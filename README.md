@@ -15,4 +15,11 @@ glide install
 go install -v ./cmd/konnectd/... && konnectd serve --listen 0.0.0.0:8777
 ```
 
+## Run unit tests
+
+```
+cd ~/go/src/stash.kopano.io/kc/konnect
+go test -v ./server
+```
+
 That's it for now.

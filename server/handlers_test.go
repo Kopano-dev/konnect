@@ -20,28 +20,30 @@ package server
 import (
 	"context"
 	"net/http"
-
-	"github.com/gorilla/mux"
+	"net/http/httptest"
+	"testing"
 )
 
-// Server is our HTTP server implementation.
-type Server struct {
-	mux http.Handler
-}
+func TestHealthCheckHandler(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-// NewServer constructs a server from the provided parameters.
-func NewServer(ctx context.Context) (*Server, error) {
-	s := &Server{}
+	// Prepare the request to pass to our handler.
+	req, err := http.NewRequest("GET", "/health-check", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	router := mux.NewRouter()
-	// TODO(longsleep): Add subpath support to all handlers.
-	router.HandleFunc("/health-check", s.HealthCheckHandler)
-	s.mux = router
+	// Create our server.
+	httpServer, server := newTestServer(ctx, t)
+	defer httpServer.Close()
 
-	return s, nil
-}
+	// Create response recorder to record the response.
+	rr := httptest.NewRecorder()
+	server.ServeHTTP(rr, req)
 
-// ServeHTTP implements the http.HandlerFunc interface.
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	// Check the status code is what we expect.
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
 }
