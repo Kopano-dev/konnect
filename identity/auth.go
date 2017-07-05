@@ -15,13 +15,16 @@
  *
  */
 
-package server
+package identity
 
 import (
-	"net/http"
+	"github.com/dgrijalva/jwt-go"
 )
 
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+// AuthRecord is an interface which provides identity auth information with scopes and claims..
+type AuthRecord interface {
+	UserID() string
+	AuthorizedScopes() map[string]bool
+	AuthorizeScopes(map[string]bool)
+	Claims(...string) []jwt.Claims
 }

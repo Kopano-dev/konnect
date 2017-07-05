@@ -15,13 +15,25 @@
  *
  */
 
-package server
+package payload
 
 import (
-	"net/http"
+	"github.com/gorilla/schema"
 )
 
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+var decoder = schema.NewDecoder()
+var encoder = schema.NewEncoder()
+
+// DecodeSchema decodes request form data into the provided dst schema struct.
+func DecodeSchema(dst interface{}, src map[string][]string) error {
+	return decoder.Decode(dst, src)
+}
+
+// EncodeSchema encodes the provided src schema to the provided map.
+func EncodeSchema(src interface{}, dst map[string][]string) error {
+	return encoder.Encode(src, dst)
+}
+
+func init() {
+	decoder.IgnoreUnknownKeys(true)
 }

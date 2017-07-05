@@ -15,13 +15,40 @@
  *
  */
 
-package server
+package provider
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
+
+	"github.com/google/go-querystring/query"
 )
 
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+func redirect(rw http.ResponseWriter, code int, uri *url.URL, params interface{}, asFragment bool) error {
+	var uriString string
+
+	if params != nil {
+		queryString, err := query.Values(params)
+		if err != nil {
+			return err
+		}
+
+		if asFragment {
+			uriString = fmt.Sprintf("%s#%s", uri.String(), queryString.Encode())
+		} else {
+			uri.RawQuery = queryString.Encode()
+			uriString = uri.String()
+		}
+	} else {
+		uriString = uri.String()
+	}
+
+	rw.Header().Set("Location", uriString)
+	rw.Header().Set("Cache-Control", "no-store")
+	rw.Header().Set("Pragma", "no-cache")
+
+	rw.WriteHeader(code)
+
+	return nil
 }

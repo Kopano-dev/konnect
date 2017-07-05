@@ -15,13 +15,20 @@
  *
  */
 
-package server
+package provider
 
 import (
-	"net/http"
+	"github.com/sirupsen/logrus"
 )
 
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+// Config defines a Provider's configuration settings.
+type Config struct {
+	IssuerIdentifier  string
+	WellKnownPath     string
+	JwksPath          string
+	AuthorizationPath string
+	TokenPath         string
+	UserInfoPath      string
+
+	Logger logrus.FieldLogger
 }

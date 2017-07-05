@@ -25,9 +25,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/spf13/cobra"
-
+	"stash.kopano.io/kc/konnect/oidc/provider"
 	"stash.kopano.io/kc/konnect/server"
+
+	"github.com/spf13/cobra"
 )
 
 func commandServe() *cobra.Command {
@@ -55,8 +56,23 @@ func serve(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create logger: %v", err)
 	}
 
+	config := &server.Config{
+		Logger: logger,
+
+		Provider: provider.Config{
+			IssuerIdentifier:  "http://localhost:8777",
+			WellKnownPath:     "/.well-known/openid-configuration",
+			JwksPath:          "/konnect/v1/jwks.json",
+			AuthorizationPath: "/konnect/v1/authorize",
+			TokenPath:         "/konnect/v1/token",
+			UserInfoPath:      "/konnect/v1/userinfo",
+
+			Logger: logger,
+		},
+	}
+
 	logger.Info("serve start")
-	srv, err := server.NewServer(context.Background())
+	srv, err := server.NewServer(context.Background(), config)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
 	}

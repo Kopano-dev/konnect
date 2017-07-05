@@ -1,10 +1,18 @@
 hash: 40cc819b33ec53da40fcafb0662b8e690a204336eaf850dd46b05638a6815655
-updated: 2017-07-04T17:09:31.624024204+02:00
+updated: 2017-07-05T16:09:31.267158198+02:00
 imports:
+- name: github.com/dgrijalva/jwt-go
+  version: a539ee1a749a2b895533f979515ac7e6e0f5b650
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
 - name: github.com/gorilla/context
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: bcd8bc72b08df0f70df986b97f95590779502d31
+- name: github.com/gorilla/schema
+  version: 8b1100835db5bbdae88541510f70d114b91a7e4d
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/sirupsen/logrus

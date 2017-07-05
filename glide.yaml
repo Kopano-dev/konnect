@@ -1,8 +1,13 @@
 package: stash.kopano.io/kc/konnect
 import:
+- package: github.com/dgrijalva/jwt-go
+  version: v3.0.0
+- package: github.com/google/go-querystring
+  subpackages:
+  - query
 - package: github.com/gorilla/mux
   version: v1.4.0
+- package: github.com/gorilla/schema
 - package: github.com/sirupsen/logrus
   version: v1.0.0
 - package: github.com/spf13/cobra
-  version: 99b5d838ca16c25cc4944e323684f8415e8b10ba

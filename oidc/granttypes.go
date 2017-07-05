@@ -15,13 +15,18 @@
  *
  */
 
-package server
+package oidc
 
-import (
-	"net/http"
+const (
+	// GrantTypeAuthorizationCode is the string value for the
+	// OAuth2 authroization code token request grant type.
+	GrantTypeAuthorizationCode = "authorization_code"
+
+	// GrantTypeImplicit is the string value for the OAuth2 id_token, token
+	// id_token token request grant type.
+	GrantTypeImplicit = "implicit"
+
+	// GrantTypeRefreshToken is the string value for the OAuth2 refresh_token
+	// token request grant_type.
+	GrantTypeRefreshToken = "refresh_token"
 )
-
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-}

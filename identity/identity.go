@@ -15,13 +15,18 @@
  *
  */
 
-package server
+package identity
 
 import (
+	"context"
 	"net/http"
+
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+// Manager is a interface to define a identity manager.
+type Manager interface {
+	Authenticate(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
+	Authorize(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
+	Fetch(ctx context.Context, userid string, scopes map[string]bool) (AuthRecord, bool, error)
 }

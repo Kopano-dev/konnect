@@ -15,13 +15,13 @@
  *
  */
 
-package server
+package oidc
 
-import (
-	"net/http"
+// OIDC prompt values.
+// See http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+const (
+	PromptNone          = "none"
+	PromptLogin         = "login"
+	PromptConsent       = "consent"
+	PromptSelectAccount = "select_account"
 )
-
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-}

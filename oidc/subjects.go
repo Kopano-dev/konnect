@@ -15,13 +15,10 @@
  *
  */
 
-package server
+package oidc
 
-import (
-	"net/http"
+const (
+	// SubjectIDPublic is the the string value of the Subject Identifier Type
+	// as defined in https://openid.net/specs/openid-connect-core-1_0.html#SubjectIDTypes
+	SubjectIDPublic = "public"
 )
-
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-}

@@ -21,18 +21,47 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+
+	"stash.kopano.io/kc/konnect/oidc/provider"
+
+	"github.com/sirupsen/logrus"
 )
 
+var logger = &logrus.Logger{
+	Out:       os.Stderr,
+	Formatter: &logrus.TextFormatter{DisableColors: true},
+	Level:     logrus.DebugLevel,
+}
+
 func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server) {
-	server, err := NewServer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	var server *Server
 
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		server.ServeHTTP(w, r)
 	}))
+
+	config := &Config{
+		Logger: logger,
+
+		Provider: provider.Config{
+			IssuerIdentifier:  "http://localhost:8777",
+			WellKnownPath:     "/.well-known/openid-configuration",
+			JwksPath:          "/konnect/v1/jwks.json",
+			AuthorizationPath: "/konnect/v1/authorize",
+			TokenPath:         "/konnect/v1/token",
+			UserInfoPath:      "/konnect/v1/userinfo",
+
+			Logger: logger,
+		},
+	}
+
+	var err error
+	server, err = NewServer(ctx, config)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	return s, server
 }

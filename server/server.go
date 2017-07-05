@@ -21,21 +21,39 @@ import (
 	"context"
 	"net/http"
 
+	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/oidc/provider"
+
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
 // Server is our HTTP server implementation.
 type Server struct {
 	mux http.Handler
+
+	logger logrus.FieldLogger
 }
 
 // NewServer constructs a server from the provided parameters.
-func NewServer(ctx context.Context) (*Server, error) {
-	s := &Server{}
+func NewServer(ctx context.Context, c *Config) (*Server, error) {
+	s := &Server{
+		logger: c.Logger,
+	}
+
+	// TODO(longsleep): Add subpath support to all handlers and paths.
+
+	var identityManager identity.Manager
+	p := provider.NewProvider(
+		ctx,
+		&c.Provider,
+		identityManager,
+	)
 
 	router := mux.NewRouter()
-	// TODO(longsleep): Add subpath support to all handlers.
 	router.HandleFunc("/health-check", s.HealthCheckHandler)
+	// Delegate to provider which is also a handler.
+	router.NotFoundHandler = p
 	s.mux = router
 
 	return s, nil

@@ -15,13 +15,13 @@
  *
  */
 
-package server
+package oidc
 
-import (
-	"net/http"
+// TokenTypeBearer is required for OIDC as defined in http://openid.net/specs/openid-connect-core-1_0.html.
+const TokenTypeBearer = "Bearer"
+
+// Token header as used in JSON web tokens.
+const (
+	JWTHeaderKeyID = "kid"
+	JWTHeaderAlg   = "alg"
 )
-
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-}

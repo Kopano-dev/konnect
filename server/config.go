@@ -18,10 +18,14 @@
 package server
 
 import (
-	"net/http"
+	"stash.kopano.io/kc/konnect/oidc/provider"
+
+	"github.com/sirupsen/logrus"
 )
 
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
+// Config defines a Server's configuration settings.
+type Config struct {
+	Logger logrus.FieldLogger
+
+	Provider provider.Config
 }

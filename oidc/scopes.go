@@ -15,13 +15,15 @@
  *
  */
 
-package server
+package oidc
 
-import (
-	"net/http"
+const (
+	// ScopeOpenID is the string value of the base OIDC scope.
+	ScopeOpenID = "openid"
+	// ScopeProfile is the string value of the OIDC profile scope.
+	ScopeProfile = "profile"
+	// ScopeEmail is the string value of the OIDC email scope.
+	ScopeEmail = "email"
+	// ScopeOfflineAccess is the string value of the OIDC offline_access scope.
+	ScopeOfflineAccess = "offline_access"
 )
-
-// HealthCheckHandler a http handler return 200 OK when server health is fine.
-func (s *Server) HealthCheckHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-}
