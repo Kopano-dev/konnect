@@ -12,7 +12,7 @@ cd ~/go/src/stash.kopano.io/kc
 git clone <THIS-PROJECT> konnect
 cd konnect
 glide install
-go install -v ./cmd/konnectd/... && konnectd serve --listen 0.0.0.0:8777
+go install -v ./cmd/konnectd && konnectd serve --listen 0.0.0.0:8777
 ```
 
 ## Run unit tests
