@@ -85,7 +85,7 @@ func (p *Provider) makeIssURL(path string) string {
 func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	switch path := req.URL.Path; {
 	case path == p.wellKnownPath:
-		http.NotFound(rw, req)
+		p.WellKnownHandler(rw, req)
 	case path == p.jwksPath:
 		http.NotFound(rw, req)
 	case path == p.authorizationPath:

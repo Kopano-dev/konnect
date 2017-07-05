@@ -27,6 +27,47 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+// WellKnownHandler implements the HTTP provider configuration endpoint
+// for OpenID Connect 1.0 as specified at https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
+func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
+	// TODO(longsleep): Add caching headers.
+	// Create well known.
+	wellKnown := &payload.WellKnown{
+		Issuer:                p.issuerIdentifier,
+		AuthorizationEndpoint: p.makeIssURL(p.authorizationPath),
+		TokenEndpoint:         p.makeIssURL(p.tokenPath),
+		UserInfoEndpoint:      p.makeIssURL(p.userInfoPath),
+		JwksURI:               p.makeIssURL(p.jwksPath),
+		ScopesSupported: uniqueStrings(append([]string{
+			oidc.ScopeOpenID,
+		}, p.identityManager.ScopesSupported()...)),
+		ResponseTypesSupported: []string{
+			oidc.ResponseTypeIDTokenToken,
+			oidc.ResponseTypeIDToken,
+		},
+		SubjectTypesSupported: []string{
+			oidc.SubjectIDPublic,
+		},
+		ClaimsSupported: uniqueStrings(append([]string{
+			oidc.IssuerIdentifierClaim,
+			oidc.SubjectIdentifierClaim,
+			oidc.AudienceClaim,
+			oidc.ExpirationClaim,
+			oidc.IssuedAtClaim,
+		}, p.identityManager.ClaimsSupported()...)),
+	}
+	if p.signingMethod != nil {
+		wellKnown.IDTokenSigningAlgValuesSupported = []string{
+			p.signingMethod.Alg(),
+		}
+	}
+
+	err := writeJSON(rw, http.StatusOK, wellKnown, "application/json")
+	if err != nil {
+		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+	}
+}
+
 // AuthorizeHandler implements the HTTP authorization endpoint for OpenID
 // Connect 1.0 as specified at http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthorizationEndpoint
 //
@@ -59,11 +100,6 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		goto done
-	}
-
-	if p.identityManager == nil {
-		p.ErrorPage(rw, http.StatusInternalServerError, oidc.ErrorOIDCRequestNotSupported, "no identity manager")
-		return
 	}
 
 	// Authorization Server Authenticates End-User

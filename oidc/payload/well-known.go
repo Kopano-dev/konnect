@@ -15,7 +15,7 @@
  *
  */
 
-package oidc
+package payload
 
 // WellKnown defines the OpenID Connect 1.0 discovery provider meta data as
 // specified at https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata

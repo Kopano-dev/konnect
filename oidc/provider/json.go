@@ -15,22 +15,24 @@
  *
  */
 
-package identity
+package provider
 
 import (
-	"context"
+	"encoding/json"
 	"net/http"
-
-	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
-// Manager is a interface to define a identity manager.
-type Manager interface {
-	Authenticate(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
-	Authorize(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
+func writeJSON(rw http.ResponseWriter, code int, data interface{}, contentType string) error {
+	b, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
 
-	Fetch(ctx context.Context, userid string, scopes map[string]bool) (AuthRecord, bool, error)
+	if contentType != "" {
+		rw.Header().Set("Content-Type", contentType)
+	}
+	rw.WriteHeader(code)
+	rw.Write(b)
 
-	ScopesSupported() []string
-	ClaimsSupported() []string
+	return nil
 }
