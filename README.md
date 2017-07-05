@@ -19,7 +19,7 @@ go install -v ./cmd/konnectd/... && konnectd serve --listen 0.0.0.0:8777
 
 ```
 cd ~/go/src/stash.kopano.io/kc/konnect
-go test -v ./server
+go test -v $(glide novendor)
 ```
 
 That's it for now.
