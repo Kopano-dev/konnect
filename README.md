@@ -22,4 +22,10 @@ cd ~/go/src/stash.kopano.io/kc/konnect
 go test -v $(glide novendor)
 ```
 
-That's it for now.
+## Other implementations
+
+There are some other noteworthy implementation of OpenID Connect out there which
+can be used as reference for compatibility.
+
+- https://github.com/coreos/dex
+- https://github.com/ory/hydra
