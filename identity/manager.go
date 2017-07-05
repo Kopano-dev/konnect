@@ -15,23 +15,22 @@
  *
  */
 
-package provider
+package identity
 
 import (
-	"stash.kopano.io/kc/konnect/identity"
+	"context"
+	"net/http"
 
-	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
-// Config defines a Provider's configuration settings.
-type Config struct {
-	IssuerIdentifier  string
-	WellKnownPath     string
-	JwksPath          string
-	AuthorizationPath string
-	TokenPath         string
-	UserInfoPath      string
+// Manager is a interface to define a identity manager.
+type Manager interface {
+	Authenticate(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
+	Authorize(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
 
-	IdentityManager identity.Manager
-	Logger          logrus.FieldLogger
+	Fetch(ctx context.Context, userID string, scopes map[string]bool) (AuthRecord, bool, error)
+
+	ScopesSupported() []string
+	ClaimsSupported() []string
 }

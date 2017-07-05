@@ -15,22 +15,22 @@
  *
  */
 
-package identity
+package managers
 
-import (
-	"context"
-	"net/http"
+// User defines a most simple user with an id.
+type User interface {
+	ID() string
+}
 
-	"stash.kopano.io/kc/konnect/oidc/payload"
-)
+// UserWithEmail is a User with Email.
+type UserWithEmail interface {
+	User
+	Email() string
+	EmailVerified() bool
+}
 
-// Manager is a interface to define a identity manager.
-type Manager interface {
-	Authenticate(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
-	Authorize(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
-
-	Fetch(ctx context.Context, userid string, scopes map[string]bool) (AuthRecord, bool, error)
-
-	ScopesSupported() []string
-	ClaimsSupported() []string
+// UserWithProfile is a User with Name.
+type UserWithProfile interface {
+	User
+	Name() string
 }

@@ -19,15 +19,19 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"stash.kopano.io/kc/konnect/identity/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
 	"stash.kopano.io/kc/konnect/server"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/spf13/cobra"
 )
 
@@ -55,6 +59,12 @@ func serve(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %v", err)
 	}
+	logger.Info("serve start")
+
+	logger.Infoln("Using dummy identity manager")
+	identityManager := &managers.DummyIdentityManager{
+		UserID: "dummy",
+	}
 
 	config := &server.Config{
 		Logger: logger,
@@ -67,15 +77,25 @@ func serve(cmd *cobra.Command, args []string) error {
 			TokenPath:         "/konnect/v1/token",
 			UserInfoPath:      "/konnect/v1/userinfo",
 
-			Logger: logger,
+			IdentityManager: identityManager,
+			Logger:          logger,
 		},
 	}
 
-	logger.Info("serve start")
 	srv, err := server.NewServer(context.Background(), config)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
 	}
+
+	go func() {
+		//XXX(longsleep): remove me - create keypair for testing.
+		key, keyGenErr := rsa.GenerateKey(rand.Reader, 512)
+		if keyGenErr != nil {
+			errCh <- fmt.Errorf("failed to create key pair: %v", keyGenErr)
+		}
+		srv.SetSigningKey("default", key, jwt.SigningMethodRS256)
+		logger.Infof("created random RSA key pair")
+	}()
 
 	listenAddr, _ := cmd.Flags().GetString("listen")
 	logger.Infof("starting http listener on %s", listenAddr)

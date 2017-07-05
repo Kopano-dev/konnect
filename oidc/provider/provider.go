@@ -54,7 +54,7 @@ type Provider struct {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(ctx context.Context, c *Config, identityManager identity.Manager) *Provider {
+func NewProvider(ctx context.Context, c *Config) *Provider {
 	p := &Provider{
 		issuerIdentifier:  c.IssuerIdentifier,
 		wellKnownPath:     c.WellKnownPath,
@@ -63,8 +63,9 @@ func NewProvider(ctx context.Context, c *Config, identityManager identity.Manage
 		tokenPath:         c.TokenPath,
 		userInfoPath:      c.UserInfoPath,
 
-		identityManager: identityManager,
-		validationKeys:  make(map[string]crypto.PublicKey),
+		identityManager: c.IdentityManager,
+
+		validationKeys: make(map[string]crypto.PublicKey),
 
 		accessTokenDuration: time.Minute * 10, //TODO(longsleep): Move to configuration.
 
@@ -79,6 +80,17 @@ func (p *Provider) makeIssURL(path string) string {
 		return ""
 	}
 	return fmt.Sprintf("%s%s", p.issuerIdentifier, path)
+}
+
+// SetSigningKey sets the provided signer as key for token signing and uses the provided id as key id. The public key of the provided
+// signer is also added as validation key with the same id.
+func (p *Provider) SetSigningKey(id string, key crypto.Signer, signingMethod jwt.SigningMethod) error {
+	p.validationKeys[id] = key.Public()
+	p.signingKey = key
+	p.signingKeyID = id
+	p.signingMethod = signingMethod
+
+	return nil
 }
 
 // ServerHTTP implements the http.HandlerFunc interface.

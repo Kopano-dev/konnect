@@ -21,7 +21,6 @@ import (
 	"context"
 	"net/http"
 
-	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc/provider"
 
 	"github.com/gorilla/mux"
@@ -30,25 +29,25 @@ import (
 
 // Server is our HTTP server implementation.
 type Server struct {
-	mux http.Handler
+	*provider.Provider
 
+	mux    http.Handler
 	logger logrus.FieldLogger
 }
 
 // NewServer constructs a server from the provided parameters.
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
-	s := &Server{
-		logger: c.Logger,
-	}
-
 	// TODO(longsleep): Add subpath support to all handlers and paths.
 
-	var identityManager identity.Manager
 	p := provider.NewProvider(
 		ctx,
 		&c.Provider,
-		identityManager,
 	)
+
+	s := &Server{
+		Provider: p,
+		logger:   c.Logger,
+	}
 
 	router := mux.NewRouter()
 	router.HandleFunc("/health-check", s.HealthCheckHandler)
