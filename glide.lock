@@ -1,8 +1,8 @@
-hash: 40cc819b33ec53da40fcafb0662b8e690a204336eaf850dd46b05638a6815655
-updated: 2017-07-05T16:09:31.267158198+02:00
+hash: de31d68658265fc978efb68a7a7b652c581db226ae83aabce11f8f9b00b06e9f
+updated: 2017-07-06T20:37:56.001868947+02:00
 imports:
 - name: github.com/dgrijalva/jwt-go
-  version: a539ee1a749a2b895533f979515ac7e6e0f5b650
+  version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
 - name: github.com/google/go-querystring
   version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
   subpackages:
@@ -15,6 +15,11 @@ imports:
   version: 8b1100835db5bbdae88541510f70d114b91a7e4d
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/longsleep/go-metrics
+  version: c1943bcf904753d1e15df1aece374004792c2ac5
+  subpackages:
+  - loggedwriter
+  - timing
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra

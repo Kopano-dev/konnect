@@ -8,6 +8,10 @@ import:
 - package: github.com/gorilla/mux
   version: v1.4.0
 - package: github.com/gorilla/schema
+- package: github.com/longsleep/go-metrics
+  subpackages:
+  - loggedWriter
+  - timing
 - package: github.com/sirupsen/logrus
   version: v1.0.0
 - package: github.com/spf13/cobra

@@ -26,6 +26,7 @@ import (
 
 	"stash.kopano.io/kc/konnect/oidc/provider"
 
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,17 +36,11 @@ var logger = &logrus.Logger{
 	Level:     logrus.DebugLevel,
 }
 
-func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server) {
-	var server *Server
-
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		server.ServeHTTP(w, r)
-	}))
-
+func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server, http.Handler) {
 	config := &Config{
 		Logger: logger,
 
-		Provider: provider.NewProvider(ctx, &provider.Config{
+		Provider: provider.NewProvider(&provider.Config{
 			IssuerIdentifier:  "http://localhost:8777",
 			WellKnownPath:     "/.well-known/openid-configuration",
 			JwksPath:          "/konnect/v1/jwks.json",
@@ -57,13 +52,18 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 		}),
 	}
 
-	var err error
-	server, err = NewServer(ctx, config)
+	server, err := NewServer(config)
 	if err != nil {
 		t.Fatal(err)
 	}
+	router := mux.NewRouter()
+	server.AddRoutes(ctx, router)
 
-	return s, server
+	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		router.ServeHTTP(rw, req)
+	}))
+
+	return s, server, router
 }
 
 func TestNewTestServer(t *testing.T) {

@@ -22,10 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"stash.kopano.io/kc/konnect/identity/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
@@ -52,26 +49,26 @@ func commandServe() *cobra.Command {
 }
 
 func serve(cmd *cobra.Command, args []string) error {
-	errCh := make(chan error, 2)
-	signalCh := make(chan os.Signal)
+	ctx := context.Background()
 
 	logger, err := newLogger()
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %v", err)
 	}
-	logger.Info("serve start")
 
 	logger.Infoln("Using dummy identity manager")
 	identityManager := &managers.DummyIdentityManager{
 		UserID: "dummy",
 	}
 
-	ctx := context.Background()
+	listenAddr, _ := cmd.Flags().GetString("listen")
 
 	config := &server.Config{
+		ListenAddr: listenAddr,
+
 		Logger: logger,
 
-		Provider: provider.NewProvider(ctx, &provider.Config{
+		Provider: provider.NewProvider(&provider.Config{
 			IssuerIdentifier:  "http://localhost:8777",
 			WellKnownPath:     "/.well-known/openid-configuration",
 			JwksPath:          "/konnect/v1/jwks.json",
@@ -84,37 +81,17 @@ func serve(cmd *cobra.Command, args []string) error {
 		}),
 	}
 
-	srv, err := server.NewServer(ctx, config)
+	srv, err := server.NewServer(config)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
 	}
 
-	go func() {
+	func() {
 		//XXX(longsleep): remove me - create keypair for testing.
-		key, keyGenErr := rsa.GenerateKey(rand.Reader, 512)
-		if keyGenErr != nil {
-			errCh <- fmt.Errorf("failed to create key pair: %v", keyGenErr)
-		}
-		srv.SetSigningKey("default", key, jwt.SigningMethodRS256)
-		logger.Infof("created random RSA key pair")
+		key, _ := rsa.GenerateKey(rand.Reader, 512)
+		srv.Provider.SetSigningKey("default", key, jwt.SigningMethodRS256)
+		logger.Infoln("created random RSA key pair")
 	}()
 
-	listenAddr, _ := cmd.Flags().GetString("listen")
-	logger.Infof("starting http listener on %s", listenAddr)
-	go func() {
-		listenErr := http.ListenAndServe(listenAddr, srv)
-		errCh <- fmt.Errorf("failed to listen on %s with: %v", listenAddr, listenErr)
-	}()
-
-	// Wait for exit or error.
-	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case err = <-errCh:
-		// breaks
-	case reason := <-signalCh:
-		logger.Infof("signal: %s", reason)
-		// breaks
-	}
-
-	return err
+	return srv.Serve(ctx)
 }

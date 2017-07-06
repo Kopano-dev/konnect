@@ -18,7 +18,6 @@
 package provider
 
 import (
-	"context"
 	"crypto"
 	"fmt"
 	"net/http"
@@ -54,7 +53,7 @@ type Provider struct {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(ctx context.Context, c *Config) *Provider {
+func NewProvider(c *Config) *Provider {
 	p := &Provider{
 		issuerIdentifier:  c.IssuerIdentifier,
 		wellKnownPath:     c.WellKnownPath,
@@ -95,6 +94,7 @@ func (p *Provider) SetSigningKey(id string, key crypto.Signer, signingMethod jwt
 
 // ServerHTTP implements the http.HandlerFunc interface.
 func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	fmt.Println("xxx", req.URL)
 	switch path := req.URL.Path; {
 	case path == p.wellKnownPath:
 		p.WellKnownHandler(rw, req)

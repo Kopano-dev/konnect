@@ -35,12 +35,12 @@ func TestHealthCheckHandler(t *testing.T) {
 	}
 
 	// Create our server.
-	httpServer, server := newTestServer(ctx, t)
+	httpServer, _, router := newTestServer(ctx, t)
 	defer httpServer.Close()
 
 	// Create response recorder to record the response.
 	rr := httptest.NewRecorder()
-	server.ServeHTTP(rr, req)
+	router.ServeHTTP(rr, req)
 
 	// Check the status code is what we expect.
 	if status := rr.Code; status != http.StatusOK {

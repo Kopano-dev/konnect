@@ -25,6 +25,8 @@ import (
 
 // Config defines a Server's configuration settings.
 type Config struct {
+	ListenAddr string
+
 	Logger logrus.FieldLogger
 
 	Provider *provider.Provider
