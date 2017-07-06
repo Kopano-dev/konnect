@@ -45,7 +45,7 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 	config := &Config{
 		Logger: logger,
 
-		Provider: provider.Config{
+		Provider: provider.NewProvider(ctx, &provider.Config{
 			IssuerIdentifier:  "http://localhost:8777",
 			WellKnownPath:     "/.well-known/openid-configuration",
 			JwksPath:          "/konnect/v1/jwks.json",
@@ -54,7 +54,7 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 			UserInfoPath:      "/konnect/v1/userinfo",
 
 			Logger: logger,
-		},
+		}),
 	}
 
 	var err error

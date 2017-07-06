@@ -66,10 +66,12 @@ func serve(cmd *cobra.Command, args []string) error {
 		UserID: "dummy",
 	}
 
+	ctx := context.Background()
+
 	config := &server.Config{
 		Logger: logger,
 
-		Provider: provider.Config{
+		Provider: provider.NewProvider(ctx, &provider.Config{
 			IssuerIdentifier:  "http://localhost:8777",
 			WellKnownPath:     "/.well-known/openid-configuration",
 			JwksPath:          "/konnect/v1/jwks.json",
@@ -79,10 +81,10 @@ func serve(cmd *cobra.Command, args []string) error {
 
 			IdentityManager: identityManager,
 			Logger:          logger,
-		},
+		}),
 	}
 
-	srv, err := server.NewServer(context.Background(), config)
+	srv, err := server.NewServer(ctx, config)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
 	}

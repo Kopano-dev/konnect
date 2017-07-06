@@ -27,5 +27,5 @@ import (
 type Config struct {
 	Logger logrus.FieldLogger
 
-	Provider provider.Config
+	Provider *provider.Provider
 }

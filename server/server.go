@@ -39,20 +39,16 @@ type Server struct {
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	// TODO(longsleep): Add subpath support to all handlers and paths.
 
-	p := provider.NewProvider(
-		ctx,
-		&c.Provider,
-	)
-
 	s := &Server{
-		Provider: p,
-		logger:   c.Logger,
+		Provider: c.Provider,
+
+		logger: c.Logger,
 	}
 
 	router := mux.NewRouter()
 	router.HandleFunc("/health-check", s.HealthCheckHandler)
 	// Delegate to provider which is also a handler.
-	router.NotFoundHandler = p
+	router.NotFoundHandler = s.Provider
 	s.mux = router
 
 	return s, nil
