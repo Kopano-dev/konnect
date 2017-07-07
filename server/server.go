@@ -103,7 +103,6 @@ func (s *Server) Serve(ctx context.Context) error {
 	defer serveCtxCancel()
 
 	logger := s.logger
-	logger.Infoln("serve start")
 
 	errCh := make(chan error, 2)
 	exitCh := make(chan bool, 1)

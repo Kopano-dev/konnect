@@ -47,6 +47,7 @@ func commandServe() *cobra.Command {
 		},
 	}
 	serveCmd.Flags().String("listen", "127.0.0.1:8777", "TCP listen address")
+	serveCmd.Flags().String("iss", "http://localhost:8777", "OIDC issuer URL")
 	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
 	serveCmd.Flags().String("signingMethod", "RS256", "JWT signing method")
 
@@ -60,16 +61,18 @@ func serve(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %v", err)
 	}
+	logger.Infoln("serve start")
 
-	logger.Infoln("Using dummy identity manager")
 	identityManager := &managers.DummyIdentityManager{
 		UserID: "dummy",
 	}
+	logger.WithField("userID", identityManager.UserID).Warnln("using dummy identity manager")
 
 	listenAddr, _ := cmd.Flags().GetString("listen")
+	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
 
 	p, err := provider.NewProvider(&provider.Config{
-		IssuerIdentifier:  "http://localhost:8777",
+		IssuerIdentifier:  issuerIdentifier,
 		WellKnownPath:     "/.well-known/openid-configuration",
 		JwksPath:          "/konnect/v1/jwks.json",
 		AuthorizationPath: "/konnect/v1/authorize",
@@ -106,11 +109,12 @@ func serve(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		logger.WithField("alg", signingMethodString).Infoln("token signing set up")
 	} else {
 		//XXX(longsleep): remove me - create keypair for testing.
 		key, _ := rsa.GenerateKey(rand.Reader, 512)
 		srv.Provider.SetSigningKey("default", key, jwt.SigningMethodRS256)
-		logger.Warnln("created random RSA key pair")
+		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random RSA key pair")
 	}
 
 	return srv.Serve(ctx)
