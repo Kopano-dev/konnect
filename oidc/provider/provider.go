@@ -94,7 +94,6 @@ func (p *Provider) SetSigningKey(id string, key crypto.Signer, signingMethod jwt
 
 // ServerHTTP implements the http.HandlerFunc interface.
 func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	fmt.Println("xxx", req.URL)
 	switch path := req.URL.Path; {
 	case path == p.wellKnownPath:
 		p.WellKnownHandler(rw, req)
