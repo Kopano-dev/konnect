@@ -21,7 +21,10 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"stash.kopano.io/kc/konnect/identity/managers"
@@ -44,6 +47,8 @@ func commandServe() *cobra.Command {
 		},
 	}
 	serveCmd.Flags().String("listen", "127.0.0.1:8777", "TCP listen address")
+	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
+	serveCmd.Flags().String("signingMethod", "RS256", "JWT signing method")
 
 	return serveCmd
 }
@@ -89,12 +94,55 @@ func serve(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create server: %v", err)
 	}
 
-	func() {
+	if keyFn, _ := cmd.Flags().GetString("key"); keyFn != "" {
+		signingMethodString, _ := cmd.Flags().GetString("signingMethod")
+		signingMethod := jwt.GetSigningMethod(signingMethodString)
+		if signingMethod == nil {
+			return fmt.Errorf("unknown signing method: %s", signingMethodString)
+		}
+
+		logger.WithField("file", keyFn).Infoln("loading key from file")
+		err := addKeysToProvider(keyFn, p, signingMethod)
+		if err != nil {
+			return err
+		}
+	} else {
 		//XXX(longsleep): remove me - create keypair for testing.
 		key, _ := rsa.GenerateKey(rand.Reader, 512)
 		srv.Provider.SetSigningKey("default", key, jwt.SigningMethodRS256)
-		logger.Infoln("created random RSA key pair")
-	}()
+		logger.Warnln("created random RSA key pair")
+	}
 
 	return srv.Serve(ctx)
+}
+
+func addKeysToProvider(fn string, p *provider.Provider, signingMethod jwt.SigningMethod) error {
+	fi, err := os.Stat(fn)
+	if err != nil {
+		return fmt.Errorf("failed load load keys: %v", err)
+	}
+
+	switch mode := fi.Mode(); {
+	case mode.IsDir():
+		// load all from directory.
+		return fmt.Errorf("key directory not implemented")
+	default:
+		// file
+		pemBytes, errRead := ioutil.ReadFile(fn)
+		if errRead != nil {
+			return fmt.Errorf("failed to parse key file: %v", errRead)
+		}
+		block, _ := pem.Decode(pemBytes)
+		if block == nil {
+			return fmt.Errorf("no PEM block found")
+		}
+		key, errParse := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return fmt.Errorf("failed to parse key: %v", errParse)
+		}
+
+		err = p.SetSigningKey("default", key, signingMethod)
+	}
+
+	return err
 }
