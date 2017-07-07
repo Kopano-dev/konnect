@@ -28,15 +28,15 @@ func TestHealthCheckHandler(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Create our server.
+	httpServer, _, router, _ := newTestServer(ctx, t)
+	defer httpServer.Close()
+
 	// Prepare the request to pass to our handler.
 	req, err := http.NewRequest("GET", "/health-check", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Create our server.
-	httpServer, _, router := newTestServer(ctx, t)
-	defer httpServer.Close()
 
 	// Create response recorder to record the response.
 	rr := httptest.NewRecorder()

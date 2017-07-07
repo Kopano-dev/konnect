@@ -63,22 +63,25 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	listenAddr, _ := cmd.Flags().GetString("listen")
 
+	p, err := provider.NewProvider(&provider.Config{
+		IssuerIdentifier:  "http://localhost:8777",
+		WellKnownPath:     "/.well-known/openid-configuration",
+		JwksPath:          "/konnect/v1/jwks.json",
+		AuthorizationPath: "/konnect/v1/authorize",
+		TokenPath:         "/konnect/v1/token",
+		UserInfoPath:      "/konnect/v1/userinfo",
+
+		IdentityManager: identityManager,
+		Logger:          logger,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create provider: %v", err)
+	}
+
 	config := &server.Config{
 		ListenAddr: listenAddr,
-
-		Logger: logger,
-
-		Provider: provider.NewProvider(&provider.Config{
-			IssuerIdentifier:  "http://localhost:8777",
-			WellKnownPath:     "/.well-known/openid-configuration",
-			JwksPath:          "/konnect/v1/jwks.json",
-			AuthorizationPath: "/konnect/v1/authorize",
-			TokenPath:         "/konnect/v1/token",
-			UserInfoPath:      "/konnect/v1/userinfo",
-
-			IdentityManager: identityManager,
-			Logger:          logger,
-		}),
+		Logger:     logger,
+		Provider:   p,
 	}
 
 	srv, err := server.NewServer(config)

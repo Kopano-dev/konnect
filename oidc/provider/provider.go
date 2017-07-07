@@ -53,7 +53,7 @@ type Provider struct {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(c *Config) *Provider {
+func NewProvider(c *Config) (*Provider, error) {
 	p := &Provider{
 		issuerIdentifier:  c.IssuerIdentifier,
 		wellKnownPath:     c.WellKnownPath,
@@ -71,7 +71,7 @@ func NewProvider(c *Config) *Provider {
 		logger: c.Logger,
 	}
 
-	return p
+	return p, nil
 }
 
 func (p *Provider) makeIssURL(path string) string {

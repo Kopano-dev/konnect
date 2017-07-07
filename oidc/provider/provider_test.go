@@ -15,19 +15,21 @@
  *
  */
 
-package server
+package provider
 
 import (
 	"context"
+	"crypto"
+	"crypto/x509"
+	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"stash.kopano.io/kc/konnect/identity/managers"
-	"stash.kopano.io/kc/konnect/oidc/provider"
 
-	"github.com/gorilla/mux"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,8 +39,25 @@ var logger = &logrus.Logger{
 	Level:     logrus.DebugLevel,
 }
 
-func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server, http.Handler, *Config) {
-	p, err := provider.NewProvider(&provider.Config{
+var rsaPrivateKeyBytes = []byte(`-----BEGIN RSA PRIVATE KEY-----
+MIIBOwIBAAJBAMJQfNl1V9opRN58oFZ0qxnIZexDZCNJOJqlzew6rDu46Tegd2e7
+uPPhQ0wQ7JQ/pvpMWBR9ayDNirdPQKAHFAECAwEAAQJBAKXVQSfpQEe8rrzeSYxf
+V2LSp0GCpiSDKd65oEt6K2FvSj+jIh7K/bsEs/0B1FBX0ISP1eXY5ojhohLkR1HN
+NV0CIQDjPnPsbv6+0wfo014w88uIbQY+INzhZm+vbG3ZFuRZwwIhANrnSPoKAvQW
+J69xBfTOquvU5hTfYQsMqob8LkZ7+7rrAiEApnlbHUtXDl60/ajS6RPA+Gm+WAdl
+KS8NBLtvYck2clcCIFToGPpDH9olLcdzA2htMQbAUW4PJsjuZMZu0lQsivt5AiBe
+iL15eI5KhPbmAaTZBrhZ1l9MkpCrwGTjD4zOPUqD9A==
+-----END RSA PRIVATE KEY-----`)
+
+var rsaPrivateKey crypto.Signer
+
+func init() {
+	block, _ := pem.Decode(rsaPrivateKeyBytes)
+	rsaPrivateKey, _ = x509.ParsePKCS1PrivateKey(block.Bytes)
+}
+
+func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Provider, http.Handler, *Config) {
+	config := &Config{
 		IssuerIdentifier:  "http://localhost:8777",
 		WellKnownPath:     "/.well-known/openid-configuration",
 		JwksPath:          "/konnect/v1/jwks.json",
@@ -50,32 +69,23 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 			UserID: "unittestuser",
 		},
 		Logger: logger,
-	})
+	}
+
+	provider, err := NewProvider(config)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	config := &Config{
-		Logger:   logger,
-		Provider: p,
-	}
-
-	server, err := NewServer(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	router := mux.NewRouter()
-	server.AddRoutes(ctx, router)
+	provider.SetSigningKey("default", rsaPrivateKey, jwt.SigningMethodRS256)
 
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		router.ServeHTTP(rw, req)
+		provider.ServeHTTP(rw, req)
 	}))
 
-	return s, server, router, config
+	return s, provider, provider, config
 }
 
-func TestNewTestServer(t *testing.T) {
+func TestNewTestProvider(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	newTestServer(ctx, t)
+	NewTestProvider(ctx, t)
 }
