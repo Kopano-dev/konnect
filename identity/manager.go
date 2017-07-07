@@ -26,8 +26,8 @@ import (
 
 // Manager is a interface to define a identity manager.
 type Manager interface {
-	Authenticate(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
-	Authorize(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
+	Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
+	Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
 
 	Fetch(ctx context.Context, userID string, scopes map[string]bool) (AuthRecord, bool, error)
 

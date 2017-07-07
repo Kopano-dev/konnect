@@ -26,8 +26,6 @@ import (
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 // DummyIdentityManager implements an identity manager which always grants
@@ -57,12 +55,12 @@ func (u *dummyUser) Name() string {
 }
 
 // Authenticate implements the identity.Manager interface.
-func (im *DummyIdentityManager) Authenticate(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
 	return NewAuthRecord(im.UserID, nil, nil), nil
 }
 
 // Authorize implements the identity.Manager interface.
-func (im *DummyIdentityManager) Authorize(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (identity.AuthRecord, error) {
+func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (identity.AuthRecord, error) {
 	promptConsent := false
 	var approvedScopes map[string]bool
 
@@ -109,40 +107,8 @@ func (im *DummyIdentityManager) Fetch(ctx context.Context, userID string, scopes
 	if userID != im.UserID {
 		return nil, false, fmt.Errorf("DummyIdentityManager: no user")
 	}
-	var user User
-	user = &dummyUser{im.UserID}
 
-	// TODO(longsleep): Move the code below to general function.
-	authorizedScopes := make(map[string]bool)
-	claims := make(map[string]jwt.Claims)
-	for scope, authorizedScope := range scopes {
-		if !authorizedScope {
-			continue
-		}
-		switch scope {
-		case oidc.ScopeOpenID:
-			// breaks
-		case oidc.ScopeEmail:
-			if userWithEmail, ok := user.(UserWithEmail); ok {
-				claims[oidc.ScopeEmail] = &oidc.EmailClaims{
-					Email:         userWithEmail.Email(),
-					EmailVerified: userWithEmail.EmailVerified(),
-				}
-			}
-		case oidc.ScopeProfile:
-			if userWithProfile, ok := user.(UserWithProfile); ok {
-				claims[oidc.ScopeProfile] = &oidc.ProfileClaims{
-					Name: userWithProfile.Name(),
-				}
-			}
-		default:
-			authorizedScope = false
-		}
-		if authorizedScope {
-			authorizedScopes[scope] = true
-		}
-	}
-
+	authorizedScopes, claims := authorizeScopes(&dummyUser{im.UserID}, scopes)
 	return NewAuthRecord(userID, authorizedScopes, claims), true, nil
 }
 

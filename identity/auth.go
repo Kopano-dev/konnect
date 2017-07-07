@@ -27,4 +27,7 @@ type AuthRecord interface {
 	AuthorizedScopes() map[string]bool
 	AuthorizeScopes(map[string]bool)
 	Claims(...string) []jwt.Claims
+
+	User() User
+	SetUser(User)
 }

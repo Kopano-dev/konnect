@@ -15,7 +15,7 @@
  *
  */
 
-package managers
+package identity
 
 // User defines a most simple user with an id.
 type User interface {
@@ -33,4 +33,9 @@ type UserWithEmail interface {
 type UserWithProfile interface {
 	User
 	Name() string
+}
+
+// UserWithNumericID is a User with a numeric id.
+type UserWithNumericID interface {
+	NumericID() int64
 }

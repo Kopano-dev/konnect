@@ -27,6 +27,8 @@ type authRecord struct {
 	userid           string
 	authorizedScopes map[string]bool
 	claims           map[string]jwt.Claims
+
+	user identity.User
 }
 
 // NewAuthRecord returns a implementation of identity.AuthRecord holding
@@ -74,4 +76,14 @@ func (r *authRecord) Claims(scopes ...string) []jwt.Claims {
 	}
 
 	return result
+}
+
+// User implements the identity.AuthRecord interface.
+func (r *authRecord) User() identity.User {
+	return r.user
+}
+
+// SetUser implements the identity.AuthRecord interface.
+func (r *authRecord) SetUser(u identity.User) {
+	r.user = u
 }

@@ -25,8 +25,11 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"time"
 
+	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/identity/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
 	"stash.kopano.io/kc/konnect/server"
@@ -63,10 +66,26 @@ func serve(cmd *cobra.Command, args []string) error {
 	}
 	logger.Infoln("serve start")
 
-	identityManager := &managers.DummyIdentityManager{
-		UserID: "dummy",
+	managerName := "cookie"
+	var identityManager identity.Manager
+	switch managerName {
+	case "cookie":
+		cookieBackendURL, urlErr := url.Parse("http://localhost:8080/cookierecord.json")
+		if urlErr != nil {
+			return urlErr
+		}
+		cookieIdentityManager := managers.NewCookieIdentityManager(cookieBackendURL, 30*time.Second, nil)
+		logger.WithField("url", cookieBackendURL).Infoln("using cookie backend identity manager")
+		identityManager = cookieIdentityManager
+	case "dummy":
+		fallthrough
+	default:
+		dummyIdentityManager := &managers.DummyIdentityManager{
+			UserID: "dummy",
+		}
+		logger.WithField("userID", dummyIdentityManager.UserID).Warnln("using dummy identity manager")
+		identityManager = dummyIdentityManager
 	}
-	logger.WithField("userID", identityManager.UserID).Warnln("using dummy identity manager")
 
 	listenAddr, _ := cmd.Flags().GetString("listen")
 	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
