@@ -31,6 +31,8 @@ const (
 	ErrorOAuth2InvalidGrant            = "invalid_grant"
 	ErrorOAuth2UnsupportedGrantType    = "unsupported_grant_type"
 	ErrorOAuth2AccessDenied            = "access_denied"
+	ErrorOAuth2ServerError             = "server_error"
+	ErrorOAuth2TemporarilyUnavailable  = "temporarily_unavailable"
 
 	ErrorOIDCInteractionRequired = "interaction_required"
 	ErrorOIDCLoginRequired       = "login_required"

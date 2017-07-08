@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"stash.kopano.io/kc/konnect/identity"
@@ -35,16 +36,17 @@ import (
 	"stash.kopano.io/kc/konnect/server"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func commandServe() *cobra.Command {
 	serveCmd := &cobra.Command{
-		Use:   "serve",
+		Use:   "serve <identity-manager> [...args]",
 		Short: "Start server and listen for requests",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := serve(cmd, args); err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(1)
 			}
 		},
@@ -53,6 +55,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("iss", "http://localhost:8777", "OIDC issuer URL")
 	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
 	serveCmd.Flags().String("signingMethod", "RS256", "JWT signing method")
+	serveCmd.Flags().String("signInFormURI", "/sign-in", "Redirection URI to sign-in form")
 
 	return serveCmd
 }
@@ -64,27 +67,54 @@ func serve(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %v", err)
 	}
-	logger.Infoln("serve start")
 
-	managerName := "cookie"
-	var identityManager identity.Manager
-	switch managerName {
-	case "cookie":
-		cookieBackendURL, urlErr := url.Parse("http://localhost:8080/cookierecord.json")
-		if urlErr != nil {
-			return urlErr
+	if len(args) == 0 {
+		return fmt.Errorf("identity-manager argument missing")
+	}
+	identityManagerName := args[0]
+
+	signInFormURIString, _ := cmd.Flags().GetString("signInFormURI")
+	signInFormURI, err := url.Parse(signInFormURIString)
+	if err != nil || !strings.HasPrefix(signInFormURI.EscapedPath(), "/") {
+		if err == nil {
+			err = fmt.Errorf("URI path must be absolute")
 		}
-		cookieIdentityManager := managers.NewCookieIdentityManager(cookieBackendURL, 30*time.Second, nil)
-		logger.WithField("url", cookieBackendURL).Infoln("using cookie backend identity manager")
+		return fmt.Errorf("signInFormURI invalid, %v", err)
+	}
+
+	var identityManager identity.Manager
+	switch identityManagerName {
+	case "cookie":
+		if len(args) != 2 {
+			return fmt.Errorf("cookie backend requires the backend URI as argument")
+		}
+		backendURI, backendURIErr := url.Parse(args[1])
+		if backendURIErr != nil || !backendURI.IsAbs() {
+			if backendURIErr == nil {
+				backendURIErr = fmt.Errorf("URI must have a scheme")
+			}
+			return fmt.Errorf("backend URI invalid, %v", backendURIErr)
+		}
+
+		identityManagerConfig := &identity.Config{
+			SignInFormURI: signInFormURI,
+
+			Logger: logger,
+		}
+		cookieIdentityManager := managers.NewCookieIdentityManager(identityManagerConfig, backendURI, 30*time.Second, nil)
+		logger.WithFields(logrus.Fields{
+			"backend": backendURI,
+			"signIn":  signInFormURI,
+		}).Infoln("using cookie backend identity manager")
 		identityManager = cookieIdentityManager
 	case "dummy":
-		fallthrough
-	default:
 		dummyIdentityManager := &managers.DummyIdentityManager{
 			UserID: "dummy",
 		}
 		logger.WithField("userID", dummyIdentityManager.UserID).Warnln("using dummy identity manager")
 		identityManager = dummyIdentityManager
+	default:
+		return fmt.Errorf("unknown identity manager %v", identityManagerName)
 	}
 
 	listenAddr, _ := cmd.Flags().GetString("listen")
@@ -136,6 +166,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random RSA key pair")
 	}
 
+	logger.Infoln("serve start")
 	return srv.Serve(ctx)
 }
 

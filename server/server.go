@@ -117,7 +117,7 @@ func (s *Server) Serve(ctx context.Context) error {
 		Handler: router,
 	}
 	go func() {
-		logger.WithField("listenAddr", s.listenAddr).Info("starting http listener")
+		logger.WithField("listenAddr", s.listenAddr).Infoln("starting http listener")
 		err := srv.ListenAndServe()
 		if err != nil {
 			errCh <- fmt.Errorf("failed to listen on %s with: %v", s.listenAddr, err)

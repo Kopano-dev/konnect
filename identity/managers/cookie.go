@@ -24,24 +24,31 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/version"
+
+	"github.com/sirupsen/logrus"
 )
 
 // CookieIdentityManager implements an identity manager which passes through
 // received HTTP cookies to a HTTP backend..
 type CookieIdentityManager struct {
-	url    *url.URL
-	client *http.Client
+	backendURI *url.URL
+	client     *http.Client
+
+	signInFormURI string
+
+	logger logrus.FieldLogger
 }
 
 // NewCookieIdentityManager creates a new CookieIdentityManager from the
 // provided parameters.
-func NewCookieIdentityManager(url *url.URL, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
+func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
@@ -52,8 +59,12 @@ func NewCookieIdentityManager(url *url.URL, timeout time.Duration, transport htt
 	}
 
 	im := &CookieIdentityManager{
-		url:    url,
-		client: client,
+		backendURI: backendURI,
+		client:     client,
+
+		signInFormURI: c.SignInFormURI.String(),
+
+		logger: c.Logger,
 	}
 
 	return im
@@ -93,24 +104,34 @@ type cookieBackendResponse struct {
 	Email     string `json:"email"`
 }
 
-// Authenticate implements the identity.Manager interface.
-func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
-	request, err := http.NewRequest(http.MethodGet, im.url.String(), nil)
+func (im *CookieIdentityManager) backendRequest(ctx context.Context, cookies []*http.Cookie) (*cookieBackendResponse, error) {
+	if len(cookies) == 0 {
+		// Fastpath, do nothing when no cookies.
+		return nil, nil
+	}
+
+	request, err := http.NewRequest(http.MethodPost, im.backendURI.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("CookieIdentityManager failed to create request: %v", err)
+		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 	request.Header.Set("User-Agent", fmt.Sprintf("konnect/%s", version.Version))
 	request.Header.Set("X-Konnect-Request", "1")
 
+	var encodedCookies []string
+	for _, cookie := range cookies {
+		encodedCookies = append(encodedCookies, cookie.String())
+	}
+	request.Header.Set("Cookie", strings.Join(encodedCookies, "; "))
 	request = request.WithContext(ctx)
+
 	response, err := im.client.Do(request)
 	if err != nil {
-		return nil, fmt.Errorf("CookieIdentityManager request failed: %v", err)
+		return nil, fmt.Errorf("request failed: %v", err)
 	}
 	body, err := ioutil.ReadAll(response.Body)
 	response.Body.Close()
 	if err != nil {
-		return nil, fmt.Errorf("CookieIdentityManager read response failed: %v", err)
+		return nil, fmt.Errorf("read response failed: %v", err)
 	}
 
 	switch response.StatusCode {
@@ -118,14 +139,60 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 		fallthrough
 	case http.StatusAccepted:
 		// breaks
+	case http.StatusUnauthorized:
+		fallthrough
+	case http.StatusForbidden:
+		// Not signed in.
+		return nil, nil
 	default:
-		return nil, fmt.Errorf("CookieIdentityManager request returned error code: %v", response.Status)
+		return nil, fmt.Errorf("request returned error code: %v", response.Status)
 	}
 
 	payload := &cookieBackendResponse{}
 	err = json.Unmarshal(body, payload)
 	if err != nil {
-		return nil, fmt.Errorf("CookieIdentityManager failed to parse response: %v", err)
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	return payload, nil
+}
+
+// Authenticate implements the identity.Manager interface.
+func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+	payload, err := im.backendRequest(ctx, req.Cookies())
+	if err != nil {
+		// Error, directly return.
+		im.logger.Errorln("CookieIdentityManager: backend request error", err)
+		return nil, ar.NewError(oidc.ErrorOAuth2ServerError, "CookieIdentityManager: backend request error")
+	}
+	if payload == nil {
+		// Not signed in.
+		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "CookieIdentityManager: not signed in")
+	}
+
+	// Check prompt value.
+	switch {
+	case ar.Prompts[oidc.PromptNone] == true:
+		if err != nil {
+			// Never show sign-in, directly return error.
+			return nil, err
+		}
+	case ar.Prompts[oidc.PromptLogin] == true:
+		if err == nil {
+			// Enforce to show sign-in, when signed in.
+			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "CookieIdentityManager: prompt=login request")
+		}
+	case ar.Prompts[oidc.PromptSelectAccount] == true:
+		// Not supported, just ignore.
+		fallthrough
+	default:
+		// Let all other prompt values pass.
+	}
+
+	if err != nil {
+		redirectURI, _ := url.Parse(im.signInFormURI)
+		redirectURI.RawQuery = fmt.Sprintf("continue=%s&oauth=1", url.QueryEscape(req.RequestURI))
+		return nil, identity.NewRedirectError(err.Error(), redirectURI)
 	}
 
 	auth := NewAuthRecord(payload.ID, nil, nil)
@@ -141,8 +208,47 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 
 // Authorize implements the identity.Manager interface.
 func (im *CookieIdentityManager) Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (identity.AuthRecord, error) {
-	// TODO(longsleep): Implement proper consent and scope checks.
-	auth.AuthorizeScopes(ar.Scopes)
+	promptConsent := false
+	var approvedScopes map[string]bool
+
+	// Check prompt value.
+	switch {
+	case ar.Prompts[oidc.PromptConsent] == true:
+		promptConsent = true
+	default:
+		// Let all other prompt values pass.
+	}
+
+	// Fastpath for known clients.
+	switch ar.ClientID {
+	default:
+		// TODO(longsleep): Implement previous consent checks via backend.
+		approvedScopes = ar.Scopes
+	}
+
+	// Offline access validation.
+	// http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
+	if ok, _ := ar.Scopes[oidc.ScopeOfflineAccess]; ok {
+		if !promptConsent {
+			// Ensure that the prompt parameter contains consent unless
+			// other conditions for processing the request permitting offline
+			// access to the requested resources are in place; unless one or
+			// both of these conditions are fulfilled, then it MUST ignore the
+			// offline_access request,
+			delete(ar.Scopes, oidc.ScopeOfflineAccess)
+		}
+	}
+
+	if promptConsent {
+		if ar.Prompts[oidc.PromptNone] == true {
+			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
+		}
+
+		// TODO(longsleep): Implement permissions page / consent prompt.
+		return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
+	}
+
+	auth.AuthorizeScopes(approvedScopes)
 	return auth, nil
 }
 
