@@ -31,7 +31,8 @@ import (
 	"time"
 
 	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/identity/managers"
+	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
 	"stash.kopano.io/kc/konnect/server"
 
@@ -101,14 +102,14 @@ func serve(cmd *cobra.Command, args []string) error {
 
 			Logger: logger,
 		}
-		cookieIdentityManager := managers.NewCookieIdentityManager(identityManagerConfig, backendURI, 30*time.Second, nil)
+		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, backendURI, 30*time.Second, nil)
 		logger.WithFields(logrus.Fields{
 			"backend": backendURI,
 			"signIn":  signInFormURI,
 		}).Infoln("using cookie backend identity manager")
 		identityManager = cookieIdentityManager
 	case "dummy":
-		dummyIdentityManager := &managers.DummyIdentityManager{
+		dummyIdentityManager := &identityManagers.DummyIdentityManager{
 			UserID: "dummy",
 		}
 		logger.WithField("userID", dummyIdentityManager.UserID).Warnln("using dummy identity manager")
@@ -116,6 +117,8 @@ func serve(cmd *cobra.Command, args []string) error {
 	default:
 		return fmt.Errorf("unknown identity manager %v", identityManagerName)
 	}
+
+	codeManager := codeManagers.NewMemoryMapManager(ctx)
 
 	listenAddr, _ := cmd.Flags().GetString("listen")
 	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
@@ -129,6 +132,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		UserInfoPath:      "/konnect/v1/userinfo",
 
 		IdentityManager: identityManager,
+		CodeManager:     codeManager,
 		Logger:          logger,
 	})
 	if err != nil {

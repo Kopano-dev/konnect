@@ -140,8 +140,10 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 
 	// Create code when requested.
 	if _, ok := ar.ResponseTypes[oidc.ResponseTypeCode]; ok {
-		err = ar.NewError(oidc.ErrorOAuth2UnsupportedResponseType, "code flow not implemented")
-		goto done
+		codeString, err = p.codeManager.Create(ar, auth)
+		if err != nil {
+			goto done
+		}
 	}
 
 	// Create access token when requested.

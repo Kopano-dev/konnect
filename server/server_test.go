@@ -24,7 +24,8 @@ import (
 	"os"
 	"testing"
 
-	"stash.kopano.io/kc/konnect/identity/managers"
+	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
 
 	"github.com/gorilla/mux"
@@ -46,10 +47,11 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 		TokenPath:         "/konnect/v1/token",
 		UserInfoPath:      "/konnect/v1/userinfo",
 
-		IdentityManager: &managers.DummyIdentityManager{
+		IdentityManager: &identityManagers.DummyIdentityManager{
 			UserID: "unittestuser",
 		},
-		Logger: logger,
+		CodeManager: codeManagers.NewMemoryMapManager(ctx),
+		Logger:      logger,
 	})
 	if err != nil {
 		t.Fatal(err)

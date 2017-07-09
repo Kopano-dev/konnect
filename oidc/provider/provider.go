@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/oidc/code"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
@@ -41,6 +42,7 @@ type Provider struct {
 	userInfoPath      string
 
 	identityManager identity.Manager
+	codeManager     code.Manager
 
 	signingMethod  jwt.SigningMethod
 	signingKey     crypto.PrivateKey
@@ -63,6 +65,7 @@ func NewProvider(c *Config) (*Provider, error) {
 		userInfoPath:      c.UserInfoPath,
 
 		identityManager: c.IdentityManager,
+		codeManager:     c.CodeManager,
 
 		validationKeys: make(map[string]crypto.PublicKey),
 

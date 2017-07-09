@@ -15,25 +15,15 @@
  *
  */
 
-package provider
+package code
 
 import (
 	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/oidc/code"
-
-	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
-// Config defines a Provider's configuration settings.
-type Config struct {
-	IssuerIdentifier  string
-	WellKnownPath     string
-	JwksPath          string
-	AuthorizationPath string
-	TokenPath         string
-	UserInfoPath      string
-
-	IdentityManager identity.Manager
-	CodeManager     code.Manager
-	Logger          logrus.FieldLogger
+// Manager is a interface defining a code manager.
+type Manager interface {
+	Create(ar *payload.AuthenticationRequest, auth identity.AuthRecord) (string, error)
+	Pop(code string) (*payload.AuthenticationRequest, identity.AuthRecord, bool)
 }

@@ -27,7 +27,8 @@ import (
 	"os"
 	"testing"
 
-	"stash.kopano.io/kc/konnect/identity/managers"
+	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
@@ -65,10 +66,11 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 		TokenPath:         "/konnect/v1/token",
 		UserInfoPath:      "/konnect/v1/userinfo",
 
-		IdentityManager: &managers.DummyIdentityManager{
+		IdentityManager: &identityManagers.DummyIdentityManager{
 			UserID: "unittestuser",
 		},
-		Logger: logger,
+		CodeManager: codeManagers.NewMemoryMapManager(ctx),
+		Logger:      logger,
 	}
 
 	provider, err := NewProvider(config)
