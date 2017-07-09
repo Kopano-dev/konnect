@@ -72,14 +72,19 @@ func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, timeout t
 }
 
 type cookieUser struct {
-	id    string
-	nid   int64
-	email string
+	sub   string
 	name  string
+	email string
+
+	id int64
 }
 
-func (u *cookieUser) ID() string {
-	return u.id
+func (u *cookieUser) Subject() string {
+	return u.sub
+}
+
+func (u *cookieUser) Name() string {
+	return u.name
 }
 
 func (u *cookieUser) Email() string {
@@ -90,19 +95,16 @@ func (u *cookieUser) EmailVerified() bool {
 	return false
 }
 
-func (u *cookieUser) Name() string {
-	return u.name
-}
-
-func (u *cookieUser) NumericID() int64 {
-	return u.nid
+func (u *cookieUser) ID() int64 {
+	return u.id
 }
 
 type cookieBackendResponse struct {
-	ID        string `json:"id"`
-	NumericID int64  `json:"nid"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
+	Subject string `json:"sub"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+
+	ID int64 `json:"id"`
 }
 
 func (im *CookieIdentityManager) backendRequest(ctx context.Context, cookies []*http.Cookie) (*cookieBackendResponse, error) {
@@ -196,12 +198,13 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 		return nil, identity.NewRedirectError(err.Error(), redirectURI)
 	}
 
-	auth := NewAuthRecord(payload.ID, nil, nil)
+	auth := NewAuthRecord(payload.Subject, nil, nil)
 	auth.SetUser(&cookieUser{
-		id:    auth.UserID(),
-		nid:   payload.NumericID,
+		sub:   auth.Subject(),
 		email: payload.Email,
 		name:  payload.Name,
+
+		id: payload.ID,
 	})
 
 	return auth, nil
@@ -274,13 +277,13 @@ func (im *CookieIdentityManager) ApprovedScopes(ctx context.Context, userid stri
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
 	auth, ok := identity.FromContext(ctx)
 	if !ok {
 		return nil, false, fmt.Errorf("CookieIdentityManager: no auth, cookie identities only support single request fetch")
 	}
 
-	if auth.UserID() != userID {
+	if auth.Subject() != sub {
 		return nil, false, fmt.Errorf("CookieIdentityManager: wrong user - this should not happen")
 	}
 
@@ -290,7 +293,7 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, scope
 	}
 
 	authorizedScopes, claims := authorizeScopes(user, scopes)
-	return NewAuthRecord(userID, authorizedScopes, claims), true, nil
+	return NewAuthRecord(sub, authorizedScopes, claims), true, nil
 }
 
 // ScopesSupported implements the identity.Manager interface.

@@ -48,7 +48,7 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 		UserInfoPath:      "/konnect/v1/userinfo",
 
 		IdentityManager: &identityManagers.DummyIdentityManager{
-			UserID: "unittestuser",
+			Sub: "unittestuser",
 		},
 		CodeManager: codeManagers.NewMemoryMapManager(ctx),
 		Logger:      logger,

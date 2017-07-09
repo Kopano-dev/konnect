@@ -24,7 +24,7 @@ import (
 )
 
 type authRecord struct {
-	userid           string
+	sub              string
 	authorizedScopes map[string]bool
 	claims           map[string]jwt.Claims
 
@@ -33,21 +33,21 @@ type authRecord struct {
 
 // NewAuthRecord returns a implementation of identity.AuthRecord holding
 // the provided data in memory.
-func NewAuthRecord(userid string, authorizedScopes map[string]bool, claims map[string]jwt.Claims) identity.AuthRecord {
+func NewAuthRecord(sub string, authorizedScopes map[string]bool, claims map[string]jwt.Claims) identity.AuthRecord {
 	if authorizedScopes == nil {
 		authorizedScopes = make(map[string]bool)
 	}
 
 	return &authRecord{
-		userid:           userid,
+		sub:              sub,
 		authorizedScopes: authorizedScopes,
 		claims:           claims,
 	}
 }
 
-// UserID implements the identity.AuthRecord  interface.
-func (r *authRecord) UserID() string {
-	return r.userid
+// Subject implements the identity.AuthRecord  interface.
+func (r *authRecord) Subject() string {
+	return r.sub
 }
 
 // AuthorizedScopes implements the identity.AuthRecord  interface.

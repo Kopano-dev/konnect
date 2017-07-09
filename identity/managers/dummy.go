@@ -32,19 +32,19 @@ import (
 // DummyIdentityManager implements an identity manager which always grants
 // access to a fixed user id.
 type DummyIdentityManager struct {
-	UserID string
+	Sub string
 }
 
 type dummyUser struct {
-	id string
+	sub string
 }
 
-func (u *dummyUser) ID() string {
-	return u.id
+func (u *dummyUser) Subject() string {
+	return u.sub
 }
 
 func (u *dummyUser) Email() string {
-	return fmt.Sprintf("%s@%s.local", u.id, u.id)
+	return fmt.Sprintf("%s@%s.local", u.sub, u.sub)
 }
 
 func (u *dummyUser) EmailVerified() bool {
@@ -52,12 +52,12 @@ func (u *dummyUser) EmailVerified() bool {
 }
 
 func (u *dummyUser) Name() string {
-	return fmt.Sprintf("Foo %s", strings.Title(u.id))
+	return fmt.Sprintf("Foo %s", strings.Title(u.sub))
 }
 
 // Authenticate implements the identity.Manager interface.
 func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
-	return NewAuthRecord(im.UserID, nil, nil), nil
+	return NewAuthRecord(im.Sub, nil, nil), nil
 }
 
 // Authorize implements the identity.Manager interface.
@@ -124,13 +124,13 @@ func (im *DummyIdentityManager) ApprovedScopes(ctx context.Context, userid strin
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *DummyIdentityManager) Fetch(ctx context.Context, userID string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
-	if userID != im.UserID {
+func (im *DummyIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+	if sub != im.Sub {
 		return nil, false, fmt.Errorf("DummyIdentityManager: no user")
 	}
 
-	authorizedScopes, claims := authorizeScopes(&dummyUser{im.UserID}, scopes)
-	return NewAuthRecord(userID, authorizedScopes, claims), true, nil
+	authorizedScopes, claims := authorizeScopes(&dummyUser{im.Sub}, scopes)
+	return NewAuthRecord(sub, authorizedScopes, claims), true, nil
 }
 
 // ScopesSupported implements the identity.Manager interface.

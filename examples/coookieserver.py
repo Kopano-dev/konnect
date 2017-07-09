@@ -5,26 +5,34 @@ from http import cookies
 import json
 
 # User table.
-users = {
-    "arthur": {
-        "id": "arthur",
-        "nid": 1,
+users = {}
+
+
+def addUsers(l):
+    for u in l:
+        users[u.get("sub")] = u
+
+        # Add numeric user ID.
+        u["id"] = len(users)
+
+
+addUsers([
+    {
+        "sub": "arthur",
         "name": "Arthur Dent",
-        "email": "arthur@earth.local"
+        "email": "arthur@earth.local",
     },
-    "trillian": {
-        "id": "trillian",
-        "nid": 2,
+    {
+        "sub": "trillian",
         "name": "Trillian",
-        "email": "trillian@galaxy.local"
+        "email": "trillian@galaxy.local",
     },
-    "ford": {
-        "id": "ford",
-        "nid": 3,
+    {
+        "sub": "ford",
         "name": "Ford Perfect",
-        "email": "ford@betelgeuse.local"
+        "email": "ford@betelgeuse.local",
     }
-}
+])
 
 
 class Handler(BaseHTTPRequestHandler):

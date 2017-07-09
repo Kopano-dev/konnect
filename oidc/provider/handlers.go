@@ -479,7 +479,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 
 	response := &payload.UserInfoResponse{
 		UserInfoClaims: oidc.UserInfoClaims{
-			Subject: user.UserID(),
+			Subject: user.Subject(),
 		},
 		ProfileClaims: oidc.NewProfileClaims(user.Claims(oidc.ScopeProfile)[0]),
 		EmailClaims:   oidc.NewEmailClaims(user.Claims(oidc.ScopeEmail)[0]),

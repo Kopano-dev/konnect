@@ -19,7 +19,7 @@ package identity
 
 // User defines a most simple user with an id.
 type User interface {
-	ID() string
+	Subject() string
 }
 
 // UserWithEmail is a User with Email.
@@ -35,7 +35,7 @@ type UserWithProfile interface {
 	Name() string
 }
 
-// UserWithNumericID is a User with a numeric id.
-type UserWithNumericID interface {
-	NumericID() int64
+// UserWithID is a User with a numeric id.
+type UserWithID interface {
+	ID() int64
 }

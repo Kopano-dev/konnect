@@ -23,7 +23,7 @@ import (
 
 // AuthRecord is an interface which provides identity auth information with scopes and claims..
 type AuthRecord interface {
-	UserID() string
+	Subject() string
 	AuthorizedScopes() map[string]bool
 	AuthorizeScopes(map[string]bool)
 	Claims(...string) []jwt.Claims

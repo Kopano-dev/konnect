@@ -41,7 +41,7 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 		AuthorizedScopesList: authorizedScopesList,
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    p.issuerIdentifier,
-			Subject:   auth.UserID(),
+			Subject:   auth.Subject(),
 			Audience:  audience,
 			ExpiresAt: time.Now().Add(p.accessTokenDuration).Unix(),
 			IssuedAt:  time.Now().Unix(),
@@ -58,7 +58,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 		Nonce: ar.Nonce,
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    p.issuerIdentifier,
-			Subject:   auth.UserID(),
+			Subject:   auth.Subject(),
 			Audience:  ar.ClientID,
 			ExpiresAt: time.Now().Add(time.Hour).Unix(), // 1 Hour, must be consumed by then.
 			IssuedAt:  time.Now().Unix(),
@@ -66,7 +66,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 	if accessTokenString == "" {
 		// Include requested scope data in ID token when no access token is
 		// generated.
-		user, found, err := p.identityManager.Fetch(ctx, auth.UserID(), auth.AuthorizedScopes())
+		user, found, err := p.identityManager.Fetch(ctx, auth.Subject(), auth.AuthorizedScopes())
 		if !found {
 			return "", fmt.Errorf("user not found")
 		}
@@ -117,7 +117,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 		}
 	}
 
-	ref, err := p.identityManager.ApproveScopes(ctx, auth.UserID(), audience, approvedScopes)
+	ref, err := p.identityManager.ApproveScopes(ctx, auth.Subject(), audience, approvedScopes)
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +128,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 		Ref:                ref,
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    p.issuerIdentifier,
-			Subject:   auth.UserID(),
+			Subject:   auth.Subject(),
 			Audience:  audience,
 			ExpiresAt: time.Now().Add(time.Hour * 24 * 365 * 3).Unix(), // 3 Years.
 			IssuedAt:  time.Now().Unix(),

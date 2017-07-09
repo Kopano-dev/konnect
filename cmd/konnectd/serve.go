@@ -110,9 +110,9 @@ func serve(cmd *cobra.Command, args []string) error {
 		identityManager = cookieIdentityManager
 	case "dummy":
 		dummyIdentityManager := &identityManagers.DummyIdentityManager{
-			UserID: "dummy",
+			Sub: "dummy",
 		}
-		logger.WithField("userID", dummyIdentityManager.UserID).Warnln("using dummy identity manager")
+		logger.WithField("sub", dummyIdentityManager.Sub).Warnln("using dummy identity manager")
 		identityManager = dummyIdentityManager
 	default:
 		return fmt.Errorf("unknown identity manager %v", identityManagerName)
