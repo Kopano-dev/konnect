@@ -191,7 +191,7 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 
 	if err != nil {
 		redirectURI, _ := url.Parse(im.signInFormURI)
-		redirectURI.RawQuery = fmt.Sprintf("continue=%s&oauth=1", url.QueryEscape(req.RequestURI))
+		redirectURI.RawQuery = fmt.Sprintf("continue=%s&oauth=1", url.QueryEscape(getRequestURL(req).String()))
 		return nil, identity.NewRedirectError(err.Error(), redirectURI)
 	}
 
