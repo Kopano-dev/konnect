@@ -28,6 +28,7 @@ import (
 	"stash.kopano.io/kc/konnect/oidc/code"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -105,7 +106,7 @@ func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	case path == p.authorizationPath:
 		p.AuthorizeHandler(rw, req)
 	case path == p.tokenPath:
-		http.NotFound(rw, req)
+		cors.Default().ServeHTTP(rw, req, p.TokenHandler)
 	case path == p.userInfoPath:
 		http.NotFound(rw, req)
 	default:

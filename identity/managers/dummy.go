@@ -25,6 +25,7 @@ import (
 
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
+	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
@@ -100,6 +101,26 @@ func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 	auth.AuthorizeScopes(approvedScopes)
 	return auth, nil
+}
+
+// ApproveScopes implements the Backend interface.
+func (im *DummyIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
+	ref, err := code.GenerateRandomString(32)
+	if err != nil {
+		return "", err
+	}
+
+	// TODO(longsleep): Store generated ref with provided data.
+	return ref, nil
+}
+
+// ApprovedScopes implements the Backend interface.
+func (im *DummyIdentityManager) ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error) {
+	if ref == "" {
+		return nil, fmt.Errorf("SimplePasswdBackend: invalid ref")
+	}
+
+	return nil, nil
 }
 
 // Fetch implements the identity.Manager interface.

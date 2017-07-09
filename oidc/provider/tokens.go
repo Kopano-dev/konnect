@@ -107,6 +107,40 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 	return idToken.SignedString(p.signingKey)
 }
 
+func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {
+	approvedScopesList := []string{}
+	approvedScopes := make(map[string]bool)
+	for scope, granted := range auth.AuthorizedScopes() {
+		if granted {
+			approvedScopesList = append(approvedScopesList, scope)
+			approvedScopes[scope] = true
+		}
+	}
+
+	ref, err := p.identityManager.ApproveScopes(ctx, auth.UserID(), audience, approvedScopes)
+	if err != nil {
+		return "", err
+	}
+
+	refreshTokenClaims := &oidc.RefreshTokenClaims{
+		IsRefreshToken:     true,
+		ApprovedScopesList: approvedScopesList,
+		Ref:                ref,
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    p.issuerIdentifier,
+			Subject:   auth.UserID(),
+			Audience:  audience,
+			ExpiresAt: time.Now().Add(time.Hour * 24 * 365 * 3).Unix(), // 3 Years.
+			IssuedAt:  time.Now().Unix(),
+		},
+	}
+
+	refreshToken := jwt.NewWithClaims(p.signingMethod, refreshTokenClaims)
+	refreshToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID
+
+	return refreshToken.SignedString(p.signingKey)
+}
+
 func (p *Provider) validateJWT(token *jwt.Token) (interface{}, error) {
 	rawAlg, ok := token.Header[oidc.JWTHeaderAlg]
 	if !ok {

@@ -10,8 +10,11 @@ import:
 - package: github.com/gorilla/schema
 - package: github.com/longsleep/go-metrics
   subpackages:
-  - loggedWriter
+  - loggedwriter
   - timing
+- package: github.com/orcaman/concurrent-map
+- package: github.com/rs/cors
+  version: v1.1
 - package: github.com/sirupsen/logrus
   version: v1.0.0
 - package: github.com/spf13/cobra

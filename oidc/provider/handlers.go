@@ -204,3 +204,208 @@ done:
 
 	p.Found(rw, ar.RedirectURI, response, ar.UseFragment)
 }
+
+// TokenHandler implements the HTTP token endpoint for OpenID
+// Connect 1.0 as specified at http://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
+func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
+	var err error
+	var tr *payload.TokenRequest
+	var found bool
+	var ar *payload.AuthenticationRequest
+	var auth identity.AuthRecord
+	var accessTokenString string
+	var idTokenString string
+	var refreshTokenString string
+	var approvedScopes map[string]bool
+	var authorizedScopes map[string]bool
+
+	rw.Header().Set("Cache-Control", "no-store")
+	rw.Header().Set("Pragma", "no-cache")
+
+	// Validate request method
+	switch req.Method {
+	case http.MethodPost:
+		// breaks
+	default:
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "request must be sent with POST")
+		goto done
+	}
+
+	// Token Request Validation
+	// http://openid.net/specs/openid-connect-core-1_0.html#TokenRequestValidation
+	err = req.ParseForm()
+	if err != nil {
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
+		goto done
+	}
+	tr, err = payload.DecodeTokenRequest(req)
+	if err != nil {
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
+		goto done
+	}
+
+	err = tr.Validate(func(token *jwt.Token) (interface{}, error) {
+		// Validator for incoming refresh tokens.
+		// TODO(longsleep): Validate claims.
+		return p.validateJWT(token)
+	})
+	if err != nil {
+		goto done
+	}
+
+	switch tr.GrantType {
+	case oidc.GrantTypeAuthorizationCode:
+		ar, auth, found = p.codeManager.Pop(tr.Code)
+		if !found {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "code not found")
+			goto done
+		}
+
+		authorizedScopes = auth.AuthorizedScopes()
+
+		// Additional validations according to https://tools.ietf.org/html/rfc6749#section-4.1.3
+		// TODO(longsleep): Authenticate the client if client authentication is included.
+
+		// Ensure that the authorization code was issued to the client id.
+		if ar.ClientID != tr.ClientID {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "client_id mismatch")
+			goto done
+		}
+
+		// Ensure that the "redirect_uri" parameter is a match.
+		if ar.RawRedirectURI != tr.RawRedirectURI {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "redirect_uri mismatch")
+			goto done
+		}
+
+	case oidc.GrantTypeRefreshToken:
+		if tr.RefreshToken == nil {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "missing refresh_token")
+			goto done
+		}
+
+		// Get claims from refresh token.
+		claims := tr.RefreshToken.Claims.(*oidc.RefreshTokenClaims)
+
+		// Ensure that the authorization code was issued to the client id.
+		if claims.Audience != tr.ClientID {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "client_id mismatch")
+			goto done
+		}
+
+		// Additional validations according to https://tools.ietf.org/html/rfc6749#section-4.1.3
+		// TODO(longsleep): Authenticate the client if client authentication is included.
+		// TODO(longsleep): Compare standard claims issuer.
+
+		// Lookup Ref values from backend.
+		approvedScopes, err = p.identityManager.ApprovedScopes(req.Context(), claims.Subject, tr.ClientID, claims.Ref)
+		if err != nil {
+			goto done
+		}
+		if approvedScopes == nil {
+			// Use approvals from token if backend did not say anything.
+			approvedScopes = make(map[string]bool)
+			for _, scope := range claims.ApprovedScopesList {
+				approvedScopes[scope] = true
+			}
+		}
+
+		if len(tr.Scopes) > 0 {
+			// Make sure all requested scopes are granted and limited authorized
+			// scopes to the requested scopes.
+			authorizedScopes = make(map[string]bool)
+			for scope := range tr.Scopes {
+				if !approvedScopes[scope] {
+					err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InsufficientScope, "insufficient scope")
+					goto done
+				} else {
+					authorizedScopes[scope] = true
+				}
+			}
+		} else {
+			// Authorize all approved scopes when no scopes are in request.
+			authorizedScopes = approvedScopes
+		}
+
+		// Load user record from identitymanager, without any scopes.
+		auth, found, err = p.identityManager.Fetch(req.Context(), claims.StandardClaims.Subject, nil)
+		if !found {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "user not found")
+			goto done
+		}
+		if err != nil {
+			goto done
+		}
+		// Add authorized scopes.
+		auth.AuthorizeScopes(authorizedScopes)
+
+		// Create fake request for token generation.
+		ar = &payload.AuthenticationRequest{
+			ClientID: claims.Audience,
+		}
+
+	default:
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2UnsupportedGrantType, "grant_type value not implemented")
+		goto done
+	}
+
+	// Create access token.
+	accessTokenString, err = p.makeAccessToken(req.Context(), ar.ClientID, auth)
+	if err != nil {
+		goto done
+	}
+
+	switch tr.GrantType {
+	case oidc.GrantTypeAuthorizationCode:
+		// Create ID token when not previously requested.
+		if !ar.ResponseTypes[oidc.ResponseTypeIDToken] {
+			idTokenString, err = p.makeIDToken(req.Context(), ar, auth, accessTokenString, "")
+			if err != nil {
+				goto done
+			}
+		}
+
+		// Create refresh token when granted.
+		if authorizedScopes[oidc.ScopeOfflineAccess] {
+			refreshTokenString, err = p.makeRefreshToken(req.Context(), ar.ClientID, auth)
+			if err != nil {
+				goto done
+			}
+		}
+	}
+
+done:
+	if err != nil {
+		switch err.(type) {
+		case *oidc.OAuth2Error:
+			err = writeJSON(rw, http.StatusBadRequest, err, "application/json")
+			if err != nil {
+				p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+			}
+		default:
+			p.ErrorPage(rw, http.StatusInternalServerError, err.Error(), "well sorry, but there was a problem")
+		}
+
+		return
+	}
+
+	// Successful Token Response
+	// http://openid.net/specs/openid-connect-core-1_0.html#TokenResponse
+	response := &payload.TokenSuccess{}
+	if accessTokenString != "" {
+		response.AccessToken = accessTokenString
+		response.TokenType = oidc.TokenTypeBearer
+		response.ExpiresIn = int64(p.accessTokenDuration.Seconds())
+	}
+	if idTokenString != "" {
+		response.IDToken = idTokenString
+	}
+	if refreshTokenString != "" {
+		response.RefreshToken = refreshTokenString
+	}
+
+	err = writeJSON(rw, http.StatusOK, response, "application/json")
+	if err != nil {
+		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+	}
+}

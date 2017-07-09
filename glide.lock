@@ -1,5 +1,5 @@
-hash: de31d68658265fc978efb68a7a7b652c581db226ae83aabce11f8f9b00b06e9f
-updated: 2017-07-06T20:37:56.001868947+02:00
+hash: 7eb96b2724dc713a36401b116817da2ca09e107ca7b183841653bb48f90ad0d7
+updated: 2017-07-09T14:07:44.907850704+02:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -20,6 +20,10 @@ imports:
   subpackages:
   - loggedwriter
   - timing
+- name: github.com/orcaman/concurrent-map
+  version: 2ae17bc4c860c83513ee50feb9746f3e50d7515d
+- name: github.com/rs/cors
+  version: 8dd4211afb5d08dbb39a533b9bb9e4b486351df6
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra

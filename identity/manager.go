@@ -29,6 +29,9 @@ type Manager interface {
 	Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
 	Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
 
+	ApproveScopes(ctx context.Context, userid string, audience string, approvedScopesList map[string]bool) (string, error)
+	ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error)
+
 	Fetch(ctx context.Context, userID string, scopes map[string]bool) (AuthRecord, bool, error)
 
 	ScopesSupported() []string
