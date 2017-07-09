@@ -12,6 +12,7 @@ import:
   subpackages:
   - loggedwriter
   - timing
+- package: github.com/mendsley/gojwk
 - package: github.com/orcaman/concurrent-map
 - package: github.com/rs/cors
   version: v1.1

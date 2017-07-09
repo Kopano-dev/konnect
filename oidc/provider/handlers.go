@@ -27,6 +27,7 @@ import (
 	"stash.kopano.io/kc/konnect/oidc/payload"
 
 	"github.com/dgrijalva/jwt-go"
+	jwk "github.com/mendsley/gojwk"
 )
 
 // WellKnownHandler implements the HTTP provider configuration endpoint
@@ -65,6 +66,31 @@ func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	err := writeJSON(rw, http.StatusOK, wellKnown, "application/json")
+	if err != nil {
+		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+	}
+}
+
+// JwksHandler implements the HTTP provider JWKS endpoint for OpenID provider
+// metadata used with OpenID Connect Discovery 1.0 as specified at https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
+func (p *Provider) JwksHandler(rw http.ResponseWriter, req *http.Request) {
+	// TODO(longsleep): Add caching headers.
+	// TODO(longsleep): Use better library, or self implemented jwks struct.
+	jwks := &jwk.Key{
+		Keys: make([]*jwk.Key, len(p.validationKeys)-1),
+	}
+	for kid, key := range p.validationKeys {
+		keyJwk, err := jwk.PublicKey(key)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		keyJwk.Use = "sig" // https://tools.ietf.org/html/rfc7517#section-4.2
+		keyJwk.Kid = kid
+		jwks.Keys = append(jwks.Keys, keyJwk)
+	}
+
+	err := writeJSON(rw, http.StatusOK, jwks, "application/jwk-set+json")
 	if err != nil {
 		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
 	}

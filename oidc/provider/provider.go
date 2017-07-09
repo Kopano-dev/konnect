@@ -102,7 +102,7 @@ func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	case path == p.wellKnownPath:
 		p.WellKnownHandler(rw, req)
 	case path == p.jwksPath:
-		http.NotFound(rw, req)
+		p.JwksHandler(rw, req)
 	case path == p.authorizationPath:
 		p.AuthorizeHandler(rw, req)
 	case path == p.tokenPath:
