@@ -6,17 +6,23 @@ import json
 
 # User table.
 users = {
-    "hans": {
-        "id": "hans",
+    "arthur": {
+        "id": "arthur",
         "nid": 1,
-        "name": "Hans Meiser",
-        "email": "hans@meiser.local"
+        "name": "Arthur Dent",
+        "email": "arthur@earth.local"
     },
-    "hugo": {
-        "id": "hugo",
+    "trillian": {
+        "id": "trillian",
         "nid": 2,
-        "name": "Hugo Egon",
-        "email": "hugo@egon.local"
+        "name": "Trillian",
+        "email": "trillian@galaxy.local"
+    },
+    "ford": {
+        "id": "ford",
+        "nid": 3,
+        "name": "Ford Perfect",
+        "email": "ford@betelgeuse.local"
     }
 }
 
@@ -25,7 +31,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         cookie = cookies.SimpleCookie()
         cookie.load(self.headers.get("Cookie", ""))
-        id = cookie.get("cookieserver_user", None)
+        id = cookie.get("minioidc-simple", None)
         if id is None:
             self.send_response(401)
             self.end_headers()
