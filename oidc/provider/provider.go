@@ -108,7 +108,8 @@ func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	case path == p.tokenPath:
 		cors.Default().ServeHTTP(rw, req, p.TokenHandler)
 	case path == p.userInfoPath:
-		http.NotFound(rw, req)
+		// TODO(longsleep): Use more strict CORS.
+		cors.AllowAll().ServeHTTP(rw, req, p.UserInfoHandler)
 	default:
 		http.NotFound(rw, req)
 	}

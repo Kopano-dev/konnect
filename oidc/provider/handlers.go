@@ -20,6 +20,7 @@ package provider
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
@@ -402,6 +403,86 @@ done:
 	}
 	if refreshTokenString != "" {
 		response.RefreshToken = refreshTokenString
+	}
+
+	err = writeJSON(rw, http.StatusOK, response, "application/json")
+	if err != nil {
+		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+	}
+}
+
+// UserInfoHandler implements the HTTP userinfo endpoint for OpenID
+// Connect 1.0 as specified at https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
+func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
+	var err error
+	rw.Header().Set("Cache-Control", "no-store")
+	rw.Header().Set("Pragma", "no-cache")
+
+	switch req.Method {
+	case http.MethodOptions:
+		rw.WriteHeader(http.StatusOK)
+		return
+	case http.MethodHead:
+		fallthrough
+	case http.MethodPost:
+		fallthrough
+	case http.MethodGet:
+		// pass
+	default:
+		return
+	}
+
+	var claims *oidc.AccessTokenClaims
+
+	// Parse and validate UserInfo request
+	// https://openid.net/specs/openid-connect-core-1_0.html#UserInfoRequest
+
+	auth := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
+	switch auth[0] {
+	case oidc.TokenTypeBearer:
+		if len(auth) != 2 {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Invalid Bearer authorization header format")
+			break
+		}
+		claims = &oidc.AccessTokenClaims{}
+		_, err = jwt.ParseWithClaims(auth[1], claims, func(token *jwt.Token) (interface{}, error) {
+			return p.validateJWT(token)
+		})
+		if err == nil {
+			// TODO(longsleep): Validate all claims.
+			err = claims.Valid()
+		}
+		if err != nil {
+			// Wrap as OAuth2 error.
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error())
+		}
+
+	default:
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Bearer authorization required")
+	}
+	if err != nil {
+		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, err)
+		return
+	}
+
+	var user identity.AuthRecord
+	var found bool
+	user, found, err = p.identityManager.Fetch(req.Context(), claims.StandardClaims.Subject, claims.AuthorizedScopes())
+	if !found {
+		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")
+		return
+	}
+	if err != nil {
+		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error()))
+		return
+	}
+
+	response := &payload.UserInfoResponse{
+		UserInfoClaims: oidc.UserInfoClaims{
+			Subject: user.UserID(),
+		},
+		ProfileClaims: oidc.NewProfileClaims(user.Claims(oidc.ScopeProfile)[0]),
+		EmailClaims:   oidc.NewEmailClaims(user.Claims(oidc.ScopeEmail)[0]),
 	}
 
 	err = writeJSON(rw, http.StatusOK, response, "application/json")
