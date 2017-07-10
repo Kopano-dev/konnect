@@ -446,9 +446,6 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	rw.Header().Set("Pragma", "no-cache")
 
 	switch req.Method {
-	case http.MethodOptions:
-		rw.WriteHeader(http.StatusOK)
-		return
 	case http.MethodHead:
 		fallthrough
 	case http.MethodPost:
