@@ -170,14 +170,13 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 		return nil, fmt.Errorf("failed to parse response: %v", err)
 	}
 
-	encryptedCookies, nonce, err := encryptStringToHexString(encodedCookies)
+	encryptedCookies, err := encryptStringToHexString(encodedCookies)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt cookies: %v", err)
 	}
 
 	claims := make(jwt.MapClaims)
 	claims["kc.cookie"] = encryptedCookies
-	claims["kc.cookie.nonce"] = nonce
 
 	user := &cookieUser{
 		sub:   payload.Subject,
@@ -335,9 +334,8 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 			var err error
 			var encodedCookies string
 			encryptedCookies, _ := accessTokenClaims.IdentityClaims["kc.cookie"].(string)
-			nonce, _ := accessTokenClaims.IdentityClaims["kc.cookie.nonce"].(string)
-			if nonce != "" {
-				encodedCookies, err = decryptHexToString(encryptedCookies, nonce)
+			if encryptedCookies != "" {
+				encodedCookies, err = decryptHexToString(encryptedCookies)
 				if err != nil {
 					return nil, false, fmt.Errorf("CookieIdentityManager: %v", err)
 				}

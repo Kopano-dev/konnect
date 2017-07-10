@@ -18,60 +18,35 @@
 package managers
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"encoding/hex"
-	"io"
+
+	"stash.kopano.io/kc/konnect/encryption"
 )
 
-// TODO(longsleep): create random AES key, encrypt with public key and add to payload.
-var encryptionKey = []byte("AES256Key-32Characters1234567890")
+// TODO(longsleep): create random key, encrypt with public key and add to payload.
+var defaultEncryptionKey [encryption.KeySize]byte
 
-func encryptStringToHexString(plaintext string) (string, string, error) {
-	block, err := aes.NewCipher(encryptionKey)
-	if err != nil {
-		return "", "", err
-	}
-
-	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
-	nonce := make([]byte, 12)
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", "", err
-	}
-
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", "", err
-	}
-
-	ciphertext := aesgcm.Seal(nil, nonce, []byte(plaintext), nil)
-
-	return hex.EncodeToString(ciphertext), hex.EncodeToString(nonce), nil
+func init() {
+	encryptionKey := []byte("AES256Key-32Characters1234567890")
+	copy(defaultEncryptionKey[:], encryptionKey[:encryption.KeySize])
 }
 
-func decryptHexToString(ciphertextHex string, nonceHex string) (string, error) {
-	nonce, err := hex.DecodeString(nonceHex)
+func encryptStringToHexString(plaintext string) (string, error) {
+	ciphertext, err := encryption.Encrypt([]byte(plaintext), &defaultEncryptionKey)
 	if err != nil {
 		return "", err
 	}
 
+	return hex.EncodeToString(ciphertext), nil
+}
+
+func decryptHexToString(ciphertextHex string) (string, error) {
 	ciphertext, err := hex.DecodeString(ciphertextHex)
 	if err != nil {
 		return "", err
 	}
 
-	block, err := aes.NewCipher(encryptionKey)
-	if err != nil {
-		return "", err
-	}
-
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-
-	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
+	plaintext, err := encryption.Decrypt(ciphertext, &defaultEncryptionKey)
 	if err != nil {
 		return "", err
 	}
