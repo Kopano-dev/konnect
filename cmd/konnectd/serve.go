@@ -86,7 +86,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	var identityManager identity.Manager
 	switch identityManagerName {
 	case "cookie":
-		if len(args) != 2 {
+		if len(args) < 2 {
 			return fmt.Errorf("cookie backend requires the backend URI as argument")
 		}
 		backendURI, backendURIErr := url.Parse(args[1])
@@ -97,15 +97,22 @@ func serve(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("backend URI invalid, %v", backendURIErr)
 		}
 
+		var cookieNames []string
+		if len(args) > 2 {
+			// TODO(longsleep): Add proper usage help.
+			cookieNames = args[2:]
+		}
+
 		identityManagerConfig := &identity.Config{
 			SignInFormURI: signInFormURI,
 
 			Logger: logger,
 		}
-		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, backendURI, 30*time.Second, nil)
+		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, backendURI, cookieNames, 30*time.Second, nil)
 		logger.WithFields(logrus.Fields{
 			"backend": backendURI,
 			"signIn":  signInFormURI,
+			"cookies": cookieNames,
 		}).Infoln("using cookie backend identity manager")
 		identityManager = cookieIdentityManager
 	case "dummy":

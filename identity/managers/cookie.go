@@ -41,17 +41,18 @@ import (
 // CookieIdentityManager implements an identity manager which passes through
 // received HTTP cookies to a HTTP backend..
 type CookieIdentityManager struct {
-	backendURI *url.URL
-	client     *http.Client
+	backendURI     *url.URL
+	allowedCookies map[string]bool
 
 	signInFormURI string
+	logger        logrus.FieldLogger
 
-	logger logrus.FieldLogger
+	client *http.Client
 }
 
 // NewCookieIdentityManager creates a new CookieIdentityManager from the
 // provided parameters.
-func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
+func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, cookieNames []string, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
@@ -61,13 +62,22 @@ func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, timeout t
 		Transport: transport,
 	}
 
+	var allowedCookies map[string]bool
+	if len(cookieNames) != 0 {
+		allowedCookies = make(map[string]bool)
+		for _, n := range cookieNames {
+			allowedCookies[n] = true
+		}
+	}
+
 	im := &CookieIdentityManager{
-		backendURI: backendURI,
-		client:     client,
+		backendURI:     backendURI,
+		allowedCookies: allowedCookies,
 
 		signInFormURI: c.SignInFormURI.String(),
+		logger:        c.Logger,
 
-		logger: c.Logger,
+		client: client,
 	}
 
 	return im
@@ -180,6 +190,12 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 	// Process incoming cookies, filter, and encode to string.
 	var encodedCookies []string
 	for _, cookie := range req.Cookies() {
+		if im.allowedCookies != nil {
+			if allowed, _ := im.allowedCookies[cookie.Name]; !allowed {
+				continue
+			}
+		}
+
 		encodedCookies = append(encodedCookies, cookie.String())
 	}
 	encodedCookiesString := strings.Join(encodedCookies, "; ")
