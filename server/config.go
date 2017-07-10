@@ -18,6 +18,8 @@
 package server
 
 import (
+	"net/http"
+
 	"stash.kopano.io/kc/konnect/oidc/provider"
 
 	"github.com/sirupsen/logrus"
@@ -27,7 +29,8 @@ import (
 type Config struct {
 	ListenAddr string
 
-	Logger logrus.FieldLogger
+	Logger        logrus.FieldLogger
+	HTTPTransport http.RoundTripper
 
 	Provider *provider.Provider
 }

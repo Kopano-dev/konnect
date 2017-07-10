@@ -21,10 +21,13 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -57,6 +60,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
 	serveCmd.Flags().String("signingMethod", "RS256", "JWT signing method")
 	serveCmd.Flags().String("signInFormURI", "/sign-in", "Redirection URI to sign-in form")
+	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 
 	return serveCmd
 }
@@ -67,6 +71,11 @@ func serve(cmd *cobra.Command, args []string) error {
 	logger, err := newLogger()
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %v", err)
+	}
+	logger.Infoln("serve start")
+
+	config := &server.Config{
+		Logger: logger,
 	}
 
 	if len(args) == 0 {
@@ -82,6 +91,30 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 		return fmt.Errorf("signInFormURI invalid, %v", err)
 	}
+
+	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
+	httpTransport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	if tlsInsecureSkipVerify {
+		// NOTE(longsleep): This disable http2 client support. See https://github.com/golang/go/issues/14275 for reasons.
+		httpTransport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: tlsInsecureSkipVerify,
+		}
+		logger.Warnln("insecure mode, TLS client connections are susceptible to man-in-the-middle attacks")
+		logger.Debugln("http2 client support is disabled (insecure mode)")
+	}
+
+	config.HTTPTransport = httpTransport
 
 	var identityManager identity.Manager
 	switch identityManagerName {
@@ -108,7 +141,7 @@ func serve(cmd *cobra.Command, args []string) error {
 
 			Logger: logger,
 		}
-		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, backendURI, cookieNames, 30*time.Second, nil)
+		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, backendURI, cookieNames, 30*time.Second, config.HTTPTransport)
 		logger.WithFields(logrus.Fields{
 			"backend": backendURI,
 			"signIn":  signInFormURI,
@@ -127,7 +160,6 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	codeManager := codeManagers.NewMemoryMapManager(ctx)
 
-	listenAddr, _ := cmd.Flags().GetString("listen")
 	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
 
 	p, err := provider.NewProvider(&provider.Config{
@@ -145,12 +177,10 @@ func serve(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create provider: %v", err)
 	}
+	config.Provider = p
 
-	config := &server.Config{
-		ListenAddr: listenAddr,
-		Logger:     logger,
-		Provider:   p,
-	}
+	listenAddr, _ := cmd.Flags().GetString("listen")
+	config.ListenAddr = listenAddr
 
 	srv, err := server.NewServer(config)
 	if err != nil {
@@ -177,7 +207,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random RSA key pair")
 	}
 
-	logger.Infoln("serve start")
+	logger.Infoln("serve started")
 	return srv.Serve(ctx)
 }
 
