@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
@@ -36,7 +37,7 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 			authorizedScopesList = append(authorizedScopesList, scope)
 		}
 	}
-	accessTokenClaims := oidc.AccessTokenClaims{
+	accessTokenClaims := konnect.AccessTokenClaims{
 		IsAccessToken:        true,
 		AuthorizedScopesList: authorizedScopesList,
 		StandardClaims: jwt.StandardClaims{
@@ -47,6 +48,14 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
+
+	user := auth.User()
+	if user != nil {
+		if userWithClaims, ok := user.(identity.UserWithClaims); ok {
+			accessTokenClaims.IdentityClaims = userWithClaims.Claims()
+		}
+	}
+
 	accessToken := jwt.NewWithClaims(p.signingMethod, accessTokenClaims)
 	accessToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID
 

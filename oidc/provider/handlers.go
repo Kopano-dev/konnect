@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"strings"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
@@ -458,7 +459,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var claims *oidc.AccessTokenClaims
+	var claims *konnect.AccessTokenClaims
 
 	// Parse and validate UserInfo request
 	// https://openid.net/specs/openid-connect-core-1_0.html#UserInfoRequest
@@ -470,7 +471,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Invalid Bearer authorization header format")
 			break
 		}
-		claims = &oidc.AccessTokenClaims{}
+		claims = &konnect.AccessTokenClaims{}
 		_, err = jwt.ParseWithClaims(auth[1], claims, func(token *jwt.Token) (interface{}, error) {
 			return p.validateJWT(token)
 		})
@@ -491,9 +492,11 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	ctx := konnect.NewAccessTokenContext(req.Context(), claims)
+
 	var user identity.AuthRecord
 	var found bool
-	user, found, err = p.identityManager.Fetch(req.Context(), claims.StandardClaims.Subject, claims.AuthorizedScopes())
+	user, found, err = p.identityManager.Fetch(ctx, claims.StandardClaims.Subject, claims.AuthorizedScopes())
 	if !found {
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")
 		return

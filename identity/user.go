@@ -17,6 +17,10 @@
 
 package identity
 
+import (
+	"github.com/dgrijalva/jwt-go"
+)
+
 // User defines a most simple user with an id.
 type User interface {
 	Subject() string
@@ -37,5 +41,12 @@ type UserWithProfile interface {
 
 // UserWithID is a User with a numeric id.
 type UserWithID interface {
+	User
 	ID() int64
+}
+
+// UserWithClaims is A User with jwt claims.
+type UserWithClaims interface {
+	User
+	Claims() jwt.MapClaims
 }

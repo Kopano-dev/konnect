@@ -27,12 +27,14 @@ import (
 	"strings"
 	"time"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/version"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -76,7 +78,8 @@ type cookieUser struct {
 	name  string
 	email string
 
-	id int64
+	id     int64
+	claims jwt.MapClaims
 }
 
 func (u *cookieUser) Subject() string {
@@ -99,6 +102,10 @@ func (u *cookieUser) ID() int64 {
 	return u.id
 }
 
+func (u *cookieUser) Claims() jwt.MapClaims {
+	return u.claims
+}
+
 type cookieBackendResponse struct {
 	Subject string `json:"sub"`
 	Name    string `json:"name"`
@@ -107,8 +114,8 @@ type cookieBackendResponse struct {
 	ID int64 `json:"id"`
 }
 
-func (im *CookieIdentityManager) backendRequest(ctx context.Context, cookies []*http.Cookie) (*cookieBackendResponse, error) {
-	if len(cookies) == 0 {
+func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCookies string) (*cookieUser, error) {
+	if encodedCookies == "" {
 		// Fastpath, do nothing when no cookies.
 		return nil, nil
 	}
@@ -120,11 +127,7 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, cookies []*
 	request.Header.Set("User-Agent", fmt.Sprintf("konnect/%s", version.Version))
 	request.Header.Set("X-Konnect-Request", "1")
 
-	var encodedCookies []string
-	for _, cookie := range cookies {
-		encodedCookies = append(encodedCookies, cookie.String())
-	}
-	request.Header.Set("Cookie", strings.Join(encodedCookies, "; "))
+	request.Header.Set("Cookie", encodedCookies)
 	request = request.WithContext(ctx)
 
 	response, err := im.client.Do(request)
@@ -157,18 +160,37 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, cookies []*
 		return nil, fmt.Errorf("failed to parse response: %v", err)
 	}
 
-	return payload, nil
+	claims := make(jwt.MapClaims)
+	claims["kc.cookie"] = encodedCookies
+
+	user := &cookieUser{
+		sub:   payload.Subject,
+		email: payload.Email,
+		name:  payload.Name,
+
+		id:     payload.ID,
+		claims: claims,
+	}
+
+	return user, nil
 }
 
 // Authenticate implements the identity.Manager interface.
 func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
-	payload, err := im.backendRequest(ctx, req.Cookies())
+	// Process incoming cookies, filter, and encode to string.
+	var encodedCookies []string
+	for _, cookie := range req.Cookies() {
+		encodedCookies = append(encodedCookies, cookie.String())
+	}
+	encodedCookiesString := strings.Join(encodedCookies, "; ")
+
+	user, err := im.backendRequest(ctx, encodedCookiesString)
 	if err != nil {
 		// Error, directly return.
 		im.logger.Errorln("CookieIdentityManager: backend request error", err)
 		return nil, ar.NewError(oidc.ErrorOAuth2ServerError, "CookieIdentityManager: backend request error")
 	}
-	if payload == nil {
+	if user == nil {
 		// Not signed in.
 		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "CookieIdentityManager: not signed in")
 	}
@@ -198,14 +220,8 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 		return nil, identity.NewRedirectError(err.Error(), redirectURI)
 	}
 
-	auth := NewAuthRecord(payload.Subject, nil, nil)
-	auth.SetUser(&cookieUser{
-		sub:   auth.Subject(),
-		email: payload.Email,
-		name:  payload.Name,
-
-		id: payload.ID,
-	})
+	auth := NewAuthRecord(user.Subject(), nil, nil)
+	auth.SetUser(user)
 
 	return auth, nil
 }
@@ -278,18 +294,39 @@ func (im *CookieIdentityManager) ApprovedScopes(ctx context.Context, userid stri
 
 // Fetch implements the identity.Manager interface.
 func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
-	auth, ok := identity.FromContext(ctx)
-	if !ok {
-		return nil, false, fmt.Errorf("CookieIdentityManager: no auth, cookie identities only support single request fetch")
+	var user identity.User
+
+	// Try identty context.
+	auth, _ := identity.FromContext(ctx)
+	if auth != nil {
+		if auth.Subject() != sub {
+			return nil, false, fmt.Errorf("CookieIdentityManager: wrong user - this should not happen")
+		}
+
+		user = auth.User() // This gets the user when added during Authenticate.
 	}
 
-	if auth.Subject() != sub {
-		return nil, false, fmt.Errorf("CookieIdentityManager: wrong user - this should not happen")
+	if user == nil {
+		// Try access token context.
+		accessTokenClaims, _ := konnect.FromAccessTokenContext(ctx)
+		if accessTokenClaims != nil && accessTokenClaims.IdentityClaims != nil {
+			var err error
+			encodedCookiesString, _ := accessTokenClaims.IdentityClaims["kc.cookie"].(string)
+			user, err = im.backendRequest(ctx, encodedCookiesString)
+			if err != nil {
+				// Error, directly return.
+				im.logger.Errorln("CookieIdentityManager: backend request error", err)
+				return nil, false, fmt.Errorf("CookieIdentityManager: backend request error")
+			}
+		}
 	}
 
-	user := auth.User() // This gets the user when added during Authenticate.
 	if user == nil {
 		return nil, false, fmt.Errorf("CookieIdentityManager: no user")
+	}
+
+	if user.Subject() != sub {
+		return nil, false, fmt.Errorf("CookieIdentityManager: wrong user")
 	}
 
 	authorizedScopes, claims := authorizeScopes(user, scopes)
