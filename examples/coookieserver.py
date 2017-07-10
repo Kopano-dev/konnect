@@ -29,7 +29,7 @@ addUsers([
     },
     {
         "sub": "ford",
-        "name": "Ford Perfect",
+        "name": "Ford Prefect",
         "email": "ford@betelgeuse.local",
     }
 ])
