@@ -144,6 +144,13 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 		},
 	}
 
+	user := auth.User()
+	if user != nil {
+		if userWithClaims, ok := user.(identity.UserWithClaims); ok {
+			refreshTokenClaims.IdentityClaims = userWithClaims.Claims()
+		}
+	}
+
 	refreshToken := jwt.NewWithClaims(p.signingMethod, refreshTokenClaims)
 	refreshToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID
 

@@ -74,12 +74,18 @@ type RefreshTokenClaims struct {
 	ApprovedScopesList []string `json:"kc.approvedScopes"`
 	Ref                string   `json:"kc.ref"`
 	jwt.StandardClaims
+	IdentityClaims jwt.MapClaims `json:"kc.identity"`
 }
 
 // Valid implements the jwt.Claims interface.
 func (c RefreshTokenClaims) Valid() error {
 	if err := c.StandardClaims.Valid(); err != nil {
 		return err
+	}
+	if c.IdentityClaims != nil {
+		if err := c.IdentityClaims.Valid(); err != nil {
+			return err
+		}
 	}
 	if c.IsRefreshToken {
 		return nil

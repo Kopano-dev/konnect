@@ -19,24 +19,26 @@ package konnect
 
 import (
 	"context"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 // key is an unexported type for keys defined in this package.
 // This prevents collisions with keys defined in other packages.
 type key int
 
-// accessTokenClaimsKey is the key for AccessTokenClaims in Contexts. It is
-// unexported; clients use konnect.NewAccessTokenContext and
-// connect.FromAccessTokenContext instead of using this key directly.
-var accessTokenClaimsKey key
+// claimsKey is the key for claims in contexts. It is
+// unexported; clients use konnect.NewClaimsContext and
+// connect.FromClaimsContext instead of using this key directly.
+var claimsKey key
 
-// NewAccessTokenContext returns a new Context that carries value auth.
-func NewAccessTokenContext(ctx context.Context, claims *AccessTokenClaims) context.Context {
-	return context.WithValue(ctx, accessTokenClaimsKey, claims)
+// NewClaimsContext returns a new Context that carries value auth.
+func NewClaimsContext(ctx context.Context, claims jwt.Claims) context.Context {
+	return context.WithValue(ctx, claimsKey, claims)
 }
 
-// FromAccessTokenContext returns the AuthRecord value stored in ctx, if any.
-func FromAccessTokenContext(ctx context.Context) (*AccessTokenClaims, bool) {
-	claims, ok := ctx.Value(accessTokenClaimsKey).(*AccessTokenClaims)
+// FromClaimsContext returns the AuthRecord value stored in ctx, if any.
+func FromClaimsContext(ctx context.Context) (jwt.Claims, bool) {
+	claims, ok := ctx.Value(claimsKey).(jwt.Claims)
 	return claims, ok
 }

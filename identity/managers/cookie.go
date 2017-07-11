@@ -281,6 +281,11 @@ func (im *CookieIdentityManager) Authorize(ctx context.Context, rw http.Response
 			// both of these conditions are fulfilled, then it MUST ignore the
 			// offline_access request,
 			delete(ar.Scopes, oidc.ScopeOfflineAccess)
+			im.logger.Debugln("consent is required for offline access but not given, removed offline_access scope")
+		} else {
+			// NOTE(longsleep): Cookie identity relies on the presence of session cookies know to a backend. Thus offline access is not supported.
+			im.logger.Warnf("CookieIdentityManager: offline_access requested but not supported, removed offline_access scope")
+			delete(ar.Scopes, oidc.ScopeOfflineAccess)
 		}
 	}
 
@@ -321,7 +326,7 @@ func (im *CookieIdentityManager) ApprovedScopes(ctx context.Context, userid stri
 func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
 	var user identity.User
 
-	// Try identty context.
+	// Try identty from context.
 	auth, _ := identity.FromContext(ctx)
 	if auth != nil {
 		if auth.Subject() != sub {
@@ -332,12 +337,16 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 	}
 
 	if user == nil {
-		// Try access token context.
-		accessTokenClaims, _ := konnect.FromAccessTokenContext(ctx)
-		if accessTokenClaims != nil && accessTokenClaims.IdentityClaims != nil {
+		// Try claims from context.
+		identityClaims, _ := konnect.FromClaimsContext(ctx)
+		if identityClaims != nil {
 			var err error
 			var encodedCookies string
-			encryptedCookies, _ := accessTokenClaims.IdentityClaims["kc.cookie"].(string)
+			identityClaimsMap, ok := identityClaims.(jwt.MapClaims)
+			if !ok {
+				return nil, false, fmt.Errorf("CookieIdentityManager: unknown identity claims type")
+			}
+			encryptedCookies, _ := identityClaimsMap["kc.cookie"].(string)
 			if encryptedCookies != "" {
 				encodedCookies, err = im.DecryptHexToString(encryptedCookies)
 				if err != nil {
@@ -365,7 +374,11 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 	}
 
 	authorizedScopes, claims := authorizeScopes(user, scopes)
-	return NewAuthRecord(sub, authorizedScopes, claims), true, nil
+
+	auth = NewAuthRecord(sub, authorizedScopes, claims)
+	auth.SetUser(user)
+
+	return auth, true, nil
 }
 
 // ScopesSupported implements the identity.Manager interface.

@@ -325,8 +325,10 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		// TODO(longsleep): Authenticate the client if client authentication is included.
 		// TODO(longsleep): Compare standard claims issuer.
 
+		ctx := konnect.NewClaimsContext(req.Context(), claims.IdentityClaims)
+
 		// Lookup Ref values from backend.
-		approvedScopes, err = p.identityManager.ApprovedScopes(req.Context(), claims.Subject, tr.ClientID, claims.Ref)
+		approvedScopes, err = p.identityManager.ApprovedScopes(ctx, claims.Subject, tr.ClientID, claims.Ref)
 		if err != nil {
 			goto done
 		}
@@ -356,7 +358,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Load user record from identitymanager, without any scopes.
-		auth, found, err = p.identityManager.Fetch(req.Context(), claims.StandardClaims.Subject, nil)
+		auth, found, err = p.identityManager.Fetch(ctx, claims.StandardClaims.Subject, nil)
 		if !found {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "user not found")
 			goto done
@@ -489,7 +491,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ctx := konnect.NewAccessTokenContext(req.Context(), claims)
+	ctx := konnect.NewClaimsContext(req.Context(), claims.IdentityClaims)
 
 	var user identity.AuthRecord
 	var found bool
