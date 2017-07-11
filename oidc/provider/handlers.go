@@ -276,7 +276,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		// Validator for incoming refresh tokens.
 		// TODO(longsleep): Validate claims.
 		return p.validateJWT(token)
-	})
+	}, &konnect.RefreshTokenClaims{})
 	if err != nil {
 		goto done
 	}
@@ -313,7 +313,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Get claims from refresh token.
-		claims := tr.RefreshToken.Claims.(*oidc.RefreshTokenClaims)
+		claims := tr.RefreshToken.Claims.(*konnect.RefreshTokenClaims)
 
 		// Ensure that the authorization code was issued to the client id.
 		if claims.Audience != tr.ClientID {

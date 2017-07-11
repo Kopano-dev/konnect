@@ -105,13 +105,12 @@ func NewTokenRequest(values url.Values) (*TokenRequest, error) {
 }
 
 // Validate validates the request data of the accociated token request.
-func (tr *TokenRequest) Validate(keyFunc jwt.Keyfunc) error {
+func (tr *TokenRequest) Validate(keyFunc jwt.Keyfunc, claims jwt.Claims) error {
 	switch tr.GrantType {
 	case oidc.GrantTypeAuthorizationCode:
 		// breaks
 	case oidc.GrantTypeRefreshToken:
 		if tr.RawRefreshToken != "" {
-			claims := &oidc.RefreshTokenClaims{}
 			refreshToken, err := jwt.ParseWithClaims(tr.RawRefreshToken, claims, func(token *jwt.Token) (interface{}, error) {
 				if keyFunc != nil {
 					return keyFunc(token)

@@ -131,7 +131,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 		return "", err
 	}
 
-	refreshTokenClaims := &oidc.RefreshTokenClaims{
+	refreshTokenClaims := &konnect.RefreshTokenClaims{
 		IsRefreshToken:     true,
 		ApprovedScopesList: approvedScopesList,
 		Ref:                ref,

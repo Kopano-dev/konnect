@@ -27,6 +27,8 @@ import (
 const (
 	IsAccessTokenClaim    = "kc.isAccessToken"
 	AuthorizedScopesClaim = "kc.authorizedScopes"
+	IsRefreshTokenClaim   = "kc.isRefreshToken"
+	RefClaim              = "kc.ref"
 	IdentityClaim         = "kc.identity"
 )
 
@@ -64,4 +66,23 @@ func (c AccessTokenClaims) AuthorizedScopes() map[string]bool {
 	}
 
 	return authorizedScopes
+}
+
+// RefreshTokenClaims define the claims used by refresh tokens.
+type RefreshTokenClaims struct {
+	IsRefreshToken     bool     `json:"kc.isRefreshToken"`
+	ApprovedScopesList []string `json:"kc.approvedScopes"`
+	Ref                string   `json:"kc.ref"`
+	jwt.StandardClaims
+}
+
+// Valid implements the jwt.Claims interface.
+func (c RefreshTokenClaims) Valid() error {
+	if err := c.StandardClaims.Valid(); err != nil {
+		return err
+	}
+	if c.IsRefreshToken {
+		return nil
+	}
+	return errors.New("kc.isRefreshToken claim not valid")
 }
