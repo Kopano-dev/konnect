@@ -23,6 +23,13 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+// Access token claims used by Konnect.
+const (
+	IsAccessTokenClaim    = "kc.isAccessToken"
+	AuthorizedScopesClaim = "kc.authorizedScopes"
+	IdentityClaim         = "kc.identity"
+)
+
 // AccessTokenClaims define the claims found in access tokens issued
 // by Konnect.
 type AccessTokenClaims struct {

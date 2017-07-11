@@ -39,14 +39,6 @@ const (
 	EmailVerifiedClaim = "email_verified"
 )
 
-// Access token claims used by Konnect.
-const (
-	IsAccessTokenClaim    = "kc.isAccessToken"
-	AuthorizedScopesClaim = "kc.authorizedScopes"
-	IsRefreshTokenClaim   = "kc.isRefreshToken"
-	RefClaim              = "kc.ref"
-)
-
 // IDTokenClaims define the claims found in OIDC ID Tokens.
 type IDTokenClaims struct {
 	Nonce           string `json:"nonce,omitempty"`
