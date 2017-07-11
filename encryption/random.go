@@ -15,7 +15,7 @@
  *
  */
 
-package code
+package encryption
 
 import (
 	"crypto/rand"

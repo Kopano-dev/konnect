@@ -19,20 +19,40 @@ package managers
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"stash.kopano.io/kc/konnect/encryption"
 )
 
-// TODO(longsleep): create random key, encrypt with public key and add to payload.
-var defaultEncryptionKey [encryption.KeySize]byte
-
-func init() {
-	encryptionKey := []byte("AES256Key-32Characters1234567890")
-	copy(defaultEncryptionKey[:], encryptionKey[:encryption.KeySize])
+// EncryptionManager implements string encryption functions with a key.
+type EncryptionManager struct {
+	key *[encryption.KeySize]byte
 }
 
-func encryptStringToHexString(plaintext string) (string, error) {
-	ciphertext, err := encryption.Encrypt([]byte(plaintext), &defaultEncryptionKey)
+// NewEncryptionManager creates a new EncryptionManager with the provided key.
+func NewEncryptionManager(key *[encryption.KeySize]byte) (*EncryptionManager, error) {
+	em := &EncryptionManager{
+		key: key,
+	}
+
+	return em, nil
+}
+
+// SetKey sets the provided key for the accociated manager.
+func (em *EncryptionManager) SetKey(key []byte) error {
+	if len(key) != encryption.KeySize {
+		return fmt.Errorf("encryption key size error, is %d, want %d", len(key), encryption.KeySize)
+	}
+
+	em.key = new([encryption.KeySize]byte)
+	copy(em.key[:], key[:encryption.KeySize])
+	return nil
+}
+
+// EncryptStringToHexString encrypts a plaintext string with the accociated
+// key and returns the hex encoded ciphertext as string.
+func (em *EncryptionManager) EncryptStringToHexString(plaintext string) (string, error) {
+	ciphertext, err := em.Encrypt([]byte(plaintext))
 	if err != nil {
 		return "", err
 	}
@@ -40,16 +60,39 @@ func encryptStringToHexString(plaintext string) (string, error) {
 	return hex.EncodeToString(ciphertext), nil
 }
 
-func decryptHexToString(ciphertextHex string) (string, error) {
+// Encrypt encrypts plaintext []byte with the accociated key and returns
+// ciphertext []byte.
+func (em *EncryptionManager) Encrypt(plaintext []byte) ([]byte, error) {
+	ciphertext, err := encryption.Encrypt(plaintext, em.key)
+	if err != nil {
+		return nil, err
+	}
+
+	return ciphertext, nil
+}
+
+// DecryptHexToString decrypts a hex encoded string with the accociated key
+// and returns the plain text as string.
+func (em *EncryptionManager) DecryptHexToString(ciphertextHex string) (string, error) {
 	ciphertext, err := hex.DecodeString(ciphertextHex)
 	if err != nil {
 		return "", err
 	}
-
-	plaintext, err := encryption.Decrypt(ciphertext, &defaultEncryptionKey)
+	plaintext, err := em.Decrypt(ciphertext)
 	if err != nil {
 		return "", err
 	}
 
 	return string(plaintext), nil
+}
+
+// Decrypt decrypts ciphertext []byte with the accociated key and returns
+// plaintext []byte.
+func (em *EncryptionManager) Decrypt(ciphertext []byte) ([]byte, error) {
+	plaintext, err := encryption.Decrypt(ciphertext, em.key)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
 }
