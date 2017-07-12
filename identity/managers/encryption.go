@@ -40,6 +40,16 @@ func NewEncryptionManager(key *[encryption.KeySize]byte) (*EncryptionManager, er
 
 // SetKey sets the provided key for the accociated manager.
 func (em *EncryptionManager) SetKey(key []byte) error {
+	switch len(key) {
+	case encryption.KeySize:
+		// all good, breaks
+	case hex.EncodedLen(encryption.KeySize):
+		// try to decode with hex
+		dst := make([]byte, encryption.KeySize)
+		if _, err := hex.Decode(dst, key); err == nil {
+			key = dst
+		}
+	}
 	if len(key) != encryption.KeySize {
 		return fmt.Errorf("encryption key size error, is %d, want %d", len(key), encryption.KeySize)
 	}

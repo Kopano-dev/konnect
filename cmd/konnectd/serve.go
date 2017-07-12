@@ -119,8 +119,9 @@ func serve(cmd *cobra.Command, args []string) error {
 	config.HTTPTransport = httpTransport
 
 	var encryptionSecret []byte
-	encryptionSecretString, _ := cmd.Flags().GetString("secret")
-	if encryptionSecretString == "" {
+	if encryptionSecretString, _ := cmd.Flags().GetString("secret"); encryptionSecretString != "" {
+		encryptionSecret = []byte(encryptionSecretString)
+	} else {
 		logger.Warnln("missing --secret paramemter, using random encyption secret")
 		encryptionSecret, err = encryption.GenerateRandomBytes(encryption.KeySize)
 		if err != nil {
@@ -128,11 +129,15 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	encryptionManager, emErr := identityManagers.NewEncryptionManager(nil)
-	if emErr != nil {
-		return fmt.Errorf("failed to create key manager: %v", emErr)
+	var encryptionManager *identityManagers.EncryptionManager
+	encryptionManager, err = identityManagers.NewEncryptionManager(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create encryption manager: %v", err)
 	}
-	encryptionManager.SetKey(encryptionSecret)
+	err = encryptionManager.SetKey(encryptionSecret)
+	if err != nil {
+		return fmt.Errorf("invalid --secret parameter value: %v", err)
+	}
 
 	var identityManager identity.Manager
 	switch identityManagerName {
