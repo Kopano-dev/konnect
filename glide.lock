@@ -1,5 +1,5 @@
 hash: 74e3f9c391b3a6bd63eed217e66efcde4f87467e8fa44ab21546107549246dfc
-updated: 2017-07-10T00:18:58.930945812+02:00
+updated: 2017-07-12T12:39:30.998317+02:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -32,6 +32,12 @@ imports:
   version: 99b5d838ca16c25cc4944e323684f8415e8b10ba
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+- name: golang.org/x/crypto
+  version: dd85ac7e6a88fc6ca420478e934de5f1a42dd3c6
+  subpackages:
+  - nacl/secretbox
+  - poly1305
+  - salsa20/salsa
 - name: golang.org/x/sys
   version: 833a04a10549a95dc34458c195cbad61bbb6cb4d
   subpackages:
