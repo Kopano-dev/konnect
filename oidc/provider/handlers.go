@@ -48,6 +48,8 @@ func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
 		ResponseTypesSupported: []string{
 			oidc.ResponseTypeIDTokenToken,
 			oidc.ResponseTypeIDToken,
+			oidc.ResponseTypeCodeIDToken,
+			oidc.ResponseTypeCodeIDTokenToken,
 		},
 		SubjectTypesSupported: []string{
 			oidc.SubjectIDPublic,
