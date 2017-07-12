@@ -23,9 +23,9 @@ import (
 	"net/http"
 	"strings"
 
+	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
-	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
@@ -105,7 +105,7 @@ func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 // ApproveScopes implements the Backend interface.
 func (im *DummyIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
-	ref, err := code.GenerateRandomString(32)
+	ref, err := encryption.GenerateRandomString(32)
 	if err != nil {
 		return "", err
 	}

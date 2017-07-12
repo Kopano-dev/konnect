@@ -33,6 +33,7 @@ import (
 	"strings"
 	"time"
 
+	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
@@ -58,6 +59,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("listen", "127.0.0.1:8777", "TCP listen address")
 	serveCmd.Flags().String("iss", "http://localhost:8777", "OIDC issuer URL")
 	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
+	serveCmd.Flags().String("secret", "", fmt.Sprintf("Encryption secret (length must be %d)", encryption.KeySize))
 	serveCmd.Flags().String("signingMethod", "RS256", "JWT signing method")
 	serveCmd.Flags().String("signInFormURI", "/sign-in", "Redirection URI to sign-in form")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
@@ -116,6 +118,22 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	config.HTTPTransport = httpTransport
 
+	var encryptionSecret []byte
+	encryptionSecretString, _ := cmd.Flags().GetString("secret")
+	if encryptionSecretString == "" {
+		logger.Warnln("missing --secret paramemter, using random encyption secret")
+		encryptionSecret, err = encryption.GenerateRandomBytes(encryption.KeySize)
+		if err != nil {
+			return fmt.Errorf("failed to create random secret value: %v", err)
+		}
+	}
+
+	encryptionManager, emErr := identityManagers.NewEncryptionManager(nil)
+	if emErr != nil {
+		return fmt.Errorf("failed to create key manager: %v", emErr)
+	}
+	encryptionManager.SetKey(encryptionSecret)
+
 	var identityManager identity.Manager
 	switch identityManagerName {
 	case "cookie":
@@ -141,7 +159,8 @@ func serve(cmd *cobra.Command, args []string) error {
 
 			Logger: logger,
 		}
-		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, backendURI, cookieNames, 30*time.Second, config.HTTPTransport)
+
+		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, encryptionManager, backendURI, cookieNames, 30*time.Second, config.HTTPTransport)
 		logger.WithFields(logrus.Fields{
 			"backend": backendURI,
 			"signIn":  signInFormURI,

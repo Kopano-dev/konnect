@@ -15,31 +15,31 @@
  *
  */
 
-package code
+package encryption
 
 import (
 	"crypto/rand"
-	"encoding/base64"
+	"io"
 )
 
-// GenerateRandomBytes returns securely generated random bytes.
-// It will return an error if the system's secure random number
-// generator fails to function correctly.
-func GenerateRandomBytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
+// GenerateKey generates a new random secret key.
+func GenerateKey() (*[KeySize]byte, error) {
+	key := new([KeySize]byte)
+	_, err := io.ReadFull(rand.Reader, key[:])
 	if err != nil {
 		return nil, err
 	}
 
-	return b, nil
+	return key, nil
 }
 
-// GenerateRandomString returns a URL-safe, base64 encoded
-// securely generated random string.
-// It will return an error if the system's secure random
-// number generator fails to function correctly.
-func GenerateRandomString(s int) (string, error) {
-	b, err := GenerateRandomBytes(s)
-	return base64.URLEncoding.EncodeToString(b), err
+// GenerateNonce creates a new random nonce.
+func GenerateNonce() (*[NonceSize]byte, error) {
+	nonce := new([NonceSize]byte)
+	_, err := io.ReadFull(rand.Reader, nonce[:])
+	if err != nil {
+		return nil, err
+	}
+
+	return nonce, nil
 }

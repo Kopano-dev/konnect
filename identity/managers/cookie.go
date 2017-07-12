@@ -28,9 +28,9 @@ import (
 	"time"
 
 	"stash.kopano.io/kc/konnect"
+	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
-	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/version"
 
@@ -41,6 +41,8 @@ import (
 // CookieIdentityManager implements an identity manager which passes through
 // received HTTP cookies to a HTTP backend..
 type CookieIdentityManager struct {
+	*EncryptionManager
+
 	backendURI     *url.URL
 	allowedCookies map[string]bool
 
@@ -52,7 +54,7 @@ type CookieIdentityManager struct {
 
 // NewCookieIdentityManager creates a new CookieIdentityManager from the
 // provided parameters.
-func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, cookieNames []string, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
+func NewCookieIdentityManager(c *identity.Config, em *EncryptionManager, backendURI *url.URL, cookieNames []string, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
@@ -71,6 +73,8 @@ func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, cookieNam
 	}
 
 	im := &CookieIdentityManager{
+		EncryptionManager: em,
+
 		backendURI:     backendURI,
 		allowedCookies: allowedCookies,
 
@@ -170,8 +174,13 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 		return nil, fmt.Errorf("failed to parse response: %v", err)
 	}
 
+	encryptedCookies, err := im.EncryptStringToHexString(encodedCookies)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt cookies: %v", err)
+	}
+
 	claims := make(jwt.MapClaims)
-	claims["kc.cookie"] = encodedCookies
+	claims["kc.cookie"] = encryptedCookies
 
 	user := &cookieUser{
 		sub:   payload.Subject,
@@ -290,7 +299,7 @@ func (im *CookieIdentityManager) Authorize(ctx context.Context, rw http.Response
 
 // ApproveScopes implements the Backend interface.
 func (im *CookieIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
-	ref, err := code.GenerateRandomString(32)
+	ref, err := encryption.GenerateRandomString(32)
 	if err != nil {
 		return "", err
 	}
@@ -327,8 +336,18 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 		accessTokenClaims, _ := konnect.FromAccessTokenContext(ctx)
 		if accessTokenClaims != nil && accessTokenClaims.IdentityClaims != nil {
 			var err error
-			encodedCookiesString, _ := accessTokenClaims.IdentityClaims["kc.cookie"].(string)
-			user, err = im.backendRequest(ctx, encodedCookiesString)
+			var encodedCookies string
+			encryptedCookies, _ := accessTokenClaims.IdentityClaims["kc.cookie"].(string)
+			if encryptedCookies != "" {
+				encodedCookies, err = im.DecryptHexToString(encryptedCookies)
+				if err != nil {
+					return nil, false, fmt.Errorf("CookieIdentityManager: %v", err)
+				}
+			} else {
+				encodedCookies = encryptedCookies
+			}
+
+			user, err = im.backendRequest(ctx, encodedCookies)
 			if err != nil {
 				// Error, directly return.
 				im.logger.Errorln("CookieIdentityManager: backend request error", err)
