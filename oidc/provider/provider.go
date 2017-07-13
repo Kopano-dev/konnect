@@ -22,9 +22,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 
 	"github.com/dgrijalva/jwt-go"
@@ -131,4 +134,37 @@ func (p *Provider) Found(rw http.ResponseWriter, uri *url.URL, params interface{
 	if err != nil {
 		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
 	}
+}
+
+// GetAccessTokenClaimsFromRequest reads incoming request, validates the
+// access token and returns the validated claims.
+func (p *Provider) GetAccessTokenClaimsFromRequest(req *http.Request) (*konnect.AccessTokenClaims, error) {
+	var err error
+	var claims *konnect.AccessTokenClaims
+
+	auth := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
+	switch auth[0] {
+	case oidc.TokenTypeBearer:
+		if len(auth) != 2 {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Invalid Bearer authorization header format")
+			break
+		}
+		claims = &konnect.AccessTokenClaims{}
+		_, err = jwt.ParseWithClaims(auth[1], claims, func(token *jwt.Token) (interface{}, error) {
+			return p.validateJWT(token)
+		})
+		if err == nil {
+			// TODO(longsleep): Validate all claims.
+			err = claims.Valid()
+		}
+		if err != nil {
+			// Wrap as OAuth2 error.
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error())
+		}
+
+	default:
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Bearer authorization required")
+	}
+
+	return claims, err
 }

@@ -20,7 +20,6 @@ package provider
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
@@ -460,34 +459,10 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var claims *konnect.AccessTokenClaims
-
 	// Parse and validate UserInfo request
 	// https://openid.net/specs/openid-connect-core-1_0.html#UserInfoRequest
 
-	auth := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
-	switch auth[0] {
-	case oidc.TokenTypeBearer:
-		if len(auth) != 2 {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Invalid Bearer authorization header format")
-			break
-		}
-		claims = &konnect.AccessTokenClaims{}
-		_, err = jwt.ParseWithClaims(auth[1], claims, func(token *jwt.Token) (interface{}, error) {
-			return p.validateJWT(token)
-		})
-		if err == nil {
-			// TODO(longsleep): Validate all claims.
-			err = claims.Valid()
-		}
-		if err != nil {
-			// Wrap as OAuth2 error.
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error())
-		}
-
-	default:
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Bearer authorization required")
-	}
+	claims, err := p.GetAccessTokenClaimsFromRequest(req)
 	if err != nil {
 		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, err)
 		return
@@ -495,9 +470,9 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 
 	ctx := konnect.NewClaimsContext(req.Context(), claims.IdentityClaims)
 
-	var user identity.AuthRecord
+	var auth identity.AuthRecord
 	var found bool
-	user, found, err = p.identityManager.Fetch(ctx, claims.StandardClaims.Subject, claims.AuthorizedScopes())
+	auth, found, err = p.identityManager.Fetch(ctx, claims.StandardClaims.Subject, claims.AuthorizedScopes())
 	if !found {
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")
 		return
@@ -507,12 +482,25 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	response := &payload.UserInfoResponse{
-		UserInfoClaims: oidc.UserInfoClaims{
-			Subject: user.Subject(),
+	response := &konnect.UserInfoResponse{
+		UserInfoResponse: &payload.UserInfoResponse{
+			UserInfoClaims: oidc.UserInfoClaims{
+				Subject: auth.Subject(),
+			},
+			ProfileClaims: oidc.NewProfileClaims(auth.Claims(oidc.ScopeProfile)[0]),
+			EmailClaims:   oidc.NewEmailClaims(auth.Claims(oidc.ScopeEmail)[0]),
 		},
-		ProfileClaims: oidc.NewProfileClaims(user.Claims(oidc.ScopeProfile)[0]),
-		EmailClaims:   oidc.NewEmailClaims(user.Claims(oidc.ScopeEmail)[0]),
+	}
+
+	// Include ID when scope authorized.
+	if withKonnectID, _ := auth.AuthorizedScopes()[konnect.ScopeID]; withKonnectID {
+		user := auth.User()
+		if user != nil {
+			if userWithID, ok := user.(identity.UserWithID); ok {
+				response.ID = userWithID.ID()
+				response.UserName = userWithID.Subject()
+			}
+		}
 	}
 
 	err = writeJSON(rw, http.StatusOK, response, "application/json")

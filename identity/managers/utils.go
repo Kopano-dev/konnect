@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"strings"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 
@@ -52,6 +53,8 @@ func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]boo
 					Name: userWithProfile.Name(),
 				}
 			}
+		case konnect.ScopeID:
+			// breaks
 		default:
 			authorizedScope = false
 		}
