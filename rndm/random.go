@@ -15,7 +15,7 @@
  *
  */
 
-package encryption
+package rndm
 
 import (
 	"crypto/rand"

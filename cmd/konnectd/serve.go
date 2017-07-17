@@ -38,6 +38,7 @@ import (
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
+	"stash.kopano.io/kc/konnect/rndm"
 	"stash.kopano.io/kc/konnect/server"
 
 	"github.com/dgrijalva/jwt-go"
@@ -123,7 +124,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		encryptionSecret = []byte(encryptionSecretString)
 	} else {
 		logger.Warnln("missing --secret paramemter, using random encyption secret")
-		encryptionSecret, err = encryption.GenerateRandomBytes(encryption.KeySize)
+		encryptionSecret, err = rndm.GenerateRandomBytes(encryption.KeySize)
 		if err != nil {
 			return fmt.Errorf("failed to create random secret value: %v", err)
 		}

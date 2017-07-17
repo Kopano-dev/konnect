@@ -28,10 +28,10 @@ import (
 	"time"
 
 	"stash.kopano.io/kc/konnect"
-	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kc/konnect/rndm"
 	"stash.kopano.io/kc/konnect/version"
 
 	"github.com/dgrijalva/jwt-go"
@@ -304,7 +304,7 @@ func (im *CookieIdentityManager) Authorize(ctx context.Context, rw http.Response
 
 // ApproveScopes implements the Backend interface.
 func (im *CookieIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
-	ref, err := encryption.GenerateRandomString(32)
+	ref, err := rndm.GenerateRandomString(32)
 	if err != nil {
 		return "", err
 	}

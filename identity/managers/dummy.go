@@ -23,10 +23,10 @@ import (
 	"net/http"
 	"strings"
 
-	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kc/konnect/rndm"
 )
 
 // DummyIdentityManager implements an identity manager which always grants
@@ -105,7 +105,7 @@ func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 // ApproveScopes implements the Backend interface.
 func (im *DummyIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
-	ref, err := encryption.GenerateRandomString(32)
+	ref, err := rndm.GenerateRandomString(32)
 	if err != nil {
 		return "", err
 	}
