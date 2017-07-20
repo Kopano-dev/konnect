@@ -1,0 +1,24 @@
+# Example Caddyfile to use with https://caddyserver.com
+#
+# This assumes you have a cookie based login area running at
+# 127.0.0.1:8999/provider/simple, konnectd running on 127.0.0.1:8777 and the
+# example backend running on 127.0.0.1:8088.
+
+0.0.0.0:8443
+tls self_signed
+
+# login area provider
+proxy /provider/simple 127.0.0.1:8999
+
+# konnect authorize endpoint below login area provider
+proxy /provider/simple/konnect/v1/authorize 127.0.0.1:8777 {
+	without /provider/simple
+}
+
+# konnect
+proxy /konnect/v1/token 127.0.0.1:8777
+proxy /konnect/v1/userinfo 127.0.0.1:8777
+proxy /konnect/v1/static 127.0.0.1:8777
+
+# konnect cookieserver, start with python3 ./examples/cookieserver.py 8088
+proxy /cookieserver/simple-userinfo 127.0.0.1:8088
