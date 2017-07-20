@@ -13,6 +13,7 @@ proxy /provider/simple 127.0.0.1:8999
 # konnect authorize endpoint below login area provider
 proxy /provider/simple/konnect/v1/authorize 127.0.0.1:8777 {
 	without /provider/simple
+	header_upstream X-Forwarded-Prefix /provider/simple
 }
 
 # konnect
