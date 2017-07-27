@@ -19,7 +19,7 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -113,21 +113,27 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	// HTTP listener.
 	srv := &http.Server{
-		Addr:    s.listenAddr,
 		Handler: router,
 	}
+
+	logger.WithField("listenAddr", s.listenAddr).Infoln("starting http listener")
+	listener, err := net.Listen("tcp", s.listenAddr)
+	if err != nil {
+		return err
+	}
+	logger.Infoln("ready to handle requests")
+
 	go func() {
-		logger.WithField("listenAddr", s.listenAddr).Infoln("starting http listener")
-		err := srv.ListenAndServe()
-		if err != nil {
-			errCh <- fmt.Errorf("failed to listen on %s with: %v", s.listenAddr, err)
+		serveErr := srv.Serve(listener)
+		if serveErr != nil {
+			errCh <- serveErr
 		}
+
 		logger.Debugln("http listener stopped")
 		close(exitCh)
 	}()
 
 	// Wait for exit or error.
-	var err error
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 	select {
 	case err = <-errCh:
