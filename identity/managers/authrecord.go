@@ -18,9 +18,9 @@
 package managers
 
 import (
-	"stash.kopano.io/kc/konnect/identity"
-
 	"github.com/dgrijalva/jwt-go"
+
+	"stash.kopano.io/kc/konnect/identity"
 )
 
 type authRecord struct {

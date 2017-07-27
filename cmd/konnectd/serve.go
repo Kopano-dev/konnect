@@ -33,6 +33,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+
 	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
@@ -40,10 +44,6 @@ import (
 	"stash.kopano.io/kc/konnect/oidc/provider"
 	"stash.kopano.io/kc/konnect/rndm"
 	"stash.kopano.io/kc/konnect/server"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 )
 
 func commandServe() *cobra.Command {

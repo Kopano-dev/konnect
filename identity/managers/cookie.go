@@ -27,15 +27,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
+
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/rndm"
 	"stash.kopano.io/kc/konnect/version"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/sirupsen/logrus"
 )
 
 // CookieIdentityManager implements an identity manager which passes through

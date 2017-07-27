@@ -21,13 +21,13 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
+	jwk "github.com/mendsley/gojwk"
+
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
-
-	"github.com/dgrijalva/jwt-go"
-	jwk "github.com/mendsley/gojwk"
 )
 
 // WellKnownHandler implements the HTTP provider configuration endpoint

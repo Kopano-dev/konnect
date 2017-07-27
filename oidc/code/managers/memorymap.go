@@ -21,12 +21,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/orcaman/concurrent-map"
+
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/rndm"
-
-	"github.com/orcaman/concurrent-map"
 )
 
 const (

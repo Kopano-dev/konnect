@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {

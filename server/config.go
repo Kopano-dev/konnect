@@ -20,9 +20,9 @@ package server
 import (
 	"net/http"
 
-	"stash.kopano.io/kc/konnect/oidc/provider"
-
 	"github.com/sirupsen/logrus"
+
+	"stash.kopano.io/kc/konnect/oidc/provider"
 )
 
 // Config defines a Server's configuration settings.

@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
-	"stash.kopano.io/kc/konnect/oidc"
-
 	"github.com/dgrijalva/jwt-go"
+
+	"stash.kopano.io/kc/konnect/oidc"
 )
 
 // AuthenticationRequest holds the incoming parameters and request data for

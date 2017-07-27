@@ -27,11 +27,11 @@ import (
 	"os"
 	"testing"
 
-	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
-	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
+
+	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 )
 
 var logger = &logrus.Logger{

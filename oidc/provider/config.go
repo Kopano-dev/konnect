@@ -18,10 +18,10 @@
 package provider
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc/code"
-
-	"github.com/sirupsen/logrus"
 )
 
 // Config defines a Provider's configuration settings.

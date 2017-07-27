@@ -24,12 +24,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
-
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 var logger = &logrus.Logger{

@@ -23,11 +23,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/dgrijalva/jwt-go"
+
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]bool, map[string]jwt.Claims) {

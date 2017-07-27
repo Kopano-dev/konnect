@@ -24,9 +24,9 @@ import (
 	"net/url"
 	"strings"
 
-	"stash.kopano.io/kc/konnect/oidc"
-
 	"github.com/dgrijalva/jwt-go"
+
+	"stash.kopano.io/kc/konnect/oidc"
 )
 
 // TokenRequest holds the incoming parameters and request data for

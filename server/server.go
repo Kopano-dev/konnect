@@ -26,12 +26,12 @@ import (
 	"syscall"
 	"time"
 
-	"stash.kopano.io/kc/konnect/oidc/provider"
-
 	"github.com/gorilla/mux"
 	"github.com/longsleep/go-metrics/loggedwriter"
 	"github.com/longsleep/go-metrics/timing"
 	"github.com/sirupsen/logrus"
+
+	"stash.kopano.io/kc/konnect/oidc/provider"
 )
 
 // Server is our HTTP server implementation.

@@ -25,14 +25,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/rs/cors"
+	"github.com/sirupsen/logrus"
+
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/rs/cors"
-	"github.com/sirupsen/logrus"
 )
 
 // Provider defines an OIDC provider with the handlers for the OIDC endpoints.
