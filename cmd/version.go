@@ -32,12 +32,11 @@ func CommandVersion() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version and exit",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf(`\
-Version: %s
-Git Commit: %s
-Built with: %s %s/%s
+			fmt.Printf(`Version    : %s
+Build date : %s
+Built with : %s %s/%s
 `,
-				version.Version, version.GitCommit, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+				version.Version, version.BuildDate, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 		},
 	}
 
