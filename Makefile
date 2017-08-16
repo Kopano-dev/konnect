@@ -7,6 +7,9 @@ GOFMT   = gofmt
 GLIDE   = glide
 GOLINT  = golint
 
+# Cgo
+CGO_ENABLED ?= 0
+
 # Variables
 PWD     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -19,7 +22,7 @@ TESTPKGS = $(shell env GOPATH=$(GOPATH) $(GO) list -f '{{ if or .TestGoFiles .XT
 CMDS     = $(or $(CMD),$(addprefix cmd/,$(notdir $(shell find "$(PWD)/cmd/" -type d))))
 TIMEOUT  = 30
 
-export GOPATH
+export GOPATH CGO_ENABLED
 
 # Build
 
@@ -34,7 +37,9 @@ $(BASE): ; $(info creating local GOPATH ...)
 $(CMDS): vendor | $(BASE) ; $(info building $@ ...) @
 	cd $(BASE) && $(GO) build \
 		-tags release \
-		-ldflags '-s -w -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE)' \
+		-asmflags '-trimpath=$(GOPATH)' \
+		-gcflags '-trimpath=$(GOPATH)' \
+		-ldflags '-s -w -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -linkmode external -extldflags -static' \
 		-o bin/$(notdir $@) $(PACKAGE)/$@
 
 # Helpers
