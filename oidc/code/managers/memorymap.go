@@ -22,11 +22,11 @@ import (
 	"time"
 
 	"github.com/orcaman/concurrent-map"
+	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
-	"stash.kopano.io/kc/konnect/rndm"
 )
 
 const (
@@ -89,10 +89,7 @@ func (cm *memoryMapManager) purgeExpired() {
 // Create creates a new random code string, stores it together with the provided
 // values in the accociated CodeManager's table and returns the code.
 func (cm *memoryMapManager) Create(ar *payload.AuthenticationRequest, auth identity.AuthRecord) (string, error) {
-	code, err := rndm.GenerateRandomString(24)
-	if err != nil {
-		return "", err
-	}
+	code := rndm.GenerateRandomString(24)
 
 	record := &codeRequestRecord{
 		ar:   ar,

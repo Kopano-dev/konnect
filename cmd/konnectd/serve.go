@@ -36,13 +36,13 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
-	"stash.kopano.io/kc/konnect/rndm"
 	"stash.kopano.io/kc/konnect/server"
 )
 
@@ -124,10 +124,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		encryptionSecret = []byte(encryptionSecretString)
 	} else {
 		logger.Warnln("missing --secret paramemter, using random encyption secret")
-		encryptionSecret, err = rndm.GenerateRandomBytes(encryption.KeySize)
-		if err != nil {
-			return fmt.Errorf("failed to create random secret value: %v", err)
-		}
+		encryptionSecret = rndm.GenerateRandomBytes(encryption.KeySize)
 	}
 
 	var encryptionManager *identityManagers.EncryptionManager
