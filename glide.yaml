@@ -22,3 +22,5 @@ import:
 - package: golang.org/x/crypto
   subpackages:
   - nacl/secretbox
+- package: stash.kopano.io/kgol/rndm
+  version: ^1.0.0
