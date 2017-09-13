@@ -61,8 +61,8 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("iss", "http://localhost:8777", "OIDC issuer URL")
 	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
 	serveCmd.Flags().String("secret", "", fmt.Sprintf("Encryption secret (length must be %d)", encryption.KeySize))
-	serveCmd.Flags().String("signingMethod", "RS256", "JWT signing method")
-	serveCmd.Flags().String("signInFormURI", "/sign-in", "Redirection URI to sign-in form")
+	serveCmd.Flags().String("signing-method", "RS256", "JWT signing method")
+	serveCmd.Flags().String("sign-in-uri", "/sign-in", "Redirection URI to sign-in form")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 
 	return serveCmd
@@ -86,13 +86,13 @@ func serve(cmd *cobra.Command, args []string) error {
 	}
 	identityManagerName := args[0]
 
-	signInFormURIString, _ := cmd.Flags().GetString("signInFormURI")
+	signInFormURIString, _ := cmd.Flags().GetString("sign-in-uri")
 	signInFormURI, err := url.Parse(signInFormURIString)
 	if err != nil || !strings.HasPrefix(signInFormURI.EscapedPath(), "/") {
 		if err == nil {
 			err = fmt.Errorf("URI path must be absolute")
 		}
-		return fmt.Errorf("signInFormURI invalid, %v", err)
+		return fmt.Errorf("invalid sign-in URI, %v", err)
 	}
 
 	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
@@ -148,7 +148,7 @@ func serve(cmd *cobra.Command, args []string) error {
 			if backendURIErr == nil {
 				backendURIErr = fmt.Errorf("URI must have a scheme")
 			}
-			return fmt.Errorf("backend URI invalid, %v", backendURIErr)
+			return fmt.Errorf("invalid backend URI, %v", backendURIErr)
 		}
 
 		var cookieNames []string
@@ -210,7 +210,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	}
 
 	if keyFn, _ := cmd.Flags().GetString("key"); keyFn != "" {
-		signingMethodString, _ := cmd.Flags().GetString("signingMethod")
+		signingMethodString, _ := cmd.Flags().GetString("signing-method")
 		signingMethod := jwt.GetSigningMethod(signingMethodString)
 		if signingMethod == nil {
 			return fmt.Errorf("unknown signing method: %s", signingMethodString)
