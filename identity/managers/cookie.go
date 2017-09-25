@@ -128,7 +128,7 @@ type cookieBackendResponse struct {
 	ID int64 `json:"id"`
 }
 
-func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCookies string) (*cookieUser, error) {
+func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCookies string, headers http.Header) (*cookieUser, error) {
 	if encodedCookies == "" {
 		// Fastpath, do nothing when no cookies.
 		return nil, nil
@@ -138,8 +138,13 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
-	request.Header.Set("User-Agent", fmt.Sprintf("konnect/%s", version.Version))
-	request.Header.Set("X-Konnect-Request", "1")
+
+	// Copy over some request headers which are used for fingerprinting sessions.
+	request.Header.Set("Accept-Language", headers.Get("Accept-Language"))
+	request.Header.Set("User-Agent", headers.Get("User-Agent"))
+
+	request.Header.Set("Connection", "keep-alive") // XXX(longsleep): This is part of the Kopano Webapp finger print and we do not really know what the browser sent on sign-in :/
+	request.Header.Set("X-Konnect-Request", fmt.Sprintf("1/%s", version.Version))
 
 	request.Header.Set("Cookie", encodedCookies)
 	request = request.WithContext(ctx)
@@ -165,7 +170,7 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 		// Not signed in.
 		return nil, nil
 	default:
-		return nil, fmt.Errorf("request returned error code: %v", response.Status)
+		return nil, fmt.Errorf("request returned error code: %v", response.StatusCode)
 	}
 
 	payload := &cookieBackendResponse{}
@@ -180,7 +185,9 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 	}
 
 	claims := make(jwt.MapClaims)
-	claims["kc.cookie"] = encryptedCookies
+	claims["cookie.v"] = encryptedCookies
+	claims["cookie.al"] = headers.Get("Accept-Language")
+	claims["cookie.ua"] = headers.Get("User-Agent")
 
 	user := &cookieUser{
 		sub:   payload.Subject,
@@ -209,7 +216,7 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 	}
 	encodedCookiesString := strings.Join(encodedCookies, "; ")
 
-	user, err := im.backendRequest(ctx, encodedCookiesString)
+	user, err := im.backendRequest(ctx, encodedCookiesString, req.Header)
 	if err != nil {
 		// Error, directly return.
 		im.logger.Errorln("CookieIdentityManager: backend request error", err)
@@ -240,9 +247,8 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 	}
 
 	if err != nil {
-		redirectURI, _ := url.Parse(im.signInFormURI)
-		redirectURI.RawQuery = fmt.Sprintf("continue=%s&oauth=1", url.QueryEscape(getRequestURL(req).String()))
-		return nil, identity.NewRedirectError(err.Error(), redirectURI)
+		u, _ := url.Parse(im.signInFormURI)
+		return nil, identity.NewLoginRequiredError(err.Error(), u)
 	}
 
 	auth := NewAuthRecord(user.Subject(), nil, nil)
@@ -343,7 +349,7 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 			if !ok {
 				return nil, false, fmt.Errorf("CookieIdentityManager: unknown identity claims type")
 			}
-			encryptedCookies, _ := identityClaimsMap["kc.cookie"].(string)
+			encryptedCookies, _ := identityClaimsMap["cookie.v"].(string)
 			if encryptedCookies != "" {
 				encodedCookies, err = im.DecryptHexToString(encryptedCookies)
 				if err != nil {
@@ -353,7 +359,14 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 				encodedCookies = encryptedCookies
 			}
 
-			user, err = im.backendRequest(ctx, encodedCookies)
+			headers := http.Header{}
+			if al, ok := identityClaimsMap["cookie.al"]; ok {
+				headers.Set("Accept-Language", al.(string))
+			}
+			if ua, ok := identityClaimsMap["cookie.ua"]; ok {
+				headers.Set("User-Agent", ua.(string))
+			}
+			user, err = im.backendRequest(ctx, encodedCookies, headers)
 			if err != nil {
 				// Error, directly return.
 				im.logger.Errorln("CookieIdentityManager: backend request error", err)

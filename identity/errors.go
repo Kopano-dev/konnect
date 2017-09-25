@@ -56,3 +56,28 @@ func (err *RedirectError) Error() string {
 func (err *RedirectError) RedirectURI() *url.URL {
 	return err.redirectURI
 }
+
+// LoginRequiredError which backends can return to indicate that sign-in is
+// required.
+type LoginRequiredError struct {
+	id        string
+	signInURI *url.URL
+}
+
+// NewLoginRequiredError creates a new corresponding error with the provided id.
+func NewLoginRequiredError(id string, signInURI *url.URL) *LoginRequiredError {
+	return &LoginRequiredError{
+		id:        id,
+		signInURI: signInURI,
+	}
+}
+
+// Error implements the error interface.
+func (err *LoginRequiredError) Error() string {
+	return err.id
+}
+
+// SignInURI returns the sign-in URL of the accociated error.
+func (err *LoginRequiredError) SignInURI() *url.URL {
+	return err.signInURI
+}

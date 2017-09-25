@@ -2,10 +2,10 @@ PACKAGE  = stash.kopano.io/kc/konnect
 
 # Tools
 
-GO      = go
-GOFMT   = gofmt
-GLIDE   = glide
-GOLINT  = golint
+GO      ?= go
+GOFMT   ?= gofmt
+GLIDE   ?= glide
+GOLINT  ?= golint
 
 # Cgo
 CGO_ENABLED ?= 0
