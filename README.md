@@ -21,7 +21,7 @@ cd ~/go/src/stash.kopano.io/kc
 git clone <THIS-PROJECT> konnect
 cd konnect
 make
-$GOPATH/konnectd serve --listen 127.0.0.1:8777 \
+bin/konnectd serve --listen 127.0.0.1:8777 \
   --iss=https://mykopano.local \
   --insecure \
   --signInFormURI=https://mykopano.local/webapp/ \
