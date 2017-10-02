@@ -19,7 +19,9 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/dgrijalva/jwt-go"
 	jwk "github.com/mendsley/gojwk"
@@ -202,6 +204,15 @@ done:
 			p.ErrorPage(rw, http.StatusBadRequest, err.Error(), err.(*payload.AuthenticationBadRequest).Description())
 		case *identity.RedirectError:
 			p.Found(rw, err.(*identity.RedirectError).RedirectURI(), nil, false)
+		case *identity.LoginRequiredError:
+			// redirect to sign-in form, add continue parameter.
+			issURI, _ := url.Parse(p.issuerIdentifier)
+			continueURI := getRequestURL(req)
+			continueURI.Scheme = issURI.Scheme
+			continueURI.Host = issURI.Host
+			signInURI := err.(*identity.LoginRequiredError).SignInURI()
+			signInURI.RawQuery = fmt.Sprintf("continue=%s&oauth=1", url.QueryEscape(continueURI.String()))
+			p.Found(rw, signInURI, nil, false)
 		case *identity.IsHandledError:
 			// do nothing
 		case *oidc.OAuth2Error:

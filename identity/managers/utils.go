@@ -18,11 +18,6 @@
 package managers
 
 import (
-	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
-
 	"github.com/dgrijalva/jwt-go"
 
 	"stash.kopano.io/kc/konnect"
@@ -64,28 +59,4 @@ func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]boo
 	}
 
 	return authorizedScopes, claims
-}
-
-func getRequestURL(req *http.Request) *url.URL {
-	u, _ := url.Parse(req.URL.String())
-
-	// TODO(longsleep): Add trusted proxy white list.
-	if strings.HasPrefix(req.RemoteAddr, "127.") {
-		for {
-			prefix := req.Header.Get("X-Forwarded-Prefix")
-			if prefix != "" {
-				u.Path = fmt.Sprintf("%s%s", prefix, u.Path)
-				break
-			}
-			replaced := req.Header.Get("X-Replaced-Path")
-			if replaced != "" {
-				u.Path = replaced
-				break
-			}
-
-			break
-		}
-	}
-
-	return u
 }

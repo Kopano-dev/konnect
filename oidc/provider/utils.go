@@ -17,6 +17,13 @@
 
 package provider
 
+import (
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+)
+
 func uniqueStrings(s []string) []string {
 	res := make([]string, 0)
 	m := make(map[string]bool)
@@ -29,4 +36,28 @@ func uniqueStrings(s []string) []string {
 	}
 
 	return res
+}
+
+func getRequestURL(req *http.Request) *url.URL {
+	u, _ := url.Parse(req.URL.String())
+
+	// TODO(longsleep): Add trusted proxy white list.
+	if strings.HasPrefix(req.RemoteAddr, "127.") {
+		for {
+			prefix := req.Header.Get("X-Forwarded-Prefix")
+			if prefix != "" {
+				u.Path = fmt.Sprintf("%s%s", prefix, u.Path)
+				break
+			}
+			replaced := req.Header.Get("X-Replaced-Path")
+			if replaced != "" {
+				u.Path = replaced
+				break
+			}
+
+			break
+		}
+	}
+
+	return u
 }
