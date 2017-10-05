@@ -1,0 +1,16 @@
+# Full file path t o a PEM encode RSA private key which is used to sign tokens.
+# This file must exist and be valid to be able to start the service. A suitable
+# key can be generated with `openssl genrsa -out key.pem 2048`.
+KEY=/etc/kopano/konnectd-tokens-signing-key.pem
+
+# Encryption secret for encrypted content included inside tokens. When not set
+# Konnect will generate and use a random token on each restart. A suitable value
+# can be generated with `openssl rand -hex 32`.
+ENCRYPTION_SECRET=
+
+# URL to the Kopano Webapp.
+KOPANO_WEBAPP_URL=https://your-kopano.local/webapp/index.php
+
+#IMAGE=/srv/images/kopano-konnectd-latest-linux-amd64.aci
+#RKT_ARGS=--port=www:127.0.0.1:8777
+#ARGS=-insecure

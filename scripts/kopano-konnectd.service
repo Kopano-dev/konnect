@@ -1,0 +1,25 @@
+[Unit]
+Description=kopano-konnectd
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Slice=machine.slice
+Environment=RKT_ARGS=--port=www:127.0.0.1:8777
+Environment=KEY=/etc/kopano/konnectd-tokens-signing-key.pem
+Environment=IMAGE=/srv/images/kopano-konnectd-latest-linux-amd64.aci
+EnvironmentFile=/etc/default/kopano-konnectd
+ExecStart=/usr/bin/rkt \
+	--insecure-options=image \
+	run $RKT_ARGS \
+	--volume key,kind=host,source=${KEY} \
+	--volume etc-ssl-certs,kind=host,source=/etc/ssl/certs \
+	${IMAGE} \
+	-- \
+	--sign-in-uri=${KOPANO_WEBAPP_URL} \
+	--secret="${ENCRYPTION_SECRET}" $ARGS \
+	cookie "${KOPANO_WEBAPP_URL}?load=custom&name=oidcuser" \
+	KOPANO_WEBAPP encryption-store-key
+ExecStopPost=/usr/bin/rkt gc --mark-only
+KillMode=mixed
+Restart=always
