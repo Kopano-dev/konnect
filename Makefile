@@ -1,4 +1,5 @@
 PACKAGE  = stash.kopano.io/kc/konnect
+PACKAGE_NAME = kopano-$(shell basename $(PACKAGE))
 
 # Tools
 
@@ -6,6 +7,8 @@ GO      ?= go
 GOFMT   ?= gofmt
 GLIDE   ?= glide
 GOLINT  ?= golint
+
+GO2XUNIT ?= go2xunit
 
 # Cgo
 CGO_ENABLED ?= 0
@@ -58,17 +61,33 @@ fmt: ; $(info running gofmt ...)	@
 
 # Tests
 
-TEST_TARGETS := test-default test-short test-race test-verbose
+TEST_TARGETS := test-default test-bench test-short test-race test-verbose
 .PHONY: $(TEST_TARGETS)
+test-bench:   ARGS=-run=_Bench* -test.benchmem -bench=.
 test-short:   ARGS=-short
 test-race:    ARGS=-race
+test-race:    CGO_ENABLED=1
 test-verbose: ARGS=-v
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
 
 .PHONY: test
-test: fmt lint vendor | $(BASE) ; $(info running $(NAME:%=% )tests ...)	@
-	@cd $(BASE) && $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
+test: vendor | $(BASE) ; $(info running $(NAME:%=% )tests ...)	@
+	@cd $(BASE) && CGO_ENABLED=$(CGO_ENABLED) $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
+
+TEST_XML_TARGETS := test-xml-default test-xml-short test-xml-race
+.PHONY: $(TEST_XML_TARGETS)
+test-xml-short: ARGS=-short
+test-xml-race:  ARGS=-race
+test-xml-race:  CGO_ENABLED=1
+$(TEST_XML_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
+$(TEST_XML_TARGETS): test-xml
+
+.PHONY: test-xml
+test-xml: vendor | $(BASE) ; $(info running $(NAME:%=% )tests ...)	@
+	@mkdir -p test
+	cd $(BASE) && 2>&1 CGO_ENABLED=$(CGO_ENABLED) $(GO) test -timeout $(TIMEOUT)s $(ARGS) -v $(TESTPKGS) | tee test/tests.output
+	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
 
 # Glide
 
@@ -81,12 +100,25 @@ vendor: glide.lock | $(BASE) ; $(info retrieving dependencies ...)
 	@ln -nsf . vendor/src
 	@touch $@
 
+# Dist
+
+.PHONY: dist
+dist: ; $(info building dist tarball ...)
+	@mkdir -p "dist/${PACKAGE_NAME}-${VERSION}"
+	@cd dist && \
+	cp -avf ../LICENSE.txt "${PACKAGE_NAME}-${VERSION}" && \
+	cp -avf ../README.md "${PACKAGE_NAME}-${VERSION}" && \
+	cp -avf ../bin/* "${PACKAGE_NAME}-${VERSION}" && \
+	tar --owner=0 --group=0 -czvf ${PACKAGE_NAME}-${VERSION}.tar.gz "${PACKAGE_NAME}-${VERSION}" && \
+	cd ..
+
 # Rest
 
 .PHONY: clean
 clean: ; $(info cleaning ...)	@
 	@rm -rf $(GOPATH)
 	@rm -rf bin
+	@rm -rf test/test.*
 
 .PHONY: version
 version:

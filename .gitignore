@@ -1,3 +1,7 @@
 /vendor
 /bin
 /.gopath
+/test/tests.*
+/golint.txt
+/govet.txt
+/dist
