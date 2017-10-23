@@ -21,7 +21,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// User defines a most simple user with an id.
+// User defines a most simple user with an id defined as subject.
 type User interface {
 	Subject() string
 }
@@ -43,6 +43,12 @@ type UserWithProfile interface {
 type UserWithID interface {
 	User
 	ID() int64
+}
+
+// UserWithUsername is a User with an username different from subject.
+type UserWithUsername interface {
+	User
+	Username() string
 }
 
 // UserWithClaims is A User with jwt claims.

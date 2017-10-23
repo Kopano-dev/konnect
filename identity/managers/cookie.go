@@ -369,7 +369,7 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 			user, err = im.backendRequest(ctx, encodedCookies, headers)
 			if err != nil {
 				// Error, directly return.
-				im.logger.Errorln("CookieIdentityManager: backend request error", err)
+				im.logger.WithError(err).Errorln("CookieIdentityManager: backend request error")
 				return nil, false, fmt.Errorf("CookieIdentityManager: backend request error")
 			}
 		}

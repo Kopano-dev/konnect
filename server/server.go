@@ -88,9 +88,15 @@ func (s *Server) AddContext(parent context.Context, next http.Handler) http.Hand
 // the provided context.Context.
 func (s *Server) AddRoutes(ctx context.Context, router *mux.Router) {
 	// TODO(longsleep): Add subpath support to all handlers and paths.
-	router.Handle("/health-check", s.AddContext(ctx, http.HandlerFunc(s.HealthCheckHandler)))
-	// Delegate rest to provider which is also a handler.
-	router.NotFoundHandler = s.AddContext(ctx, s.Config.Provider)
+	router.HandleFunc("/health-check", s.HealthCheckHandler)
+
+	if s.Config.Identifier != nil {
+		s.Config.Identifier.AddRoutes(ctx, router)
+	}
+	if s.Config.Provider != nil {
+		// Delegate rest to provider which is also a handler.
+		router.NotFoundHandler = s.Config.Provider
+	}
 }
 
 // Serve starts all the accociated servers resources and listeners and blocks
@@ -111,7 +117,7 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	// HTTP listener.
 	srv := &http.Server{
-		Handler: router,
+		Handler: s.AddContext(serveCtx, router),
 	}
 
 	logger.WithField("listenAddr", s.listenAddr).Infoln("starting http listener")

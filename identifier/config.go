@@ -15,18 +15,16 @@
  *
  */
 
-package server
+package identifier
 
 import (
 	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier"
-	"stash.kopano.io/kc/konnect/oidc/provider"
+	"stash.kopano.io/kc/konnect/identifier/backends"
 )
 
 // Config defines a Server's configuration settings.
 type Config struct {
 	Config *config.Config
 
-	Identifier *identifier.Identifier
-	Provider   *provider.Provider
+	Backend backends.Backend
 }

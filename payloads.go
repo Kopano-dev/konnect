@@ -28,5 +28,5 @@ type UserInfoResponse struct {
 
 	// Note(longsleep): Additional response data for compatibility.
 	ID       int64  `json:"id,omitempty"`
-	UserName string `json:"username,omitempty"`
+	Username string `json:"username,omitempty"`
 }

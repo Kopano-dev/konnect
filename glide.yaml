@@ -24,3 +24,8 @@ import:
   - nacl/secretbox
 - package: stash.kopano.io/kgol/rndm
   version: ^1.0.0
+- package: gopkg.in/square/go-jose.v2
+  version: v2.1.3
+- package: stash.kopano.io/kgol/kcc-go
+  version: ^1.0.0
+- package: github.com/eternnoir/gncp

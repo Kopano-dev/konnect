@@ -15,18 +15,20 @@
  *
  */
 
-package server
+package backends
 
 import (
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier"
-	"stash.kopano.io/kc/konnect/oidc/provider"
+	"context"
+
+	"stash.kopano.io/kc/konnect/identity"
 )
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
+// A Backend is an identifier Backend providing functionality to logon and to
+// fetch user meta data.
+type Backend interface {
+	RunWithContext(context.Context) error
 
-	Identifier *identifier.Identifier
-	Provider   *provider.Provider
+	Logon(ctx context.Context, username string, password string) (success bool, userID *string, err error)
+	ResolveUser(ctx context.Context, username string) (user identity.UserWithUsername, err error)
+	GetUser(ctx context.Context, userID string) (user identity.User, err error)
 }

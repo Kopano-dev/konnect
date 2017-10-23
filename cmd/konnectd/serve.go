@@ -36,10 +36,13 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	kcc "stash.kopano.io/kgol/kcc-go"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/encryption"
+	"stash.kopano.io/kc/konnect/identifier"
+	identifierBackends "stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
@@ -63,7 +66,8 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
 	serveCmd.Flags().String("secret", "", fmt.Sprintf("Encryption secret (length must be %d)", encryption.KeySize))
 	serveCmd.Flags().String("signing-method", "RS256", "JWT signing method")
-	serveCmd.Flags().String("sign-in-uri", "/sign-in", "Redirection URI to sign-in form")
+	serveCmd.Flags().String("sign-in-uri", "", "Custom redirection URI to sign-in form")
+	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 
 	return serveCmd
@@ -89,11 +93,14 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	signInFormURIString, _ := cmd.Flags().GetString("sign-in-uri")
 	signInFormURI, err := url.Parse(signInFormURIString)
-	if err != nil || !strings.HasPrefix(signInFormURI.EscapedPath(), "/") {
-		if err == nil {
-			err = fmt.Errorf("URI path must be absolute")
-		}
+	if err != nil {
 		return fmt.Errorf("invalid sign-in URI, %v", err)
+	}
+
+	authorizationEndpointURIString, _ := cmd.Flags().GetString("authorization-endpoint-uri")
+	authorizationEndpointURI, err := url.Parse(authorizationEndpointURIString)
+	if err != nil {
+		return fmt.Errorf("invalid authorization-endpoint-uri, %v", err)
 	}
 
 	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
@@ -124,7 +131,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	if encryptionSecretString, _ := cmd.Flags().GetString("secret"); encryptionSecretString != "" {
 		encryptionSecret = []byte(encryptionSecretString)
 	} else {
-		logger.Warnln("missing --secret paramemter, using random encyption secret")
+		logger.Warnln("missing --secret parameter, using random encyption secret")
 		encryptionSecret = rndm.GenerateRandomBytes(encryption.KeySize)
 	}
 
@@ -138,9 +145,18 @@ func serve(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid --secret parameter value: %v", err)
 	}
 
+	codeManager := codeManagers.NewMemoryMapManager(ctx)
+
+	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
+
+	var activeIdentifier *identifier.Identifier
+
 	var identityManager identity.Manager
 	switch identityManagerName {
 	case "cookie":
+		if !strings.HasPrefix(signInFormURI.EscapedPath(), "/") {
+			return fmt.Errorf("URI path must be absolute")
+		}
 		if len(args) < 2 {
 			return fmt.Errorf("cookie backend requires the backend URI as argument")
 		}
@@ -171,6 +187,47 @@ func serve(cmd *cobra.Command, args []string) error {
 			"cookies": cookieNames,
 		}).Infoln("using cookie backend identity manager")
 		identityManager = cookieIdentityManager
+	case "kc":
+		if authorizationEndpointURI.String() != "" {
+			return fmt.Errorf("kc backend is incompatible with authorization-endpoint-uri parameter")
+		}
+		authorizationEndpointURI.Path = "/signin/v1/identifier/_/authorize"
+
+		if signInFormURI.EscapedPath() == "" {
+			signInFormURI.Path = "/signin/v1/identifier"
+		}
+
+		identifierBackend, identifierErr := identifierBackends.NewKCIdentifierBackend(
+			cfg,
+			kcc.NewKCC(nil),
+			os.Getenv("KOPANO_SERVER_USERNAME"),
+			os.Getenv("KOPANO_SERVER_PASSWORD"),
+		)
+		if identifierErr != nil {
+			return fmt.Errorf("failed to create identifier backend: %v", identifierErr)
+		}
+
+		activeIdentifier, err = identifier.NewIdentifier(&identifier.Config{
+			Config:  cfg,
+			Backend: identifierBackend,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create identifier: %v", err)
+		}
+		err = activeIdentifier.SetKey(encryptionSecret)
+		if err != nil {
+			return fmt.Errorf("invalid --secret parameter value: %v", err)
+		}
+
+		identityManagerConfig := &identity.Config{
+			SignInFormURI: signInFormURI,
+
+			Logger: logger,
+		}
+
+		kcIdentityManager := identityManagers.NewKCIdentityManager(identityManagerConfig, activeIdentifier)
+		logger.WithFields(logrus.Fields{}).Infoln("using kc backend identity manager")
+		identityManager = kcIdentityManager
 	case "dummy":
 		dummyIdentityManager := &identityManagers.DummyIdentityManager{
 			Sub: "dummy",
@@ -181,17 +238,18 @@ func serve(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unknown identity manager %v", identityManagerName)
 	}
 
-	codeManager := codeManagers.NewMemoryMapManager(ctx)
+	authorizationPath := authorizationEndpointURI.EscapedPath()
+	if authorizationPath == "" {
+		authorizationPath = "/konnect/v1/authorize"
+	}
 
-	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
-
-	p, err := provider.NewProvider(&provider.Config{
+	activeProvider, err := provider.NewProvider(&provider.Config{
 		Config: cfg,
 
 		IssuerIdentifier:  issuerIdentifier,
 		WellKnownPath:     "/.well-known/openid-configuration",
 		JwksPath:          "/konnect/v1/jwks.json",
-		AuthorizationPath: "/konnect/v1/authorize",
+		AuthorizationPath: authorizationPath,
 		TokenPath:         "/konnect/v1/token",
 		UserInfoPath:      "/konnect/v1/userinfo",
 
@@ -208,7 +266,8 @@ func serve(cmd *cobra.Command, args []string) error {
 	srv, err := server.NewServer(&server.Config{
 		Config: cfg,
 
-		Provider: p,
+		Identifier: activeIdentifier,
+		Provider:   activeProvider,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
@@ -222,7 +281,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 
 		logger.WithField("file", keyFn).Infoln("loading key from file")
-		err := addKeysToProvider(keyFn, p, signingMethod)
+		err := addKeysToProvider(keyFn, activeProvider, signingMethod)
 		if err != nil {
 			return err
 		}
@@ -230,7 +289,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	} else {
 		//XXX(longsleep): remove me - create keypair for testing.
 		key, _ := rsa.GenerateKey(rand.Reader, 512)
-		p.SetSigningKey("default", key, jwt.SigningMethodRS256)
+		activeProvider.SetSigningKey("default", key, jwt.SigningMethodRS256)
 		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random RSA key pair")
 	}
 

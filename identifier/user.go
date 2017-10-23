@@ -15,18 +15,39 @@
  *
  */
 
-package server
+package identifier
 
-import (
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier"
-	"stash.kopano.io/kc/konnect/oidc/provider"
-)
+type IdentifiedUser struct {
+	sub string
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
+	username      string
+	email         string
+	emailVerified bool
+	displayName   string
 
-	Identifier *identifier.Identifier
-	Provider   *provider.Provider
+	id int64
+}
+
+func (u *IdentifiedUser) Subject() string {
+	return u.sub
+}
+
+func (u *IdentifiedUser) Email() string {
+	return u.email
+}
+
+func (u *IdentifiedUser) EmailVerified() bool {
+	return u.emailVerified
+}
+
+func (u *IdentifiedUser) Name() string {
+	return u.displayName
+}
+
+func (u *IdentifiedUser) ID() int64 {
+	return u.id
+}
+
+func (u *IdentifiedUser) Username() string {
+	return u.username
 }

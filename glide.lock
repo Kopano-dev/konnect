@@ -1,8 +1,10 @@
-hash: ff34d314dd274f89079c4a2ceb4d298093d8e954e5e4a2305f0a0e6f81e95cd9
-updated: 2017-09-11T13:22:55.296584942+02:00
+hash: f317c86c809e72c8c64ed0ef787a80bbdd8b77164a19c0eaa60f48789e97f069
+updated: 2017-11-20T23:50:50.584354916+01:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
+- name: github.com/eternnoir/gncp
+  version: c70df2d0cd68bfc27074d632653aed73cdb2b078
 - name: github.com/google/go-querystring
   version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
   subpackages:
@@ -35,6 +37,8 @@ imports:
 - name: golang.org/x/crypto
   version: dd85ac7e6a88fc6ca420478e934de5f1a42dd3c6
   subpackages:
+  - ed25519
+  - ed25519/internal/edwards25519
   - nacl/secretbox
   - poly1305
   - salsa20/salsa
@@ -42,6 +46,14 @@ imports:
   version: 833a04a10549a95dc34458c195cbad61bbb6cb4d
   subpackages:
   - unix
+- name: gopkg.in/square/go-jose.v2
+  version: f8f38de21b4dcd69d0413faf231983f5fd6634b1
+  subpackages:
+  - cipher
+  - json
+  - jwt
+- name: stash.kopano.io/kgol/kcc-go
+  version: f71f6eafea3662c518a7948be4d8df2ba293de07
 - name: stash.kopano.io/kgol/rndm
   version: 69ff9c69d5ce12d2fb19a552eab58ad657a5e8b2
 testImports: []

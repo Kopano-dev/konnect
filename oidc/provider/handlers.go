@@ -509,7 +509,12 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		if user != nil {
 			if userWithID, ok := user.(identity.UserWithID); ok {
 				response.ID = userWithID.ID()
-				response.UserName = userWithID.Subject()
+			}
+			if userWithUsername, ok := user.(identity.UserWithUsername); ok {
+				response.Username = userWithUsername.Username()
+			}
+			if response.Username == "" {
+				response.Username = user.Subject()
 			}
 		}
 	}

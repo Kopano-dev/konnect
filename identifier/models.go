@@ -15,18 +15,28 @@
  *
  */
 
-package server
+package identifier
 
-import (
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier"
-	"stash.kopano.io/kc/konnect/oidc/provider"
-)
+type LogonRequest struct {
+	State     string `json:"state"`
+	RawMaxAge string `json:"max_age"`
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
+	Params []string `json:"params"`
+}
 
-	Identifier *identifier.Identifier
-	Provider   *provider.Provider
+type LogonResponse struct {
+	Success bool   `json:"success"`
+	State   string `json:"state"`
+}
+
+type HelloRequest struct {
+	State  string `json:"state"`
+	Prompt bool   `json:"prompt"`
+}
+
+type HelloResponse struct {
+	State       string `json:"state"`
+	Success     bool   `json:"success"`
+	Username    string `json:"username,omitempty"`
+	DisplayName string `json:"displayname,omitempty"`
 }
