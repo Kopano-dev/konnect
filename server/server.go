@@ -30,13 +30,11 @@ import (
 	"github.com/longsleep/go-metrics/loggedwriter"
 	"github.com/longsleep/go-metrics/timing"
 	"github.com/sirupsen/logrus"
-
-	"stash.kopano.io/kc/konnect/oidc/provider"
 )
 
 // Server is our HTTP server implementation.
 type Server struct {
-	Provider *provider.Provider
+	Config *Config
 
 	listenAddr string
 	logger     logrus.FieldLogger
@@ -45,10 +43,10 @@ type Server struct {
 // NewServer constructs a server from the provided parameters.
 func NewServer(c *Config) (*Server, error) {
 	s := &Server{
-		Provider: c.Provider,
+		Config: c,
 
-		listenAddr: c.ListenAddr,
-		logger:     c.Logger,
+		listenAddr: c.Config.ListenAddr,
+		logger:     c.Config.Logger,
 	}
 
 	return s, nil
@@ -92,7 +90,7 @@ func (s *Server) AddRoutes(ctx context.Context, router *mux.Router) {
 	// TODO(longsleep): Add subpath support to all handlers and paths.
 	router.Handle("/health-check", s.AddContext(ctx, http.HandlerFunc(s.HealthCheckHandler)))
 	// Delegate rest to provider which is also a handler.
-	router.NotFoundHandler = s.AddContext(ctx, s.Provider)
+	router.NotFoundHandler = s.AddContext(ctx, s.Config.Provider)
 }
 
 // Serve starts all the accociated servers resources and listeners and blocks

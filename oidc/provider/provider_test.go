@@ -30,6 +30,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 
+	"stash.kopano.io/kc/konnect/config"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 )
@@ -58,7 +59,11 @@ func init() {
 }
 
 func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Provider, http.Handler, *Config) {
-	config := &Config{
+	cfg := &Config{
+		Config: &config.Config{
+			Logger: logger,
+		},
+
 		IssuerIdentifier:  "http://localhost:8777",
 		WellKnownPath:     "/.well-known/openid-configuration",
 		JwksPath:          "/konnect/v1/jwks.json",
@@ -70,10 +75,9 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 			Sub: "unittestuser",
 		},
 		CodeManager: codeManagers.NewMemoryMapManager(ctx),
-		Logger:      logger,
 	}
 
-	provider, err := NewProvider(config)
+	provider, err := NewProvider(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +87,7 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 		provider.ServeHTTP(rw, req)
 	}))
 
-	return s, provider, provider, config
+	return s, provider, provider, cfg
 }
 
 func TestNewTestProvider(t *testing.T) {

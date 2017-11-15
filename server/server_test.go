@@ -27,6 +27,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	"stash.kopano.io/kc/konnect/config"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
@@ -38,8 +39,14 @@ var logger = &logrus.Logger{
 	Level:     logrus.DebugLevel,
 }
 
-func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server, http.Handler, *Config) {
+func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server, http.Handler, *config.Config) {
+	cfg := &config.Config{
+		Logger: logger,
+	}
+
 	p, err := provider.NewProvider(&provider.Config{
+		Config: cfg,
+
 		IssuerIdentifier:  "http://localhost:8777",
 		WellKnownPath:     "/.well-known/openid-configuration",
 		JwksPath:          "/konnect/v1/jwks.json",
@@ -51,18 +58,16 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 			Sub: "unittestuser",
 		},
 		CodeManager: codeManagers.NewMemoryMapManager(ctx),
-		Logger:      logger,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	config := &Config{
-		Logger:   logger,
-		Provider: p,
-	}
+	server, err := NewServer(&Config{
+		Config: cfg,
 
-	server, err := NewServer(config)
+		Provider: p,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +78,7 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 		router.ServeHTTP(rw, req)
 	}))
 
-	return s, server, router, config
+	return s, server, router, cfg
 }
 
 func TestNewTestServer(t *testing.T) {

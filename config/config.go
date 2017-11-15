@@ -15,25 +15,18 @@
  *
  */
 
-package provider
+package config
 
 import (
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/oidc/code"
+	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
-// Config defines a Provider's configuration settings.
+// Config defines a Server's configuration settings.
 type Config struct {
-	Config *config.Config
+	ListenAddr string
 
-	IssuerIdentifier  string
-	WellKnownPath     string
-	JwksPath          string
-	AuthorizationPath string
-	TokenPath         string
-	UserInfoPath      string
-
-	IdentityManager identity.Manager
-	CodeManager     code.Manager
+	Logger        logrus.FieldLogger
+	HTTPTransport http.RoundTripper
 }

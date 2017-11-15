@@ -18,19 +18,13 @@
 package server
 
 import (
-	"net/http"
-
-	"github.com/sirupsen/logrus"
-
+	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/oidc/provider"
 )
 
 // Config defines a Server's configuration settings.
 type Config struct {
-	ListenAddr string
-
-	Logger        logrus.FieldLogger
-	HTTPTransport http.RoundTripper
+	Config *config.Config
 
 	Provider *provider.Provider
 }

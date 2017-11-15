@@ -37,6 +37,8 @@ import (
 
 // Provider defines an OIDC provider with the handlers for the OIDC endpoints.
 type Provider struct {
+	Config *Config
+
 	issuerIdentifier string
 
 	wellKnownPath     string
@@ -61,6 +63,8 @@ type Provider struct {
 // NewProvider returns a new Provider.
 func NewProvider(c *Config) (*Provider, error) {
 	p := &Provider{
+		Config: c,
+
 		issuerIdentifier:  c.IssuerIdentifier,
 		wellKnownPath:     c.WellKnownPath,
 		jwksPath:          c.JwksPath,
@@ -75,7 +79,7 @@ func NewProvider(c *Config) (*Provider, error) {
 
 		accessTokenDuration: time.Minute * 10, //TODO(longsleep): Move to configuration.
 
-		logger: c.Logger,
+		logger: c.Config.Logger,
 	}
 
 	return p, nil

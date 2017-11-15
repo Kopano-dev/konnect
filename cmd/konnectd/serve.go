@@ -38,6 +38,7 @@ import (
 	"github.com/spf13/cobra"
 	"stash.kopano.io/kgol/rndm"
 
+	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
@@ -77,7 +78,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	}
 	logger.Infoln("serve start")
 
-	config := &server.Config{
+	cfg := &config.Config{
 		Logger: logger,
 	}
 
@@ -117,7 +118,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		logger.Debugln("http2 client support is disabled (insecure mode)")
 	}
 
-	config.HTTPTransport = httpTransport
+	cfg.HTTPTransport = httpTransport
 
 	var encryptionSecret []byte
 	if encryptionSecretString, _ := cmd.Flags().GetString("secret"); encryptionSecretString != "" {
@@ -163,7 +164,7 @@ func serve(cmd *cobra.Command, args []string) error {
 			Logger: logger,
 		}
 
-		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, encryptionManager, backendURI, cookieNames, 30*time.Second, config.HTTPTransport)
+		cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, encryptionManager, backendURI, cookieNames, 30*time.Second, cfg.HTTPTransport)
 		logger.WithFields(logrus.Fields{
 			"backend": backendURI,
 			"signIn":  signInFormURI,
@@ -185,6 +186,8 @@ func serve(cmd *cobra.Command, args []string) error {
 	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
 
 	p, err := provider.NewProvider(&provider.Config{
+		Config: cfg,
+
 		IssuerIdentifier:  issuerIdentifier,
 		WellKnownPath:     "/.well-known/openid-configuration",
 		JwksPath:          "/konnect/v1/jwks.json",
@@ -194,17 +197,19 @@ func serve(cmd *cobra.Command, args []string) error {
 
 		IdentityManager: identityManager,
 		CodeManager:     codeManager,
-		Logger:          logger,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create provider: %v", err)
 	}
-	config.Provider = p
 
 	listenAddr, _ := cmd.Flags().GetString("listen")
-	config.ListenAddr = listenAddr
+	cfg.ListenAddr = listenAddr
 
-	srv, err := server.NewServer(config)
+	srv, err := server.NewServer(&server.Config{
+		Config: cfg,
+
+		Provider: p,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
 	}
@@ -225,7 +230,7 @@ func serve(cmd *cobra.Command, args []string) error {
 	} else {
 		//XXX(longsleep): remove me - create keypair for testing.
 		key, _ := rsa.GenerateKey(rand.Reader, 512)
-		srv.Provider.SetSigningKey("default", key, jwt.SigningMethodRS256)
+		p.SetSigningKey("default", key, jwt.SigningMethodRS256)
 		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random RSA key pair")
 	}
 
