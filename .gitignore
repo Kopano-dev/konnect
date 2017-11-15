@@ -5,3 +5,5 @@
 /golint.txt
 /govet.txt
 /dist
+/examples
+/identifier/node_modules
