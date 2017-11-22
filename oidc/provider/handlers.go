@@ -110,8 +110,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 	var err error
 	var auth identity.AuthRecord
 
-	rw.Header().Set("Cache-Control", "no-store")
-	rw.Header().Set("Pragma", "no-cache")
+	addResponseHeaders(rw.Header())
 
 	// OpenID Connect 1.0 authentication request validation.
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitValidation
@@ -462,8 +461,7 @@ done:
 // Connect 1.0 as specified at https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
 func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	var err error
-	rw.Header().Set("Cache-Control", "no-store")
-	rw.Header().Set("Pragma", "no-cache")
+	addResponseHeaders(rw.Header())
 
 	switch req.Method {
 	case http.MethodHead:

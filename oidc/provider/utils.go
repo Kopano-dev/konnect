@@ -61,3 +61,10 @@ func getRequestURL(req *http.Request) *url.URL {
 
 	return u
 }
+
+func addResponseHeaders(header http.Header) {
+	header.Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	header.Set("Pragma", "no-cache")
+	header.Set("X-Content-Type-Options", "nosniff")
+	header.Set("Referrer-Policy", "origin")
+}

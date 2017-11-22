@@ -23,7 +23,10 @@
 	proxy /konnect/v1/static 127.0.0.1:8777
 
 	# konnect login area development via webpack-dev-server
-	proxy /signin/v1/ 127.0.0.1:3000
+	proxy /signin/v1/ 127.0.0.1:3000 {
+		header_downstream Cache-Control "no-cache, max-age=0, public"
+		header_downstream Referrer-Policy origin
+	}
 	proxy /sockjs-node/ 127.0.0.1:3000 {
 		websocket
 	}

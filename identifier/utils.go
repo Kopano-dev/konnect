@@ -31,6 +31,7 @@ func addCommonResponseHeaders(header http.Header) {
 	header.Set("X-Frame-Options", "DENY")
 	header.Set("X-XSS-Protection", "1; mode=block")
 	header.Set("X-Content-Type-Options", "nosniff")
+	header.Set("Referrer-Policy", "origin")
 }
 
 func addNoCacheResponseHeaders(header http.Header) {
