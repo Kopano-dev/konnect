@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	defaultJSONContentType = "application/json; encoding-utf-8"
+	defaultJSONContentType = "application/json; encoding=utf-8"
 )
 
 // WriteJSON marshals the provided data as JSON and writes it to the provided

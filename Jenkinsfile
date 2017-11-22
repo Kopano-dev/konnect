@@ -10,6 +10,7 @@ pipeline {
 	environment {
 		GLIDE_VERSION = 'v0.13.0'
 		GLIDE_HOME = '/tmp/.glide'
+		GOBIN = '/usr/local/bin'
 	}
 	stages {
 		stage('Bootstrap') {

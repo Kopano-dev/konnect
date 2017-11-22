@@ -56,8 +56,8 @@ func TestWellKnownHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if rr.Header().Get("Content-Type") != "application/json" {
-		t.Errorf("Content-Type response header was incorrect, got %s, want application/json", rr.Header().Get("Content-Type"))
+	if rr.Header().Get("Content-Type") != "application/json; encoding=utf-8" {
+		t.Errorf("Content-Type response header was incorrect, got %s, want application/json; encoding=utf-8", rr.Header().Get("Content-Type"))
 	}
 
 	wellKnown := &payload.WellKnown{}

@@ -383,6 +383,9 @@ func (i *Identifier) setLogonCookie(rw http.ResponseWriter, user *IdentifiedUser
 	return nil
 }
 
+// GetUserFromLogonCookie looks up the associated cookie name from the provided
+// request, parses it and returns the user containing the information found in
+// the coookie payload data.
 func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Request) (*IdentifiedUser, error) {
 	cookie, err := req.Cookie(i.logonCookieName)
 	if err != nil {
@@ -408,6 +411,8 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	}, nil
 }
 
+// GetUserFromSubject looks up the user identified by the provided subject by
+// requesting the associated backend.
 func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*IdentifiedUser, error) {
 	user, err := i.backend.GetUser(ctx, sub)
 	if err != nil {
