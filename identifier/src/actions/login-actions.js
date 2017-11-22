@@ -123,13 +123,17 @@ export function executeLogonIfFormValid(username, password, isSignedIn) {
 }
 
 export function advanceLogonFlow(state, history) {
-  return () => {
+  return (dispatch) => {
     const query = queryString.parse(history.location.search);
 
     if (query.oauth === '1') {
       if (query.continue) {
         window.location.replace(query.continue);
+        return;
       }
     }
+
+    dispatch(receiveValidateLogon({})); // XXX(longsleep): hack to reset loading and errors.
+    history.push('/welcome');
   };
 }

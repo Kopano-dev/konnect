@@ -4,16 +4,12 @@ import PropTypes from 'prop-types';
 import { withStyles } from 'material-ui/styles';
 import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
-import { Route, Switch, Redirect } from 'react-router-dom';
-import renderIf from 'render-if';
+import Button from 'material-ui/Button';
+import Typography from 'material-ui/Typography';
 
-import Login from './Login';
-import Chooseaccount from './Chooseaccount';
-import Consent from './Consent';
-import Loading from './Loading';
 import KopanoLogo from '../images/kopano-logo.svg';
 import Background from '../images/loginscreen-bg.jpg';
-import { executeHello } from '../actions/common-actions';
+import { executeLogoff } from '../actions/common-actions';
 
 const styles = theme => ({
   root: {
@@ -34,14 +30,13 @@ const styles = theme => ({
     minHeight: 400,
     maxWidth: 400,
     position: 'relative'
-  })
+  }),
+  subHeader: {
+    marginBottom: theme.spacing.unit * 5
+  }
 });
 
-class Loginscreen extends Component {
-  componentDidMount() {
-    this.props.dispatch(executeHello());
-  }
-
+class Welcomescreen extends Component {
   render() {
     const { classes, hello } = this.props;
     return (
@@ -49,30 +44,45 @@ class Loginscreen extends Component {
         <Grid item xs={10} sm={5} md={4}>
           <Paper className={classes.paper} elevation={4}>
             <img src={KopanoLogo} className={classes.logo} alt="Kopano"/>
-            {renderIf(hello !== null)(() => (
-              <Switch>
-                <Route path="/identifier" exact component={Login}></Route>
-                <Route path="/chooseaccount" exact component={Chooseaccount}></Route>
-                <Route path="/consent" exact component={Consent}></Route>
-                <Redirect to="/identifier"/>
-              </Switch>
-            ))}
-            {renderIf(hello === null)(() => (
-              <Loading/>
-            ))}
+            <div>
+              <Typography type="headline" component="h3">
+                Welcome {hello.username}
+              </Typography>
+              <Typography type="subheading" className={classes.subHeader}>
+                you are signed in - awesome!
+              </Typography>
+              <Button
+                raised
+                className={classes.button}
+                onClick={(event) => this.logoff(event)}
+              >Sign out</Button>
+            </div>
           </Paper>
         </Grid>
       </Grid>
     );
   }
+
+  logoff(event) {
+    event.preventDefault();
+
+    this.props.dispatch(executeLogoff()).then((response) => {
+      const { history } = this.props;
+
+      if (response.success) {
+        history.push('/identifier');
+      }
+    });
+  }
 }
 
-Loginscreen.propTypes = {
+Welcomescreen.propTypes = {
   classes: PropTypes.object.isRequired,
 
   hello: PropTypes.object,
 
-  dispatch: PropTypes.func.isRequired
+  dispatch: PropTypes.func.isRequired,
+  history: PropTypes.object.isRequired
 };
 
 const mapStateToProps = (state) => {
@@ -83,4 +93,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(withStyles(styles)(Loginscreen));
+export default connect(mapStateToProps)(withStyles(styles)(Welcomescreen));
