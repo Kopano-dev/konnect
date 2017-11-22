@@ -26,14 +26,15 @@ import (
 	"net/url"
 	"strings"
 
-	"stash.kopano.io/kc/konnect/identifier/backends"
-	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/utils"
-
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	jose "gopkg.in/square/go-jose.v2"
 	jwt "gopkg.in/square/go-jose.v2/jwt"
+
+	"stash.kopano.io/kc/konnect"
+	"stash.kopano.io/kc/konnect/identifier/backends"
+	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 // Identifier defines a identification login area with its endpoints using
@@ -229,10 +230,25 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	i.addNoCacheResponseHeaders(rw.Header())
 
 	params := r.Params
+	// Params is an array like this [$username, $password, $mode].
 	for {
-		// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
+		if len(params) >= 3 && params[1] == "" && params[2] == "1" {
+			// Check if same user is logged in via cookie.
+			identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req)
+			if cookieErr != nil {
+				i.logger.WithError(cookieErr).Debugln("identifier failed to decode logon cookie in logon request")
+			}
+			if identifiedUser != nil {
+				if identifiedUser.Username() == params[0] {
+					user = identifiedUser
+					break
+				}
+			}
+		}
+
 		forwardedUser := req.Header.Get("X-Forwarded-User")
 		if forwardedUser != "" {
+			// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
 			if len(params) >= 1 && forwardedUser == params[0] {
 				u, resolveErr := i.backend.ResolveUser(req.Context(), params[0])
 				if resolveErr != nil {
@@ -251,7 +267,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		if len(params) >= 2 && params[1] == "" {
-			// Empty password.
+			// Empty password, stop here.
 			break
 		}
 
@@ -322,7 +338,17 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Check if logged in via cookie.
-		// TODO(longsleep): Implement cookie load and validate.
+		identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req)
+		if cookieErr != nil {
+			i.logger.WithError(cookieErr).Debugln("identifier failed to decode logon cookie in hello request")
+		}
+		if identifiedUser != nil {
+			response.Username = identifiedUser.Username()
+			if response.Username != "" {
+				response.Success = true
+				break
+			}
+		}
 
 		// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
 		forwardedUser := req.Header.Get("X-Forwarded-User")
@@ -365,7 +391,7 @@ func (i *Identifier) setLogonCookie(rw http.ResponseWriter, user *IdentifiedUser
 	claims := jwt.Claims{
 		Subject: user.Subject(),
 	}
-	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).CompactSerialize()
+	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(user.Claims()).CompactSerialize()
 	if err != nil {
 		return err
 	}
@@ -383,11 +409,19 @@ func (i *Identifier) setLogonCookie(rw http.ResponseWriter, user *IdentifiedUser
 	return nil
 }
 
+func (i *Identifier) getLogonCookie(req *http.Request) (*http.Cookie, error) {
+	return req.Cookie(i.logonCookieName)
+}
+
+func (i *Identifier) removeLogonCookie(rw http.ResponseWriter) error {
+	return nil
+}
+
 // GetUserFromLogonCookie looks up the associated cookie name from the provided
 // request, parses it and returns the user containing the information found in
 // the coookie payload data.
 func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Request) (*IdentifiedUser, error) {
-	cookie, err := req.Cookie(i.logonCookieName)
+	cookie, err := i.getLogonCookie(req)
 	if err != nil {
 		return nil, err
 	}
@@ -398,16 +432,21 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	}
 
 	var claims jwt.Claims
-	if err = token.Claims(i.recipient.Key, &claims); err != nil {
+	var userClaims map[string]interface{}
+	if err = token.Claims(i.recipient.Key, &claims, &userClaims); err != nil {
 		return nil, err
 	}
 
 	if claims.Subject == "" {
 		return nil, fmt.Errorf("invalid subject in logon token")
 	}
+	if userClaims == nil {
+		return nil, fmt.Errorf("invalid user claims in logon token")
+	}
 
 	return &IdentifiedUser{
-		sub: claims.Subject,
+		sub:      claims.Subject,
+		username: userClaims[konnect.IdentifiedUsernameClaim].(string),
 	}, nil
 }
 

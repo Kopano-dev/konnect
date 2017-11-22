@@ -32,6 +32,11 @@ const (
 	IdentityClaim         = "kc.identity"
 )
 
+// Identifier claims used by Konnect.
+const (
+	IdentifiedUsernameClaim = "kc.i.un"
+)
+
 // AccessTokenClaims define the claims found in access tokens issued
 // by Konnect.
 type AccessTokenClaims struct {

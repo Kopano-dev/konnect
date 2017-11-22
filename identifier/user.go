@@ -17,6 +17,10 @@
 
 package identifier
 
+import (
+	"stash.kopano.io/kc/konnect"
+)
+
 // A IdentifiedUser is a user with meta data.
 type IdentifiedUser struct {
 	sub string
@@ -64,4 +68,12 @@ func (u *IdentifiedUser) ID() int64 {
 // empty, which means that the accociated user does not have a username.
 func (u *IdentifiedUser) Username() string {
 	return u.username
+}
+
+// Claims returns extra claims of the accociated user.
+func (u *IdentifiedUser) Claims() map[string]interface{} {
+	claims := make(map[string]interface{})
+	claims[konnect.IdentifiedUsernameClaim] = u.Username()
+
+	return claims
 }
