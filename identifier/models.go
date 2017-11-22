@@ -37,10 +37,21 @@ type HelloRequest struct {
 	Prompt bool   `json:"prompt"`
 }
 
-// A HelloResponse holds a response  as sent by the hello endpoint.
+// A HelloResponse holds a response as sent by the hello endpoint.
 type HelloResponse struct {
 	State       string `json:"state"`
 	Success     bool   `json:"success"`
 	Username    string `json:"username,omitempty"`
 	DisplayName string `json:"displayname,omitempty"`
+}
+
+// A StateRequest is a general request with a state.
+type StateRequest struct {
+	State string
+}
+
+// A StateResponse hilds a resoonse as reply to a StateRequest.
+type StateResponse struct {
+	Success bool   `json:"success"`
+	State   string `json:"state"`
 }

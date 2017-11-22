@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -35,6 +36,11 @@ import (
 	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/utils"
+)
+
+var (
+	farPastExpiryTime                 = time.Unix(0, 0)
+	farPastExpiryTimeHTTPHeaderString = farPastExpiryTime.UTC().Format(http.TimeFormat)
 )
 
 // Identifier defines a identification login area with its endpoints using
@@ -78,6 +84,7 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/service-worker.js", i.staticHandler(http.StripPrefix(i.uriPrefix, http.FileServer(http.Dir(i.staticFolder))), false))
 	r.Handle("/identifier", i).Methods(http.MethodGet)
 	r.Handle("/identifier/_/logon", i.secureHandler(http.HandlerFunc(i.handleLogon))).Methods(http.MethodPost)
+	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/hello", i.secureHandler(http.HandlerFunc(i.handleHello))).Methods(http.MethodPost)
 
 	if i.backend != nil {
@@ -315,6 +322,38 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (i *Identifier) handleLogoff(rw http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var r StateRequest
+	err := decoder.Decode(&r)
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to decode logoff request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request JSON")
+		return
+	}
+
+	i.addNoCacheResponseHeaders(rw.Header())
+
+	err = i.removeLogonCookie(rw)
+	if err != nil {
+		i.logger.WithError(err).Errorln("identifier failed to set logoff ticket")
+		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to set logoff ticket")
+		return
+	}
+
+	response := &StateResponse{
+		State:   r.State,
+		Success: true,
+	}
+
+	rw.WriteHeader(http.StatusOK)
+
+	err = utils.WriteJSON(rw, http.StatusOK, response, "")
+	if err != nil {
+		i.logger.WithError(err).Errorln("logoff request failed writing response")
+	}
+}
+
 func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	var r HelloRequest
@@ -383,7 +422,7 @@ func (i *Identifier) addCommonResponseHeaders(header http.Header) {
 func (i *Identifier) addNoCacheResponseHeaders(header http.Header) {
 	header.Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	header.Set("Pragma", "no-cache")
-	header.Set("Expires", "0")
+	header.Set("Expires", farPastExpiryTimeHTTPHeaderString)
 }
 
 func (i *Identifier) setLogonCookie(rw http.ResponseWriter, user *IdentifiedUser) error {
@@ -414,6 +453,17 @@ func (i *Identifier) getLogonCookie(req *http.Request) (*http.Cookie, error) {
 }
 
 func (i *Identifier) removeLogonCookie(rw http.ResponseWriter) error {
+	cookie := http.Cookie{
+		Name: i.logonCookieName,
+
+		Path:     i.uriPrefix + "/identifier/_/",
+		Secure:   true,
+		HttpOnly: true,
+
+		Expires: farPastExpiryTime,
+	}
+	http.SetCookie(rw, &cookie)
+
 	return nil
 }
 
