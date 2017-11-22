@@ -26,5 +26,9 @@ import (
 type Config struct {
 	Config *config.Config
 
+	PathPrefix      string
+	StaticFolder    string
+	LogonCookieName string
+
 	Backend backends.Backend
 }

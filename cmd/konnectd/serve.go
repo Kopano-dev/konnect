@@ -68,6 +68,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("signing-method", "RS256", "JWT signing method")
 	serveCmd.Flags().String("sign-in-uri", "", "Custom redirection URI to sign-in form")
 	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")
+	serveCmd.Flags().String("identifier-client-path", "./identifier/build", "Path to the identifier web client base folder")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 
 	return serveCmd
@@ -149,6 +150,8 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
 
+	identifierClientPath, _ := cmd.Flags().GetString("identifier-client-path")
+
 	var activeIdentifier *identifier.Identifier
 
 	var identityManager identity.Manager
@@ -208,7 +211,12 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 
 		activeIdentifier, err = identifier.NewIdentifier(&identifier.Config{
-			Config:  cfg,
+			Config: cfg,
+
+			PathPrefix:      "/signin/v1",
+			StaticFolder:    identifierClientPath,
+			LogonCookieName: "__Secure-KKT", // Kopano-Konnect-Token
+
 			Backend: identifierBackend,
 		})
 		if err != nil {

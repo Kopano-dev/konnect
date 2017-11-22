@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -48,7 +49,7 @@ var (
 type Identifier struct {
 	Config *Config
 
-	uriPrefix       string
+	pathPrefix      string
 	staticFolder    string
 	logonCookieName string
 
@@ -61,12 +62,17 @@ type Identifier struct {
 
 // NewIdentifier returns a new Identifier.
 func NewIdentifier(c *Config) (*Identifier, error) {
+	staticFolder := c.StaticFolder
+	if _, err := os.Stat(staticFolder + "/index.html"); os.IsNotExist(err) {
+		return nil, fmt.Errorf("identifier static client files: %v", err)
+	}
+
 	i := &Identifier{
 		Config: c,
 
-		uriPrefix:       "/signin/v1",
-		staticFolder:    "./identifier/build",
-		logonCookieName: "__Secure-KKT", // Kopano-Konnect-Token
+		pathPrefix:      c.PathPrefix,
+		staticFolder:    staticFolder,
+		logonCookieName: c.LogonCookieName,
 
 		backend: c.Backend,
 		logger:  c.Config.Logger,
@@ -78,10 +84,10 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 // AddRoutes adds the endpoint routes of the accociated Identifier to the
 // provided router with the provided context.
 func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
-	r := router.PathPrefix(i.uriPrefix).Subrouter()
+	r := router.PathPrefix(i.pathPrefix).Subrouter()
 
-	r.PathPrefix("/static/").Handler(i.staticHandler(http.StripPrefix(i.uriPrefix, http.FileServer(http.Dir(i.staticFolder))), true))
-	r.Handle("/service-worker.js", i.staticHandler(http.StripPrefix(i.uriPrefix, http.FileServer(http.Dir(i.staticFolder))), false))
+	r.PathPrefix("/static/").Handler(i.staticHandler(http.StripPrefix(i.pathPrefix, http.FileServer(http.Dir(i.staticFolder))), true))
+	r.Handle("/service-worker.js", i.staticHandler(http.StripPrefix(i.pathPrefix, http.FileServer(http.Dir(i.staticFolder))), false))
 	r.Handle("/identifier", i).Methods(http.MethodGet)
 	r.Handle("/identifier/_/logon", i.secureHandler(http.HandlerFunc(i.handleLogon))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)
@@ -439,7 +445,7 @@ func (i *Identifier) setLogonCookie(rw http.ResponseWriter, user *IdentifiedUser
 		Name:  i.logonCookieName,
 		Value: serialized,
 
-		Path:     i.uriPrefix + "/identifier/_/",
+		Path:     i.pathPrefix + "/identifier/_/",
 		Secure:   true,
 		HttpOnly: true,
 	}
@@ -456,7 +462,7 @@ func (i *Identifier) removeLogonCookie(rw http.ResponseWriter) error {
 	cookie := http.Cookie{
 		Name: i.logonCookieName,
 
-		Path:     i.uriPrefix + "/identifier/_/",
+		Path:     i.pathPrefix + "/identifier/_/",
 		Secure:   true,
 		HttpOnly: true,
 
