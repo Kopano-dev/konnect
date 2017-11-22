@@ -20,6 +20,8 @@ package oidc
 import (
 	"fmt"
 	"net/http"
+
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 // OIDC and OAuth2 error codes.
@@ -43,13 +45,6 @@ const (
 	ErrorOIDCRegistrationNotSupported = "registration_not_supported"
 )
 
-// ErrorWithDescription is an interface binding the standard error
-// inteface with a description.
-type ErrorWithDescription interface {
-	error
-	Description() string
-}
-
 // OAuth2Error defines a general OAuth2 error with id and decription.
 type OAuth2Error struct {
 	ErrorID          string `json:"error"`
@@ -67,7 +62,7 @@ func (err *OAuth2Error) Description() string {
 }
 
 // NewOAuth2Error creates a new error with id and description.
-func NewOAuth2Error(id string, description string) ErrorWithDescription {
+func NewOAuth2Error(id string, description string) utils.ErrorWithDescription {
 	return &OAuth2Error{id, description}
 }
 
@@ -82,8 +77,8 @@ func WriteWWWAuthenticateError(rw http.ResponseWriter, code int, err error) {
 
 	var description string
 	switch err.(type) {
-	case ErrorWithDescription:
-		description = err.(ErrorWithDescription).Description()
+	case utils.ErrorWithDescription:
+		description = err.(utils.ErrorWithDescription).Description()
 	default:
 	}
 

@@ -15,24 +15,24 @@
  *
  */
 
-package provider
+package utils
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
-func writeJSON(rw http.ResponseWriter, code int, data interface{}, contentType string) error {
-	b, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return err
+// WriteErrorPage create a formatted error page response containing the provided
+// information and writes it to the provided http.ResponseWriter.
+func WriteErrorPage(rw http.ResponseWriter, code int, title string, message string) {
+	if title == "" {
+		title = http.StatusText(code)
 	}
 
-	if contentType != "" {
-		rw.Header().Set("Content-Type", contentType)
+	text := fmt.Sprintf("%d %s", code, title)
+	if message != "" {
+		text = text + " - " + message
 	}
-	rw.WriteHeader(code)
-	rw.Write(b)
 
-	return nil
+	http.Error(rw, text, code)
 }

@@ -15,7 +15,7 @@
  *
  */
 
-package provider
+package utils
 
 import (
 	"fmt"
@@ -25,7 +25,12 @@ import (
 	"github.com/google/go-querystring/query"
 )
 
-func redirect(rw http.ResponseWriter, code int, uri *url.URL, params interface{}, asFragment bool) error {
+// WriteRedirect crates a URL out of the provided uri and params and writes a
+// a HTTP response with the provided HTTP status code to the provided
+// http.ResponseWriter incliding HTTP caching headers to prevent caching. If
+// asFragment is true, the provided params are added as URL fragment, otherwise
+// they replace the query. If params is nil, the provided uri is taken as is.
+func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interface{}, asFragment bool) error {
 	var uriString string
 
 	if params != nil {

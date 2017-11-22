@@ -33,6 +33,7 @@ import (
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 // Provider defines an OIDC provider with the handlers for the OIDC endpoints.
@@ -124,17 +125,13 @@ func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 // ErrorPage writes a HTML error page to the provided ResponseWriter.
 func (p *Provider) ErrorPage(rw http.ResponseWriter, code int, title string, message string) {
-	if title == "" {
-		title = http.StatusText(code)
-	}
-
-	http.Error(rw, fmt.Sprintf("%d %s - %s", code, title, message), code)
+	utils.WriteErrorPage(rw, code, title, message)
 }
 
 // Found writes a HTTP 302 to the provided ResponseWriter with the appropriate
 // Location header creates from the other parameters.
 func (p *Provider) Found(rw http.ResponseWriter, uri *url.URL, params interface{}, asFragment bool) {
-	err := redirect(rw, http.StatusFound, uri, params, asFragment)
+	err := utils.WriteRedirect(rw, http.StatusFound, uri, params, asFragment)
 	if err != nil {
 		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
 	}

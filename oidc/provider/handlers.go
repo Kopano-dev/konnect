@@ -30,6 +30,7 @@ import (
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 // WellKnownHandler implements the HTTP provider configuration endpoint
@@ -69,9 +70,9 @@ func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	err := writeJSON(rw, http.StatusOK, wellKnown, "application/json")
+	err := utils.WriteJSON(rw, http.StatusOK, wellKnown, "")
 	if err != nil {
-		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		p.logger.WithError(err).Errorln("well-known request failed writing response")
 	}
 }
 
@@ -94,9 +95,9 @@ func (p *Provider) JwksHandler(rw http.ResponseWriter, req *http.Request) {
 		jwks.Keys = append(jwks.Keys, keyJwk)
 	}
 
-	err := writeJSON(rw, http.StatusOK, jwks, "application/jwk-set+json")
+	err := utils.WriteJSON(rw, http.StatusOK, jwks, "application/jwk-set+json")
 	if err != nil {
-		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		p.logger.WithError(err).Errorln("jwks request failed writing response")
 	}
 }
 
@@ -116,12 +117,14 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitValidation
 	err = req.ParseForm()
 	if err != nil {
+		p.logger.WithError(err).Errorln("userinfo request invalid form data")
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
 		return
 	}
 
 	ar, err := payload.DecodeAuthenticationRequest(req)
 	if err != nil {
+		p.logger.WithError(err).Errorln("authorize request invalid request data")
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
 		return
 	}
@@ -219,6 +222,7 @@ done:
 			err = ar.NewError(err.Error(), err.(*oidc.OAuth2Error).Description())
 			p.Found(rw, ar.RedirectURI, err, ar.UseFragment)
 		default:
+			p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("authorize request failed")
 			p.ErrorPage(rw, http.StatusInternalServerError, err.Error(), "well sorry, but there was a problem")
 		}
 
@@ -420,11 +424,13 @@ done:
 	if err != nil {
 		switch err.(type) {
 		case *oidc.OAuth2Error:
-			err = writeJSON(rw, http.StatusBadRequest, err, "application/json")
+			err = utils.WriteJSON(rw, http.StatusBadRequest, err, "")
 			if err != nil {
-				p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+				p.logger.WithError(err).Errorln("token request failed writing response")
+				return
 			}
 		default:
+			p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("token request failed")
 			p.ErrorPage(rw, http.StatusInternalServerError, err.Error(), "well sorry, but there was a problem")
 		}
 
@@ -446,9 +452,9 @@ done:
 		response.RefreshToken = refreshTokenString
 	}
 
-	err = writeJSON(rw, http.StatusOK, response, "application/json")
+	err = utils.WriteJSON(rw, http.StatusOK, response, "")
 	if err != nil {
-		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		p.logger.WithError(err).Errorln("token request failed writing response")
 	}
 }
 
@@ -475,6 +481,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 
 	claims, err := p.GetAccessTokenClaimsFromRequest(req)
 	if err != nil {
+		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request unauthorized")
 		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, err)
 		return
 	}
@@ -485,10 +492,12 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	var found bool
 	auth, found, err = p.identityManager.Fetch(ctx, claims.StandardClaims.Subject, claims.AuthorizedScopes())
 	if !found {
+		p.logger.WithField("sub", claims.StandardClaims.Subject).Debugln("userinfo request user not found")
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")
 		return
 	}
 	if err != nil {
+		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request invalid token")
 		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error()))
 		return
 	}
@@ -519,8 +528,8 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	err = writeJSON(rw, http.StatusOK, response, "application/json")
+	err = utils.WriteJSON(rw, http.StatusOK, response, "")
 	if err != nil {
-		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		p.logger.WithError(err).Errorln("userinfo request failed writing response")
 	}
 }

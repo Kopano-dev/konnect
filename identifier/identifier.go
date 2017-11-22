@@ -28,6 +28,7 @@ import (
 
 	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/utils"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -139,6 +140,11 @@ func (i *Identifier) SetKey(key []byte) error {
 	return nil
 }
 
+// ErrorPage writes a HTML error page to the provided ResponseWriter.
+func (i *Identifier) ErrorPage(rw http.ResponseWriter, code int, title string, message string) {
+	utils.WriteErrorPage(rw, code, title, message)
+}
+
 func (i *Identifier) staticHandler(handler http.Handler, cache bool) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		i.addCommonResponseHeaders(rw.Header())
@@ -149,7 +155,7 @@ func (i *Identifier) staticHandler(handler http.Handler, cache bool) http.Handle
 		}
 		if strings.HasSuffix(req.URL.Path, "/") {
 			// Do not serve folder-ish resources.
-			http.NotFound(rw, req)
+			i.ErrorPage(rw, http.StatusNotFound, "", "")
 			return
 		}
 		handler.ServeHTTP(rw, req)
@@ -201,7 +207,7 @@ func (i *Identifier) secureHandler(handler http.Handler) http.Handler {
 			}).Warn("rejecting identifier HTTP request")
 		}
 
-		http.Error(rw, "", http.StatusBadRequest)
+		i.ErrorPage(rw, http.StatusBadRequest, "", "")
 	})
 }
 
@@ -210,7 +216,8 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	var r LogonRequest
 	err := decoder.Decode(&r)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		i.logger.WithError(err).Debugln("identifier failed to decode logon request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request JSON")
 		return
 	}
 
@@ -220,7 +227,6 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	i.addNoCacheResponseHeaders(rw.Header())
-	rw.Header().Set("Content-Type", "application/json; encoding=utf-8")
 
 	params := r.Params
 	for {
@@ -231,7 +237,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 				u, resolveErr := i.backend.ResolveUser(req.Context(), params[0])
 				if resolveErr != nil {
 					i.logger.WithError(resolveErr).Errorln("identifier failed to resolve user with backend")
-					http.Error(rw, "", http.StatusInternalServerError)
+					i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
 					return
 				}
 
@@ -256,7 +262,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 			success, subject, err = i.backend.Logon(req.Context(), params[0], params[1])
 			if err != nil {
 				i.logger.WithError(err).Errorln("identifier failed to logon with backend")
-				http.Error(rw, "", http.StatusInternalServerError)
+				i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to logon")
 				return
 			}
 			if success {
@@ -281,16 +287,13 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	err = i.setLogonCookie(rw, user)
 	if err != nil {
 		i.logger.WithError(err).Errorln("failed to serialize logon ticket")
-		http.Error(rw, "", http.StatusInternalServerError)
+		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to serialize logon ticket")
 		return
 	}
 
 	response.Success = true
-	rw.WriteHeader(http.StatusOK)
 
-	enc := json.NewEncoder(rw)
-	enc.SetIndent("", "  ")
-	err = enc.Encode(response)
+	err = utils.WriteJSON(rw, http.StatusOK, response, "")
 	if err != nil {
 		i.logger.WithError(err).Errorln("logon request failed writing response")
 	}
@@ -301,7 +304,8 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 	var r HelloRequest
 	err := decoder.Decode(&r)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		i.logger.WithError(err).Debugln("identifier failed to decode hello request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request JSON")
 		return
 	}
 
@@ -310,7 +314,6 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	i.addNoCacheResponseHeaders(rw.Header())
-	rw.Header().Set("Content-Type", "application/json; encoding-utf-8")
 
 	for {
 		if r.Prompt {
@@ -339,9 +342,7 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 
 	rw.WriteHeader(http.StatusOK)
 
-	enc := json.NewEncoder(rw)
-	enc.SetIndent("", "  ")
-	err = enc.Encode(response)
+	err = utils.WriteJSON(rw, http.StatusOK, response, "")
 	if err != nil {
 		i.logger.WithError(err).Errorln("hello request failed writing response")
 	}
