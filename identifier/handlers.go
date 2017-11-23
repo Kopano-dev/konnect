@@ -50,6 +50,11 @@ func (i *Identifier) secureHandler(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		var err error
 
+		// TODO(longsleep): Add support for X-Forwareded-Host with trusted proxy.
+		// NOTE: this does not protect from DNS rebinding. Protection for that
+		// should be added at the frontend proxy.
+		requiredHost := req.Host
+
 		// This follows https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet
 		for {
 			if req.Header.Get("Kopano-Konnect-XSRF") != "1" {
@@ -58,24 +63,42 @@ func (i *Identifier) secureHandler(handler http.Handler) http.Handler {
 			}
 
 			origin := req.Header.Get("Origin")
+			referer := req.Header.Get("Referer")
 
-			// Require both Origin and Referer header.
-			if origin == "" || req.Header.Get("Referer") == "" {
+			// Require either Origin and Referer header.
+			// NOTE(longsleep): Firefox does not send Origin header for POST
+			// requests when on the same domain - this is fuck (tm). See
+			// https://bugzilla.mozilla.org/show_bug.cgi?id=446344 for reference.
+			if origin == "" && referer == "" {
 				err = fmt.Errorf("missing origin or referer header")
 				break
 			}
 
-			originURL, urlParseErr := url.Parse(origin)
-			if urlParseErr != nil {
-				err = fmt.Errorf("invalid origin value: %v", urlParseErr)
-				break
-			}
-
-			// Require request.Host to be the same as in originURL
-			// TODO(longsleep): Add support for X-Forwareded-Host with trusted proxy.
-			if req.Host != originURL.Host {
-				err = fmt.Errorf("origin does not match request URL")
-				break
+			if origin != "" {
+				originURL, urlParseErr := url.Parse(origin)
+				if urlParseErr != nil {
+					err = fmt.Errorf("invalid origin value: %v", urlParseErr)
+					break
+				}
+				if originURL.Host != requiredHost {
+					err = fmt.Errorf("origin does not match request URL")
+					break
+				}
+			} else if referer != "" {
+				refererURL, urlParseErr := url.Parse(referer)
+				if urlParseErr != nil {
+					err = fmt.Errorf("invalid referer value: %v", urlParseErr)
+					break
+				}
+				if refererURL.Host != requiredHost {
+					err = fmt.Errorf("referer does not match request URL")
+					break
+				}
+			} else {
+				i.logger.WithFields(logrus.Fields{
+					"host":       requiredHost,
+					"user-agent": req.UserAgent(),
+				}).Warn("identifier HTTP request is insecure with no Origin and Referer")
 			}
 
 			handler.ServeHTTP(rw, req)
@@ -84,7 +107,7 @@ func (i *Identifier) secureHandler(handler http.Handler) http.Handler {
 
 		if err != nil {
 			i.logger.WithError(err).WithFields(logrus.Fields{
-				"host":       req.Host,
+				"host":       requiredHost,
 				"referer":    req.Referer(),
 				"user-agent": req.UserAgent(),
 				"origin":     req.Header.Get("Origin"),
