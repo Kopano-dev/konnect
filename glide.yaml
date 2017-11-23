@@ -29,3 +29,4 @@ import:
 - package: stash.kopano.io/kgol/kcc-go
   version: ^1.0.0
 - package: github.com/eternnoir/gncp
+- package: github.com/minio/blake2b-simd

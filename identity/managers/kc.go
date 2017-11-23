@@ -27,9 +27,11 @@ import (
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/identifier"
+	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 // KCIdentityManager implements an identity manager which connects to Kopano
@@ -38,16 +40,18 @@ type KCIdentityManager struct {
 	signInFormURI string
 
 	identifier *identifier.Identifier
+	clients    *clients.Registry
 	logger     logrus.FieldLogger
 }
 
 // NewKCIdentityManager creates a new KCIdentityManager from the provided
 // parameters.
-func NewKCIdentityManager(c *identity.Config, i *identifier.Identifier) *KCIdentityManager {
+func NewKCIdentityManager(c *identity.Config, i *identifier.Identifier, clients *clients.Registry) *KCIdentityManager {
 	im := &KCIdentityManager{
 		signInFormURI: c.SignInFormURI.String(),
 
 		identifier: i,
+		clients:    clients,
 		logger:     c.Logger,
 	}
 
@@ -80,15 +84,20 @@ func (im *KCIdentityManager) Authenticate(ctx context.Context, rw http.ResponseW
 			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "KCIdentityManager: prompt=login request")
 		}
 	case ar.Prompts[oidc.PromptSelectAccount] == true:
-		// TODO(longsleep): implement prompt mode by redirect to login required.
-		fallthrough
+		if err == nil {
+			// Enforce to show sign-in, when signed in.
+			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "KCIdentityManager: prompt=select_account request")
+		}
 	default:
 		// Let all other prompt values pass.
 	}
 
 	if err != nil {
 		u, _ := url.Parse(im.signInFormURI)
-		return nil, identity.NewLoginRequiredError(err.Error(), u)
+		u.RawQuery = fmt.Sprintf("flow=%s&%s", identifier.FlowOIDC, req.URL.RawQuery)
+		utils.WriteRedirect(rw, http.StatusFound, u, nil, false)
+
+		return nil, &identity.IsHandledError{}
 	}
 
 	auth := NewAuthRecord(user.Subject(), nil, nil)
@@ -110,28 +119,45 @@ func (im *KCIdentityManager) Authorize(ctx context.Context, rw http.ResponseWrit
 		// Let all other prompt values pass.
 	}
 
-	// Fastpath for known clients.
-	switch ar.ClientID {
-	default:
-		// TODO(longsleep): Implement previous consent checks via backend.
-		approvedScopes = ar.Scopes
+	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, ar.RedirectURI)
+	if err != nil {
+		return nil, err
 	}
 
-	// Offline access validation.
-	// http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
-	if ok, _ := ar.Scopes[oidc.ScopeOfflineAccess]; ok {
-		if !promptConsent {
-			// Ensure that the prompt parameter contains consent unless
-			// other conditions for processing the request permitting offline
-			// access to the requested resources are in place; unless one or
-			// both of these conditions are fulfilled, then it MUST ignore the
-			// offline_access request,
-			delete(ar.Scopes, oidc.ScopeOfflineAccess)
-			im.logger.Debugln("consent is required for offline access but not given, removed offline_access scope")
-		} else {
-			// NOTE(longsleep): Cookie identity relies on the presence of session cookies know to a backend. Thus offline access is not supported.
-			im.logger.Warnf("KCIdentityManager: offline_access requested but not supported, removed offline_access scope")
-			delete(ar.Scopes, oidc.ScopeOfflineAccess)
+	// If not trusted, always force consent.
+	if clientDetails.Trusted {
+		approvedScopes = ar.Scopes
+	} else {
+		promptConsent = true
+	}
+
+	// Check given consent.
+	consent, err := im.identifier.GetConsentFromConsentCookie(req.Context(), rw, req)
+	if err != nil {
+		return nil, err
+	}
+	if consent != nil {
+		if !consent.Allow {
+			return auth, ar.NewError(oidc.ErrorOAuth2AccessDenied, "consent denied")
+		}
+
+		promptConsent = false
+		approvedScopes = consent.ApprovedScopes(ar.Scopes)
+	}
+
+	if consent == nil {
+		// Offline access validation.
+		// http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
+		if ok, _ := approvedScopes[oidc.ScopeOfflineAccess]; ok {
+			if !promptConsent {
+				// Ensure that the prompt parameter contains consent unless
+				// other conditions for processing the request permitting offline
+				// access to the requested resources are in place; unless one or
+				// both of these conditions are fulfilled, then it MUST ignore the
+				// offline_access request,
+				delete(approvedScopes, oidc.ScopeOfflineAccess)
+				im.logger.Debugln("consent is required for offline access but not given, removed offline_access scope")
+			}
 		}
 	}
 
@@ -140,8 +166,11 @@ func (im *KCIdentityManager) Authorize(ctx context.Context, rw http.ResponseWrit
 			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
 		}
 
-		// TODO(longsleep): Implement consent page.
-		return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required, but page not implemented")
+		u, _ := url.Parse(im.signInFormURI)
+		u.RawQuery = fmt.Sprintf("flow=%s&%s", identifier.FlowConsent, req.URL.RawQuery)
+		utils.WriteRedirect(rw, http.StatusFound, u, nil, false)
+
+		return nil, &identity.IsHandledError{}
 	}
 
 	auth.AuthorizeScopes(approvedScopes)

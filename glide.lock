@@ -1,5 +1,5 @@
-hash: f317c86c809e72c8c64ed0ef787a80bbdd8b77164a19c0eaa60f48789e97f069
-updated: 2017-11-20T23:50:50.584354916+01:00
+hash: f6c061ef23e12a57ef83f7ef8bebdd5583eb6c010997032e9c44959387cc1f08
+updated: 2017-11-24T18:16:02.488887663+01:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -24,6 +24,8 @@ imports:
   - timing
 - name: github.com/mendsley/gojwk
   version: 4d5ec6e58103388d6cb0d7d72bc72649be4f0504
+- name: github.com/minio/blake2b-simd
+  version: 3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4
 - name: github.com/orcaman/concurrent-map
   version: 2ae17bc4c860c83513ee50feb9746f3e50d7515d
 - name: github.com/rs/cors

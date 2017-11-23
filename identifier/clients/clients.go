@@ -15,26 +15,12 @@
  *
  */
 
-package identifier
+package clients
 
-import (
-	"net/url"
-
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier/backends"
-	"stash.kopano.io/kc/konnect/identifier/clients"
-)
-
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
-
-	PathPrefix      string
-	StaticFolder    string
-	LogonCookieName string
-
-	AuthorizationEndpointURI *url.URL
-
-	Backend backends.Backend
-	Clients *clients.Registry
+// Details hold detail information about clients identified by ID.
+type Details struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"display_name"`
+	URI         string `json:"uri"`
+	Trusted     bool   `json:"trusted"`
 }

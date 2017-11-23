@@ -1,6 +1,8 @@
 import axios from 'axios';
 
 import * as types from './action-types';
+import { newHelloRequest } from '../models/hello';
+import { withClientRequestState } from '../utils';
 
 export function receiveError(error) {
   return {
@@ -15,24 +17,25 @@ export function resetHello() {
   };
 }
 
-export function receiveHello(state, username, displayName) {
+export function receiveHello(hello) {
+  const { success, username, displayName } = hello;
+
   return {
     type: types.RECEIVE_HELLO,
-    state,
+    state: success === true,
     username,
-    displayName
+    displayName,
+    hello
   };
 }
 
-export function executeHello(prompt=false) {
-  return function(dispatch) {
+export function executeHello() {
+  return function(dispatch, getState) {
     dispatch(resetHello());
 
-    const r = {
-      state: Math.random().toString(36).substring(7),
-      prompt: prompt
-    };
+    const { flow, query } = getState().common;
 
+    const r = withClientRequestState(newHelloRequest(flow, query));
     return axios.post('./identifier/_/hello', r, {
       headers: {
         'Kopano-Konnect-XSRF': '1'
@@ -57,7 +60,7 @@ export function executeHello(prompt=false) {
         throw new Error('Unexpected response state: ' + response.state);
       }
 
-      dispatch(receiveHello(response.success === true, response.username, response.displayName));
+      dispatch(receiveHello(response));
       return Promise.resolve(response);
     }).catch(error => {
       dispatch(receiveError(error));
@@ -65,11 +68,11 @@ export function executeHello(prompt=false) {
   };
 }
 
-export function retryHello(prompt=false) {
+export function retryHello() {
   return function(dispatch) {
     dispatch(receiveError(null));
 
-    return dispatch(executeHello(prompt));
+    return dispatch(executeHello());
   };
 }
 
@@ -90,10 +93,7 @@ export function executeLogoff() {
   return function(dispatch) {
     dispatch(requestLogoff());
 
-    const r = {
-      state: Math.random().toString(36).substring(7)
-    };
-
+    const r = withClientRequestState({});
     return axios.post('./identifier/_/logoff', r, {
       headers: {
         'Kopano-Konnect-XSRF': '1'

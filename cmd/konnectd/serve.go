@@ -43,6 +43,7 @@ import (
 	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identifier"
 	identifierBackends "stash.kopano.io/kc/konnect/identifier/backends"
+	identifierClients "stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
@@ -149,8 +150,11 @@ func serve(cmd *cobra.Command, args []string) error {
 	codeManager := codeManagers.NewMemoryMapManager(ctx)
 
 	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
+	issuerIdentifierURI, _ := url.Parse(issuerIdentifier)
 
 	identifierClientPath, _ := cmd.Flags().GetString("identifier-client-path")
+
+	clientRegistry := &identifierClients.Registry{}
 
 	var activeIdentifier *identifier.Identifier
 
@@ -210,6 +214,9 @@ func serve(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create identifier backend: %v", identifierErr)
 		}
 
+		fullAuthorizationEndpointURL, _ := url.Parse(issuerIdentifierURI.String())
+		fullAuthorizationEndpointURL.Path = authorizationEndpointURI.Path
+
 		activeIdentifier, err = identifier.NewIdentifier(&identifier.Config{
 			Config: cfg,
 
@@ -217,7 +224,10 @@ func serve(cmd *cobra.Command, args []string) error {
 			StaticFolder:    identifierClientPath,
 			LogonCookieName: "__Secure-KKT", // Kopano-Konnect-Token
 
+			AuthorizationEndpointURI: fullAuthorizationEndpointURL,
+
 			Backend: identifierBackend,
+			Clients: clientRegistry,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create identifier: %v", err)
@@ -233,7 +243,7 @@ func serve(cmd *cobra.Command, args []string) error {
 			Logger: logger,
 		}
 
-		kcIdentityManager := identityManagers.NewKCIdentityManager(identityManagerConfig, activeIdentifier)
+		kcIdentityManager := identityManagers.NewKCIdentityManager(identityManagerConfig, activeIdentifier, clientRegistry)
 		logger.WithFields(logrus.Fields{}).Infoln("using kc backend identity manager")
 		identityManager = kcIdentityManager
 	case "dummy":

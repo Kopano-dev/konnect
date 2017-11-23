@@ -15,26 +15,27 @@
  *
  */
 
-package identifier
+package clients
 
 import (
+	"context"
 	"net/url"
-
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier/backends"
-	"stash.kopano.io/kc/konnect/identifier/clients"
 )
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
+// Registry implements the registry for registered clients.
+type Registry struct{}
 
-	PathPrefix      string
-	StaticFolder    string
-	LogonCookieName string
+// Lookup returns the cleitns Detail information for the provided id and uri.
+func (r *Registry) Lookup(ctx context.Context, id string, uri *url.URL) (*Details, error) {
+	// TODO(longsleep): Implement secure clients configuration and check
+	// their ID and redirect URI.
+	// TODO(longsleep): Implement implicit trust for web clients running on
+	// the same origin as the issuer (ourselves).
+	trusted := false
 
-	AuthorizationEndpointURI *url.URL
-
-	Backend backends.Backend
-	Clients *clients.Registry
+	return &Details{
+		ID:      id,
+		URI:     uri.String(),
+		Trusted: trusted,
+	}, nil
 }

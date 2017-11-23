@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/gorilla/mux"
@@ -31,6 +32,7 @@ import (
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
+	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -44,9 +46,12 @@ type Identifier struct {
 	staticFolder    string
 	logonCookieName string
 
+	authorizationEndpointURI *url.URL
+
 	encrypter jose.Encrypter
 	recipient *jose.Recipient
 	backend   backends.Backend
+	clients   *clients.Registry
 
 	logger logrus.FieldLogger
 }
@@ -65,7 +70,10 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		staticFolder:    staticFolder,
 		logonCookieName: c.LogonCookieName,
 
+		authorizationEndpointURI: c.AuthorizationEndpointURI,
+
 		backend: c.Backend,
+		clients: c.Clients,
 		logger:  c.Config.Logger,
 	}
 
@@ -83,6 +91,7 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/identifier/_/logon", i.secureHandler(http.HandlerFunc(i.handleLogon))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/hello", i.secureHandler(http.HandlerFunc(i.handleHello))).Methods(http.MethodPost)
+	r.Handle("/identifier/_/consent", i.secureHandler(http.HandlerFunc(i.handleConsent))).Methods(http.MethodPost)
 
 	if i.backend != nil {
 		i.backend.RunWithContext(ctx)
@@ -215,4 +224,44 @@ func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*Ident
 	}
 
 	return identifiedUser, nil
+}
+
+// GetConsentFromConsentCookie extract consent information for the provided
+// request.
+func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request) (*Consent, error) {
+	state := req.Form.Get("konnect")
+	if state == "" {
+		return nil, nil
+	}
+
+	cr := &ConsentRequest{
+		State:          state,
+		ClientID:       req.Form.Get("client_id"),
+		RawRedirectURI: req.Form.Get("redirect_uri"),
+		Ref:            req.Form.Get("state"),
+		Nonce:          req.Form.Get("nonce"),
+	}
+
+	cookie, err := i.getConsentCookie(req, cr)
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	// Directly remove the cookie again after we used it.
+	i.removeConsentCookie(rw, req, cr)
+
+	token, err := jwt.ParseEncrypted(cookie.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	var consent Consent
+	if err = token.Claims(i.recipient.Key, &consent); err != nil {
+		return nil, err
+	}
+
+	return &consent, nil
 }

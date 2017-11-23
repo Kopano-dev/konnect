@@ -18,8 +18,10 @@
 package identifier
 
 import (
+	"encoding/base64"
 	"net/http"
 
+	blake2b "github.com/minio/blake2b-simd"
 	jwt "gopkg.in/square/go-jose.v2/jwt"
 )
 
@@ -63,4 +65,75 @@ func (i *Identifier) removeLogonCookie(rw http.ResponseWriter) error {
 	http.SetCookie(rw, &cookie)
 
 	return nil
+}
+
+func (i *Identifier) setConsentCookie(rw http.ResponseWriter, req *http.Request, cr *ConsentRequest, consent *Consent) error {
+	name, err := i.getConsentCookieName(cr)
+	if err != nil {
+		return err
+	}
+
+	serialized, err := jwt.Encrypted(i.encrypter).Claims(consent).CompactSerialize()
+	if err != nil {
+		return err
+	}
+
+	cookie := http.Cookie{
+		Name:   name,
+		Value:  serialized,
+		MaxAge: 60,
+
+		Path:     i.pathPrefix + "/identifier/_/",
+		Secure:   true,
+		HttpOnly: true,
+	}
+	http.SetCookie(rw, &cookie)
+
+	return nil
+}
+
+func (i *Identifier) getConsentCookie(req *http.Request, cr *ConsentRequest) (*http.Cookie, error) {
+	name, err := i.getConsentCookieName(cr)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.Cookie(name)
+}
+
+func (i *Identifier) removeConsentCookie(rw http.ResponseWriter, req *http.Request, cr *ConsentRequest) error {
+	name, err := i.getConsentCookieName(cr)
+	if err != nil {
+		return nil
+	}
+
+	cookie := http.Cookie{
+		Name: name,
+
+		Path:     i.pathPrefix + "/identifier/_/",
+		Secure:   true,
+		HttpOnly: true,
+
+		Expires: farPastExpiryTime,
+	}
+	http.SetCookie(rw, &cookie)
+
+	return nil
+}
+
+func (i *Identifier) getConsentCookieName(cr *ConsentRequest) (string, error) {
+	// Consent cookie names are based on parameters in the request.
+	hasher := blake2b.New256()
+	hasher.Write([]byte(cr.State))
+	hasher.Write([]byte("h"))
+	hasher.Write([]byte(cr.ClientID))
+	hasher.Write([]byte("e"))
+	hasher.Write([]byte(cr.RawRedirectURI))
+	hasher.Write([]byte("l"))
+	hasher.Write([]byte(cr.Ref))
+	hasher.Write([]byte("o"))
+	hasher.Write([]byte(cr.Nonce))
+
+	name := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
+	return name, nil
 }

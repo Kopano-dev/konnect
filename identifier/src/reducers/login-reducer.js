@@ -2,6 +2,8 @@ import {
   RECEIVE_VALIDATE_LOGON,
   REQUEST_LOGON,
   RECEIVE_LOGON,
+  REQUEST_CONSENT,
+  RECEIVE_CONSENT,
   UPDATE_INPUT
 } from '../actions/action-types';
 
@@ -18,15 +20,17 @@ function loginReducer(state = {
         loading: false
       });
 
+    case REQUEST_CONSENT:
     case REQUEST_LOGON:
       return Object.assign({}, state, {
         loading: true
       });
 
+    case RECEIVE_CONSENT:
     case RECEIVE_LOGON:
       if (!action.state) {
         return Object.assign({}, state, {
-          errors: action.errors,
+          errors: action.errors ? action.errors : {},
           loading: false
         });
       }

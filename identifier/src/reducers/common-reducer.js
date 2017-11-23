@@ -3,11 +3,20 @@ import {
   RESET_HELLO,
   RECEIVE_HELLO
 } from '../actions/action-types';
+import queryString from 'query-string';
 
-function commonReducer(state = {
+const query = queryString.parse(document.location.search);
+const flow = query.flow || '';
+delete query.flow;
+
+const defaultState = {
   hello: null,
-  error: null
-}, action) {
+  error: null,
+  flow: flow,
+  query: query
+};
+
+function commonReducer(state = defaultState, action) {
   switch (action.type) {
     case RECEIVE_ERROR:
       return Object.assign({}, state, {
@@ -23,7 +32,8 @@ function commonReducer(state = {
       return Object.assign({}, state, {
         hello: {
           state: action.state,
-          username: action.username
+          username: action.username,
+          details: action.hello
         }
       });
     default:

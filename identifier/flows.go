@@ -17,24 +17,11 @@
 
 package identifier
 
-import (
-	"net/url"
-
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier/backends"
-	"stash.kopano.io/kc/konnect/identifier/clients"
+const (
+	// FlowOIDC is the string value for the oidc flow.
+	FlowOIDC = "oidc"
+	// FlowOAuth is the string value for the oauth flow.
+	FlowOAuth = "oauth"
+	// FlowConsent is the string value for the consent flow.
+	FlowConsent = "consent"
 )
-
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
-
-	PathPrefix      string
-	StaticFolder    string
-	LogonCookieName string
-
-	AuthorizationEndpointURI *url.URL
-
-	Backend backends.Backend
-	Clients *clients.Registry
-}

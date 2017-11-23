@@ -26,6 +26,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -206,6 +207,29 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if r.Hello != nil {
+		err = r.Hello.parse()
+		if err != nil {
+			i.logger.WithError(err).Debugln("identifier failed to parse logon request hello")
+			i.ErrorPage(rw, http.StatusBadRequest, "", "failed to parse request values")
+			return
+		}
+
+		hello, errHello := i.newHelloResponse(rw, req, r.Hello, user)
+		if errHello != nil {
+			i.logger.WithError(errHello).Debugln("rejecting identifier logon request")
+			i.ErrorPage(rw, http.StatusBadRequest, "", errHello.Error())
+			return
+		}
+		if !hello.Success {
+			rw.Header().Set("Kopano-Konnect-State", response.State)
+			rw.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		response.Hello = hello
+	}
+
 	err = i.setLogonCookie(rw, user)
 	if err != nil {
 		i.logger.WithError(err).Errorln("failed to serialize logon ticket")
@@ -245,7 +269,44 @@ func (i *Identifier) handleLogoff(rw http.ResponseWriter, req *http.Request) {
 		Success: true,
 	}
 
-	rw.WriteHeader(http.StatusOK)
+	err = utils.WriteJSON(rw, http.StatusOK, response, "")
+	if err != nil {
+		i.logger.WithError(err).Errorln("logoff request failed writing response")
+	}
+}
+
+func (i *Identifier) handleConsent(rw http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var r ConsentRequest
+	err := decoder.Decode(&r)
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to decode consent request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request JSON")
+		return
+	}
+
+	addNoCacheResponseHeaders(rw.Header())
+
+	if !r.Allow {
+		rw.Header().Set("Kopano-Konnect-State", r.State)
+		rw.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err = i.setConsentCookie(rw, req, &r, &Consent{
+		Allow:    r.Allow,
+		RawScope: r.RawScope,
+	})
+	if err != nil {
+		i.logger.WithError(err).Errorln("failed to serialize consent ticket")
+		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to serialize consent ticket")
+		return
+	}
+
+	response := &StateResponse{
+		State:   r.State,
+		Success: true,
+	}
 
 	err = utils.WriteJSON(rw, http.StatusOK, response, "")
 	if err != nil {
@@ -262,24 +323,61 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request JSON")
 		return
 	}
-
-	response := &HelloResponse{
-		State: r.State,
+	err = r.parse()
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to parse hello request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to parse request values")
+		return
 	}
 
 	addNoCacheResponseHeaders(rw.Header())
 
+	response, err := i.newHelloResponse(rw, req, &r, nil)
+	if err != nil {
+		i.logger.WithError(err).Debugln("rejecting identifier hello request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", err.Error())
+		return
+	}
+	if !response.Success {
+		rw.Header().Set("Kopano-Konnect-State", response.State)
+		rw.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	err = utils.WriteJSON(rw, http.StatusOK, response, "")
+	if err != nil {
+		i.logger.WithError(err).Errorln("hello request failed writing response")
+	}
+}
+
+func (i Identifier) newHelloResponse(rw http.ResponseWriter, req *http.Request, r *HelloRequest, identifiedUser *IdentifiedUser) (*HelloResponse, error) {
+	var err error
+	response := &HelloResponse{
+		State: r.State,
+	}
+
+handleHelloLoop:
 	for {
-		if r.Prompt {
-			// Ignore all potential sources, when prompt was requested.
-			break
+		// Check prompt value.
+		switch {
+		case r.Prompts[oidc.PromptNone] == true:
+			// Never show sign-in, directly return error.
+			return nil, fmt.Errorf("prompt none requested")
+		case r.Prompts[oidc.PromptLogin] == true:
+			// Ignore all potential sources, when prompt login was requested.
+			break handleHelloLoop
+		default:
+			// Let all other prompt values pass.
 		}
 
-		// Check if logged in via cookie.
-		identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req)
-		if cookieErr != nil {
-			i.logger.WithError(cookieErr).Debugln("identifier failed to decode logon cookie in hello request")
+		if identifiedUser == nil {
+			// Check if logged in via cookie.
+			identifiedUser, err = i.GetUserFromLogonCookie(req.Context(), req)
+			if err != nil {
+				i.logger.WithError(err).Debugln("identifier failed to decode logon cookie in hello")
+			}
 		}
+
 		if identifiedUser != nil {
 			response.Username = identifiedUser.Username()
 			if response.Username != "" {
@@ -299,15 +397,45 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 		break
 	}
 	if !response.Success {
-		rw.Header().Set("Kopano-Konnect-State", response.State)
-		rw.WriteHeader(http.StatusNoContent)
-		return
+		return response, nil
 	}
 
-	rw.WriteHeader(http.StatusOK)
+	switch r.Flow {
+	case FlowOAuth:
+		fallthrough
+	case FlowConsent:
+		fallthrough
+	case FlowOIDC:
+		clientDetails, err := i.clients.Lookup(req.Context(), r.ClientID, r.RedirectURI)
+		if err != nil {
+			return nil, err
+		}
 
-	err = utils.WriteJSON(rw, http.StatusOK, response, "")
-	if err != nil {
-		i.logger.WithError(err).Errorln("hello request failed writing response")
+		promptConsent := false
+
+		// Check prompt value.
+		switch {
+		case r.Prompts[oidc.PromptConsent] == true:
+			promptConsent = true
+		default:
+			// Let all other prompt values pass.
+		}
+
+		// If not trusted, always force consent.
+		if !clientDetails.Trusted {
+			promptConsent = true
+		}
+
+		if promptConsent {
+			response.Next = FlowConsent
+			response.RequestedScopes = r.Scopes
+			response.ClientDetails = clientDetails
+		}
+
+		// Add authorize endpoint URI as continue URI.
+		response.ContinueURI = i.authorizationEndpointURI.String()
+		response.Flow = r.Flow
 	}
+
+	return response, nil
 }
