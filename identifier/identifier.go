@@ -157,6 +157,9 @@ func (i *Identifier) ErrorPage(rw http.ResponseWriter, code int, title string, m
 func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Request) (*IdentifiedUser, error) {
 	cookie, err := i.getLogonCookie(req)
 	if err != nil {
+		if err == http.ErrNoCookie {
+			return nil, nil
+		}
 		return nil, err
 	}
 
