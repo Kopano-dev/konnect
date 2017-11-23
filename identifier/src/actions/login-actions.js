@@ -127,7 +127,7 @@ export function advanceLogonFlow(state, history) {
     const query = queryString.parse(history.location.search);
 
     if (query.oauth === '1') {
-      if (query.continue) {
+      if (query.continue && query.continue.indexOf(document.location.origin) === 0) {
         window.location.replace(query.continue);
         return;
       }
