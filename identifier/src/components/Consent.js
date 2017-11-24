@@ -11,7 +11,7 @@ import green from 'material-ui/colors/green';
 import Typography from 'material-ui/Typography';
 import renderIf from 'render-if';
 
-import { executeConsent, advanceLogonFlow } from '../actions/login-actions';
+import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actions/login-actions';
 import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
 
 const styles = theme => ({
@@ -47,10 +47,12 @@ const styles = theme => ({
 
 class Login extends Component {
   componentDidMount() {
-    const { hello, history, client } = this.props;
+    const { dispatch, hello, history, client } = this.props;
     if ((!hello || !hello.state || !client) && history.action !== 'PUSH') {
       history.replace(`/identifier${history.location.search}${history.location.hash}`);
     }
+
+    dispatch(receiveValidateLogon({})); // XXX(longsleep): hack to reset loading and errors.
   }
 
   render() {
