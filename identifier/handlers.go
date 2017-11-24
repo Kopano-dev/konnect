@@ -136,6 +136,15 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 
 	addNoCacheResponseHeaders(rw.Header())
 
+	if r.Hello != nil {
+		err = r.Hello.parse()
+		if err != nil {
+			i.logger.WithError(err).Debugln("identifier failed to parse logon request hello")
+			i.ErrorPage(rw, http.StatusBadRequest, "", "failed to parse request values")
+			return
+		}
+	}
+
 	params := r.Params
 	// Params is an array like this [$username, $password, $mode].
 	for {
@@ -153,18 +162,26 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		forwardedUser := req.Header.Get("X-Forwarded-User")
-		if forwardedUser != "" {
-			// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
-			if len(params) >= 1 && forwardedUser == params[0] {
-				user, err = i.resolveUser(req.Context(), params[0])
-				if err != nil {
-					i.logger.WithError(err).Errorln("identifier failed to resolve user with backend")
-					i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
-					return
+		promptLogin := false
+		if r.Hello != nil {
+			promptLogin, _ = r.Hello.Prompts[oidc.PromptLogin]
+		}
+
+		// Check forwarded user if allowed.
+		if !promptLogin {
+			forwardedUser := req.Header.Get("X-Forwarded-User")
+			if forwardedUser != "" {
+				// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
+				if len(params) >= 1 && forwardedUser == params[0] {
+					user, err = i.resolveUser(req.Context(), params[0])
+					if err != nil {
+						i.logger.WithError(err).Errorln("identifier failed to resolve user with backend")
+						i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
+						return
+					}
 				}
+				break
 			}
-			break
 		}
 
 		if len(params) >= 2 && params[1] == "" {
@@ -211,13 +228,6 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if r.Hello != nil {
-		err = r.Hello.parse()
-		if err != nil {
-			i.logger.WithError(err).Debugln("identifier failed to parse logon request hello")
-			i.ErrorPage(rw, http.StatusBadRequest, "", "failed to parse request values")
-			return
-		}
-
 		hello, errHello := i.newHelloResponse(rw, req, r.Hello, user)
 		if errHello != nil {
 			i.logger.WithError(errHello).Debugln("rejecting identifier logon request")
@@ -372,6 +382,13 @@ handleHelloLoop:
 			return nil, fmt.Errorf("prompt none requested")
 		case r.Prompts[oidc.PromptLogin] == true:
 			// Ignore all potential sources, when prompt login was requested.
+			if identifiedUser != nil {
+				response.Username = identifiedUser.Username()
+				response.DisplayName = identifiedUser.Name()
+				if response.Username != "" {
+					response.Success = true
+				}
+			}
 			break handleHelloLoop
 		default:
 			// Let all other prompt values pass.
