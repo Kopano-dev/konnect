@@ -143,13 +143,10 @@ export function executeConsent(allow=false) {
           // success.
           return response.data;
         case 204:
-          // cancel.
+          // cancel reply.
           return {
-            success: false,
-            state: response.headers['kopano-konnect-state'],
-            errors: {
-              http: new Error('Consent failed. Please try again.')
-            }
+            success: true,
+            state: response.headers['kopano-konnect-state']
           };
         default:
           // error.

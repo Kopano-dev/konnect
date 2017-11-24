@@ -290,19 +290,23 @@ func (i *Identifier) handleConsent(rw http.ResponseWriter, req *http.Request) {
 
 	addNoCacheResponseHeaders(rw.Header())
 
-	if !r.Allow {
-		rw.Header().Set("Kopano-Konnect-State", r.State)
-		rw.WriteHeader(http.StatusNoContent)
-		return
+	consent := &Consent{
+		Allow: r.Allow,
+	}
+	if r.Allow {
+		consent.RawScope = r.RawScope
 	}
 
-	err = i.setConsentCookie(rw, req, &r, &Consent{
-		Allow:    r.Allow,
-		RawScope: r.RawScope,
-	})
+	err = i.setConsentCookie(rw, req, &r, consent)
 	if err != nil {
 		i.logger.WithError(err).Errorln("failed to serialize consent ticket")
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to serialize consent ticket")
+		return
+	}
+
+	if !r.Allow {
+		rw.Header().Set("Kopano-Konnect-State", r.State)
+		rw.WriteHeader(http.StatusNoContent)
 		return
 	}
 

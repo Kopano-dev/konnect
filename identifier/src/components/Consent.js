@@ -85,7 +85,7 @@ class Login extends Component {
             <Button
               color="primary"
               className={classes.button}
-              onClick={(event) => this.cancel(event)}
+              onClick={(event) => this.action(event, false)}
             >Cancel
             </Button>
             <div className={classes.wrapper}>
@@ -95,7 +95,7 @@ class Login extends Component {
                 color="primary"
                 className={classes.button}
                 disabled={loading}
-                onClick={(event) => this.allow(event)}
+                onClick={(event) => this.action(event, true)}
               >Allow</Button>
               {loading && <CircularProgress size={24} className={classes.buttonProgress} />}
             </div>
@@ -105,15 +105,11 @@ class Login extends Component {
     );
   }
 
-  cancel(event) {
-    event.preventDefault();
-  }
-
-  allow(event) {
+  action(event, allow=false) {
     event.preventDefault();
 
     const { dispatch, history } = this.props;
-    dispatch(executeConsent(true)).then((response) => {
+    dispatch(executeConsent(allow)).then((response) => {
       if (response.success) {
         dispatch(advanceLogonFlow(response.success, history, true, {konnect: response.state}));
       }
