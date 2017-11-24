@@ -31,11 +31,23 @@ func (r *Registry) Lookup(ctx context.Context, id string, uri *url.URL) (*Detail
 	// their ID and redirect URI.
 	// TODO(longsleep): Implement implicit trust for web clients running on
 	// the same origin as the issuer (ourselves).
-	trusted := false
+	var trusted bool
+	var displayName string
+
+	// Some hardcoded ID's for testing.
+	switch id {
+	case "playground-trusted.js":
+		trusted = true
+		fallthrough
+	case "playground.js":
+		// Normal playground mode, moting special not trusted.
+		displayName = "OIDC Playground"
+	}
 
 	return &Details{
-		ID:      id,
-		URI:     uri.String(),
-		Trusted: trusted,
+		ID:          id,
+		URI:         uri.String(),
+		DisplayName: displayName,
+		Trusted:     trusted,
 	}, nil
 }
