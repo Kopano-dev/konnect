@@ -9,8 +9,10 @@ import Tooltip from 'material-ui/Tooltip';
 import { CircularProgress } from 'material-ui/Progress';
 import green from 'material-ui/colors/green';
 import Typography from 'material-ui/Typography';
+import renderIf from 'render-if';
 
 import { executeConsent, advanceLogonFlow } from '../actions/login-actions';
+import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
 
 const styles = theme => ({
   button: {
@@ -52,7 +54,7 @@ class Login extends Component {
   }
 
   render() {
-    const { classes, loading, hello, client } = this.props;
+    const { classes, loading, hello, errors, client } = this.props;
     return (
       <div>
         <Typography type="headline" component="h3">
@@ -82,24 +84,32 @@ class Login extends Component {
 
         <form action="" onSubmit={(event) => this.logon(event)}>
           <div className={classes.buttonGroup}>
-            <Button
-              color="primary"
-              className={classes.button}
-              onClick={(event) => this.action(event, false)}
-            >Cancel
-            </Button>
+            <div className={classes.wrapper}>
+              <Button
+                color="primary"
+                className={classes.button}
+                disabled={!!loading}
+                onClick={(event) => this.action(event, false)}
+              >Cancel
+              </Button>
+              {(loading && loading !== REQUEST_CONSENT_ALLOW) && <CircularProgress size={24} className={classes.buttonProgress} />}
+            </div>
             <div className={classes.wrapper}>
               <Button
                 type="submit"
                 raised
                 color="primary"
                 className={classes.button}
-                disabled={loading}
+                disabled={!!loading}
                 onClick={(event) => this.action(event, true)}
               >Allow</Button>
-              {loading && <CircularProgress size={24} className={classes.buttonProgress} />}
+              {loading === REQUEST_CONSENT_ALLOW && <CircularProgress size={24} className={classes.buttonProgress} />}
             </div>
           </div>
+
+          {renderIf(errors.http)(() => (
+            <Typography type="body1" color="error" className={classes.message}>{errors.http.message}</Typography>
+          ))}
         </form>
       </div>
     );
@@ -120,7 +130,8 @@ class Login extends Component {
 Login.propTypes = {
   classes: PropTypes.object.isRequired,
 
-  loading: PropTypes.bool.isRequired,
+  loading: PropTypes.string.isRequired,
+  errors: PropTypes.object.isRequired,
   hello: PropTypes.object,
   client: PropTypes.object.isRequired,
 
@@ -138,9 +149,11 @@ ClientDisplayName.propTypes = {
 
 const mapStateToProps = (state) => {
   const { hello } = state.common;
+  const { loading, errors } = state.login;
 
   return {
-    loading: false,
+    loading: loading,
+    errors,
     hello,
     client: hello.details.client || {}
   };

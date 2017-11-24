@@ -39,9 +39,9 @@ export function receiveLogon(logon) {
   };
 }
 
-export function requestConsent() {
+export function requestConsent(allow=false) {
   return {
-    type: types.REQUEST_CONSENT
+    type: allow ? types.REQUEST_CONSENT_ALLOW : types.REQUEST_CONSENT_CANCEL
   };
 }
 
@@ -121,7 +121,7 @@ export function executeLogon(username, password) {
 
 export function executeConsent(allow=false) {
   return function(dispatch, getState) {
-    dispatch(requestConsent());
+    dispatch(requestConsent(allow));
 
     const { query } = getState().common;
 

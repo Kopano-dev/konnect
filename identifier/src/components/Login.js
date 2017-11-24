@@ -101,7 +101,7 @@ class Login extends Component {
                   raised
                   color="primary"
                   className={classes.button}
-                  disabled={loading}
+                  disabled={!!loading}
                   onClick={(event) => this.logon(event)}
                 >Next</Button>
                 {loading && <CircularProgress size={24} className={classes.buttonProgress} />}
@@ -138,7 +138,7 @@ class Login extends Component {
 Login.propTypes = {
   classes: PropTypes.object.isRequired,
 
-  loading: PropTypes.bool.isRequired,
+  loading: PropTypes.string.isRequired,
   username: PropTypes.string.isRequired,
   password: PropTypes.string.isRequired,
   errors: PropTypes.object.isRequired,
