@@ -157,17 +157,11 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		if forwardedUser != "" {
 			// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
 			if len(params) >= 1 && forwardedUser == params[0] {
-				u, resolveErr := i.backend.ResolveUser(req.Context(), params[0])
-				if resolveErr != nil {
-					i.logger.WithError(resolveErr).Errorln("identifier failed to resolve user with backend")
+				user, err = i.resolveUser(req.Context(), params[0])
+				if err != nil {
+					i.logger.WithError(err).Errorln("identifier failed to resolve user with backend")
 					i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
 					return
-				}
-
-				// Construct user from resolved result.
-				user = &IdentifiedUser{
-					sub:      u.Subject(),
-					username: u.Username(),
 				}
 			}
 			break
@@ -205,6 +199,15 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Set("Kopano-Konnect-State", response.State)
 		rw.WriteHeader(http.StatusNoContent)
 		return
+	}
+
+	// Get user meta data.
+	// TODO(longsleep): This is an additional request to the backend. This
+	// should be avoided. Best would be if the backend would return everything
+	// in one shot (TODO in core).
+	err = i.updateUser(req.Context(), user)
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to update user data in logon request")
 	}
 
 	if r.Hello != nil {
@@ -380,6 +383,7 @@ handleHelloLoop:
 
 		if identifiedUser != nil {
 			response.Username = identifiedUser.Username()
+			response.DisplayName = identifiedUser.Name()
 			if response.Username != "" {
 				response.Success = true
 				break

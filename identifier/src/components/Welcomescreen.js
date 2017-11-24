@@ -46,11 +46,16 @@ class Welcomescreen extends Component {
             <img src={KopanoLogo} className={classes.logo} alt="Kopano"/>
             <div>
               <Typography type="headline" component="h3">
-                Welcome {hello.username}
+                Welcome {hello.displayName}
               </Typography>
               <Typography type="subheading" className={classes.subHeader}>
-                you are signed in - awesome!
+                {hello.username}
               </Typography>
+
+              <Typography gutterBottom>
+                You are signed in - awesome!
+              </Typography>
+
               <Button
                 raised
                 className={classes.button}

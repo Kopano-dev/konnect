@@ -18,7 +18,10 @@
 package identifier
 
 import (
+	"context"
+
 	"stash.kopano.io/kc/konnect"
+	"stash.kopano.io/kc/konnect/identity"
 )
 
 // A IdentifiedUser is a user with meta data.
@@ -74,6 +77,35 @@ func (u *IdentifiedUser) Username() string {
 func (u *IdentifiedUser) Claims() map[string]interface{} {
 	claims := make(map[string]interface{})
 	claims[konnect.IdentifiedUsernameClaim] = u.Username()
+	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
 
 	return claims
+}
+
+func (i *Identifier) resolveUser(ctx context.Context, username string) (*IdentifiedUser, error) {
+	u, err := i.backend.ResolveUser(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+
+	// Construct user from resolved result.
+	user := &IdentifiedUser{
+		sub:      u.Subject(),
+		username: u.Username(),
+	}
+
+	return user, nil
+}
+
+func (i *Identifier) updateUser(ctx context.Context, user *IdentifiedUser) error {
+	u, err := i.backend.GetUser(ctx, user.Subject())
+	if err != nil {
+		return err
+	}
+
+	if uwp, ok := u.(identity.UserWithProfile); ok {
+		user.displayName = uwp.Name()
+	}
+
+	return nil
 }

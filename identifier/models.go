@@ -99,7 +99,7 @@ type HelloResponse struct {
 	Flow        string `json:"flow"`
 	Success     bool   `json:"success"`
 	Username    string `json:"username,omitempty"`
-	DisplayName string `json:"displayname,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
 
 	Next            string           `json:"next,omitempty"`
 	ContinueURI     string           `json:"continue_uri,omitempty"`

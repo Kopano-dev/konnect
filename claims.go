@@ -34,7 +34,8 @@ const (
 
 // Identifier claims used by Konnect.
 const (
-	IdentifiedUsernameClaim = "kc.i.un"
+	IdentifiedUsernameClaim    = "kc.i.un"
+	IdentifiedDisplayNameClaim = "kc.i.dn"
 )
 
 // AccessTokenClaims define the claims found in access tokens issued

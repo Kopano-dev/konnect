@@ -190,10 +190,17 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		return nil, fmt.Errorf("invalid user claims in logon token")
 	}
 
-	return &IdentifiedUser{
-		sub:      claims.Subject,
-		username: userClaims[konnect.IdentifiedUsernameClaim].(string),
-	}, nil
+	user := &IdentifiedUser{
+		sub: claims.Subject,
+	}
+	if v, _ := userClaims[konnect.IdentifiedUsernameClaim]; v != nil {
+		user.username = v.(string)
+	}
+	if v, _ := userClaims[konnect.IdentifiedDisplayNameClaim]; v != nil {
+		user.displayName = v.(string)
+	}
+
+	return user, nil
 }
 
 // GetUserFromSubject looks up the user identified by the provided subject by

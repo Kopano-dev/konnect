@@ -33,6 +33,7 @@ function commonReducer(state = defaultState, action) {
         hello: {
           state: action.state,
           username: action.username,
+          displayName: action.displayName,
           details: action.hello
         }
       });
