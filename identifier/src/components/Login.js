@@ -41,9 +41,15 @@ const styles = theme => ({
 
 class Login extends Component {
   componentDidMount() {
-    const { hello, history } = this.props;
+    const { hello, query, dispatch, history } = this.props;
     if (hello && hello.state && history.action !== 'PUSH') {
+      if (query.prompt !== 'select_account') {
+        dispatch(advanceLogonFlow(true, history));
+        return;
+      }
+
       history.replace(`/chooseaccount${history.location.search}${history.location.hash}`);
+      return;
     }
   }
 
@@ -137,6 +143,7 @@ Login.propTypes = {
   password: PropTypes.string.isRequired,
   errors: PropTypes.object.isRequired,
   hello: PropTypes.object,
+  query: PropTypes.object.isRequired,
 
   dispatch: PropTypes.func.isRequired,
   history: PropTypes.object.isRequired
@@ -144,14 +151,15 @@ Login.propTypes = {
 
 const mapStateToProps = (state) => {
   const { loading, username, password, errors} = state.login;
-  const { hello } = state.common;
+  const { hello, query } = state.common;
 
   return {
     loading,
     username,
     password,
     errors,
-    hello
+    hello,
+    query
   };
 };
 
