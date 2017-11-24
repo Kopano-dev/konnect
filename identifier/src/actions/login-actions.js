@@ -233,6 +233,7 @@ export function advanceLogonFlow(success, history, done=false, extraQuery={}) {
           return;
         }
         if (hello.details.continue_uri) {
+          q.prompt = 'none';
           window.location.replace(hello.details.continue_uri + '?' + queryString.stringify(q));
           return;
         }
