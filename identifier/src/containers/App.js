@@ -1,12 +1,13 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import injectTapEventPlugin from 'react-tap-event-plugin';
-import { BrowserRouter, Switch, Route, Redirect } from 'react-router-dom';
+import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 import '../styles/App.css';
 import Loginscreen from '../components/Loginscreen';
 import Welcomescreen from '../components/Welcomescreen';
+import PrivateRoute from '../components/PrivateRoute';
 
 // Needed for onTouchTap
 // http://stackoverflow.com/a/34015469/988941
@@ -28,23 +29,6 @@ class App extends Component {
 }
 
 App.propTypes = {
-  hello: PropTypes.object
-};
-
-const PrivateRoute = ({ component: Target, hello, ...rest }) => (
-  <Route {...rest} render={props => (
-    hello ? (
-      <Target {...props}/>
-    ) : (
-      <Redirect to={{
-        pathname: '/identifier'
-      }}/>
-    )
-  )}/>
-);
-
-PrivateRoute.propTypes = {
-  component: PropTypes.func.isRequired,
   hello: PropTypes.object
 };
 

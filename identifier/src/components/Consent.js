@@ -13,6 +13,7 @@ import renderIf from 'render-if';
 
 import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actions/login-actions';
 import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
+import ClientDisplayName from './ClientDisplayName';
 
 const styles = theme => ({
   button: {
@@ -139,14 +140,6 @@ Consent.propTypes = {
 
   dispatch: PropTypes.func.isRequired,
   history: PropTypes.object.isRequired
-};
-
-const ClientDisplayName = ({ client, ...rest }) => (
-  <span {...rest}>{client.display_name ? client.display_name : client.id}</span>
-);
-
-ClientDisplayName.propTypes = {
-  client: PropTypes.object.isRequired
 };
 
 const mapStateToProps = (state) => {
