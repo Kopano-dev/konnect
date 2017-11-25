@@ -20,6 +20,8 @@ package identifier
 import (
 	"context"
 
+	"github.com/dgrijalva/jwt-go"
+
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 )
@@ -74,8 +76,8 @@ func (u *IdentifiedUser) Username() string {
 }
 
 // Claims returns extra claims of the accociated user.
-func (u *IdentifiedUser) Claims() map[string]interface{} {
-	claims := make(map[string]interface{})
+func (u *IdentifiedUser) Claims() jwt.MapClaims {
+	claims := make(jwt.MapClaims)
 	claims[konnect.IdentifiedUsernameClaim] = u.Username()
 	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
 
