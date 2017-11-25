@@ -25,7 +25,7 @@ const styles = theme => ({
   }
 });
 
-class Login extends Component {
+class Chooseaccount extends Component {
   componentDidMount() {
     const { hello, history } = this.props;
     if ((!hello || !hello.state) && history.action !== 'PUSH') {
@@ -102,7 +102,7 @@ class Login extends Component {
   }
 }
 
-Login.propTypes = {
+Chooseaccount.propTypes = {
   classes: PropTypes.object.isRequired,
 
   loading: PropTypes.bool.isRequired,
@@ -124,4 +124,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(withStyles(styles)(Login));
+export default connect(mapStateToProps)(withStyles(styles)(Chooseaccount));

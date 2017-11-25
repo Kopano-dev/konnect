@@ -45,7 +45,7 @@ const styles = theme => ({
   }
 });
 
-class Login extends Component {
+class Consent extends Component {
   componentDidMount() {
     const { dispatch, hello, history, client } = this.props;
     if ((!hello || !hello.state || !client) && history.action !== 'PUSH') {
@@ -129,7 +129,7 @@ class Login extends Component {
   }
 }
 
-Login.propTypes = {
+Consent.propTypes = {
   classes: PropTypes.object.isRequired,
 
   loading: PropTypes.string.isRequired,
@@ -161,4 +161,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(withStyles(styles)(Login));
+export default connect(mapStateToProps)(withStyles(styles)(Consent));
