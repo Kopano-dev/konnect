@@ -145,22 +145,6 @@ func (im *KCIdentityManager) Authorize(ctx context.Context, rw http.ResponseWrit
 		approvedScopes = consent.ApprovedScopes(ar.Scopes)
 	}
 
-	if consent == nil {
-		// Offline access validation.
-		// http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
-		if ok, _ := approvedScopes[oidc.ScopeOfflineAccess]; ok {
-			if !promptConsent {
-				// Ensure that the prompt parameter contains consent unless
-				// other conditions for processing the request permitting offline
-				// access to the requested resources are in place; unless one or
-				// both of these conditions are fulfilled, then it MUST ignore the
-				// offline_access request,
-				delete(approvedScopes, oidc.ScopeOfflineAccess)
-				im.logger.Debugln("consent is required for offline access but not given, removed offline_access scope")
-			}
-		}
-	}
-
 	if promptConsent {
 		if ar.Prompts[oidc.PromptNone] == true {
 			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
@@ -171,6 +155,44 @@ func (im *KCIdentityManager) Authorize(ctx context.Context, rw http.ResponseWrit
 		utils.WriteRedirect(rw, http.StatusFound, u, nil, false)
 
 		return nil, &identity.IsHandledError{}
+	}
+
+	// Offline access validation.
+	// http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
+	if ok, _ := approvedScopes[oidc.ScopeOfflineAccess]; ok {
+		var ignoreOfflineAccessErr error
+		for {
+			if ok, _ := ar.ResponseTypes[oidc.ResponseTypeCode]; !ok {
+				// MUST ignore the offline_access request unless the Client is using
+				// a response_type value that would result in an Authorization
+				// Code being returned,
+				ignoreOfflineAccessErr = fmt.Errorf("response_type=code required, %#v", ar.ResponseTypes)
+				break
+			}
+
+			if clientDetails.Trusted {
+				// Always allow offline access for trusted clients. This qualifies
+				// for other conditions.
+				break
+			}
+
+			if ok, _ := ar.Prompts[oidc.PromptConsent]; !ok && consent == nil {
+				// Ensure that the prompt parameter contains consent unless
+				// other conditions for processing the request permitting offline
+				// access to the requested resources are in place; unless one or
+				// both of these conditions are fulfilled, then it MUST ignore the
+				// offline_access request,
+				ignoreOfflineAccessErr = fmt.Errorf("prompt=consent required, %#v", ar.Prompts)
+				break
+			}
+
+			break
+		}
+
+		if ignoreOfflineAccessErr != nil {
+			delete(approvedScopes, oidc.ScopeOfflineAccess)
+			im.logger.WithError(ignoreOfflineAccessErr).Debugln("removed offline_access scope")
+		}
 	}
 
 	auth.AuthorizeScopes(approvedScopes)

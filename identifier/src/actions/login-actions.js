@@ -248,7 +248,6 @@ export function advanceLogonFlow(success, history, done=false, extraQuery={}) {
         }
     }
 
-    console.log('xxx advance', history.action);
     // Default action.
     let target = '/welcome';
     if (history.action === 'REPLACE') {
