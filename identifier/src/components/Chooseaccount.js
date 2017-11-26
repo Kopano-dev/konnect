@@ -61,7 +61,7 @@ class Chooseaccount extends Component {
               button
               disableGutters
               className={classes.accountListItem}
-              disabled={loading}
+              disabled={!!loading}
               onClick={(event) => this.logon(event)}
             ><Avatar>{username.substr(0, 1)}</Avatar>
               <ListItemText primary={username} />
@@ -70,7 +70,7 @@ class Chooseaccount extends Component {
               button
               disableGutters
               className={classes.accountListItem}
-              disabled={loading}
+              disabled={!!loading}
               onClick={(event) => this.logoff(event)}
             ><Avatar>?</Avatar>
               <ListItemText primary="Use another account" />
@@ -105,7 +105,7 @@ class Chooseaccount extends Component {
 Chooseaccount.propTypes = {
   classes: PropTypes.object.isRequired,
 
-  loading: PropTypes.bool.isRequired,
+  loading: PropTypes.string.isRequired,
   errors: PropTypes.object.isRequired,
   hello: PropTypes.object,
 
