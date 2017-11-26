@@ -102,7 +102,7 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 func (i *Identifier) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	addCommonResponseHeaders(rw.Header())
 	rw.Header().Set("Cache-Control", "no-cache, max-age=0, public")
-	rw.Header().Set("Referrer-Policy", "origin")
+	rw.Header().Set("Content-Security-Policy", "object-src 'none'; script-src 'self'; base-uri 'none'; frame-ancestors 'none';")
 
 	http.ServeFile(rw, req, i.staticFolder+"/index.html")
 }
