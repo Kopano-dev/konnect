@@ -248,8 +248,14 @@ export function advanceLogonFlow(success, history, done=false, extraQuery={}) {
         }
     }
 
+    console.log('xxx advance', history.action);
     // Default action.
+    let target = '/welcome';
+    if (history.action === 'REPLACE') {
+      target = target + history.location.search + history.location.hash;
+    }
+
     dispatch(receiveValidateLogon({})); // XXX(longsleep): hack to reset loading and errors.
-    history.push('/welcome');
+    history.push(target);
   };
 }

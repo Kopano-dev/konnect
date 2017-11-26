@@ -4,13 +4,14 @@ import PropTypes from 'prop-types';
 import { withStyles } from 'material-ui/styles';
 import Paper from 'material-ui/Paper';
 import Grid from 'material-ui/Grid';
-import { Route, Switch, Redirect } from 'react-router-dom';
+import { Route, Switch } from 'react-router-dom';
 import renderIf from 'render-if';
 
 import Login from './Login';
 import Chooseaccount from './Chooseaccount';
 import Consent from './Consent';
 import Loading from './Loading';
+import RedirectWithQuery from './RedirectWithQuery';
 import KopanoLogo from '../images/kopano-logo.svg';
 import Background from '../images/loginscreen-bg.jpg';
 import { executeHello } from '../actions/common-actions';
@@ -54,7 +55,7 @@ class Loginscreen extends Component {
                 <Route path="/identifier" exact component={Login}></Route>
                 <Route path="/chooseaccount" exact component={Chooseaccount}></Route>
                 <Route path="/consent" exact component={Consent}></Route>
-                <Redirect to="/identifier"/>
+                <RedirectWithQuery target="/identifier"/>
               </Switch>
             ))}
             {renderIf(hello === null)(() => (
