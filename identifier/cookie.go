@@ -30,7 +30,9 @@ func (i *Identifier) setLogonCookie(rw http.ResponseWriter, user *IdentifiedUser
 	claims := jwt.Claims{
 		Subject: user.Subject(),
 	}
-	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(user.Claims()).CompactSerialize()
+
+	userClaims := map[string]interface{}(user.Claims())
+	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(userClaims).CompactSerialize()
 	if err != nil {
 		return err
 	}
