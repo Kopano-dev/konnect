@@ -3,8 +3,6 @@ import { connect } from 'react-redux';
 import { withStyles } from 'material-ui/styles';
 import PropTypes from 'prop-types';
 import Button from 'material-ui/Button';
-import List, { ListItem, ListItemText } from 'material-ui/List';
-import Checkbox from 'material-ui/Checkbox';
 import Tooltip from 'material-ui/Tooltip';
 import { CircularProgress } from 'material-ui/Progress';
 import green from 'material-ui/colors/green';
@@ -14,6 +12,7 @@ import renderIf from 'render-if';
 import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actions/login-actions';
 import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
 import ClientDisplayName from './ClientDisplayName';
+import ScopeList from './ScopeList';
 
 const styles = theme => ({
   button: {
@@ -58,6 +57,8 @@ class Consent extends Component {
 
   render() {
     const { classes, loading, hello, errors, client } = this.props;
+
+    const scopes = hello.details.scopes || {};
     return (
       <div>
         <Typography type="headline" component="h3">
@@ -70,18 +71,7 @@ class Consent extends Component {
         <Typography type="subheading" gutterBottom>
           <Tooltip placement="bottom" title={`Clicking "Allow" will redirect you to: ${client.uri}`}><ClientDisplayName client={client}/></Tooltip> wants to
         </Typography>
-        <List dense disablePadding className={classes.scopeList}>
-          <ListItem
-            disableGutters
-          ><Checkbox
-              checked={true}
-              disableRipple
-              disabled
-            />
-            <ListItemText primary="Access your basic account information" />
-          </ListItem>
-        </List>
-
+        <ScopeList dense disablePadding className={classes.scopeList} scopes={scopes}></ScopeList>
         <Typography type="subheading" gutterBottom>Allow <ClientDisplayName client={client}/> to do this?</Typography>
         <Typography color="secondary">By clicking Allow, you allow this app to use your information.</Typography>
 
