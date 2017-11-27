@@ -13,27 +13,24 @@ import Consent from './Consent';
 import Loading from './Loading';
 import RedirectWithQuery from './RedirectWithQuery';
 import KopanoLogo from '../images/kopano-logo.svg';
-import Background from '../images/loginscreen-bg.jpg';
 import { executeHello } from '../actions/common-actions';
 
 const styles = theme => ({
   root: {
-    height: '100vh',
-    backgroundImage: 'url(' + Background + ')',
-    backgroundPosition: 'bottom',
-    backgroundSize: 'cover',
-    backgroundRepeat: 'no-repeat'
+    height: '100vh'
   },
   logo: {
     height: 18,
     marginBottom: theme.spacing.unit * 2
+  },
+  limiter: {
+    maxWidth: 450
   },
   paper: theme.mixins.gutters({
     backgroundColor: 'rgba(255,255,255,0.85)',
     paddingTop: 48,
     paddingBottom: 36,
     minHeight: 400,
-    maxWidth: 400,
     position: 'relative'
   })
 });
@@ -47,7 +44,7 @@ class Loginscreen extends Component {
     const { classes, hello } = this.props;
     return (
       <Grid container justify="center" alignItems="center" spacing={0} className={classes.root}>
-        <Grid item xs={10} sm={5} md={4}>
+        <Grid item xs={10} sm={5} md={4} className={classes.limiter}>
           <Paper className={classes.paper} elevation={4}>
             <img src={KopanoLogo} className={classes.logo} alt="Kopano"/>
             {renderIf(hello !== null)(() => (

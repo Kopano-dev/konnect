@@ -4,7 +4,6 @@ import injectTapEventPlugin from 'react-tap-event-plugin';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-import '../styles/App.css';
 import Loginscreen from '../components/Loginscreen';
 import Welcomescreen from '../components/Welcomescreen';
 import PrivateRoute from '../components/PrivateRoute';

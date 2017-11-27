@@ -1,4 +1,37 @@
+/* css for index, loaded by bundle */
+
 body {
   margin: 0;
   padding: 0;
+  height: 100vh;
+  background-size: cover;
+  background-image: url(./images/loginscreen-bg.jpg);
+  background-repeat: no-repeat;
+  background-position: bottom;
+}
+
+#loader {
+  position: absolute;
+  bottom: 5%;
+  left: 50%;
+  font-weight: 500;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  color: white;
+  text-shadow: #000 0px 0px 1px;
+  transform: translate(-50%, -50%);
+}
+
+#font-preloader {
+  position: absolute;
+  top: -500px;
+  font-weight: 400;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+}
+
+#font-preloader > span {
+  font-weight: 500;
+}
+
+.App {
+  height: 100vh;
 }
