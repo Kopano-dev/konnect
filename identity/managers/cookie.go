@@ -396,6 +396,7 @@ func (im *CookieIdentityManager) ScopesSupported() []string {
 	return []string{
 		oidc.ScopeProfile,
 		oidc.ScopeEmail,
+		konnect.ScopeID,
 	}
 }
 

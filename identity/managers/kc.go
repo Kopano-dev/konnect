@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"stash.kopano.io/kgol/rndm"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier"
 	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identity"
@@ -245,6 +246,8 @@ func (im *KCIdentityManager) ScopesSupported() []string {
 	return []string{
 		oidc.ScopeProfile,
 		oidc.ScopeEmail,
+		oidc.ScopeOfflineAccess,
+		konnect.ScopeID,
 	}
 }
 
