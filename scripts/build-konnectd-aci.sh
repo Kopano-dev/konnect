@@ -7,6 +7,7 @@ ARCH=$(go env GOHOSTARCH)
 
 make
 VERSION=$($BINARY version|grep Version|awk -F': ' '{ print $2 }')
+(cd identifier && make)
 
 acbuild --debug begin
 trap "{ export EXT=$?; acbuild --debug end && rm -rf $TMPDIR && exit $EXT; }" EXIT
