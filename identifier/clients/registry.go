@@ -20,19 +20,40 @@ package clients
 import (
 	"context"
 	"net/url"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Registry implements the registry for registered clients.
-type Registry struct{}
+type Registry struct {
+	trustedURI *url.URL
+
+	logger logrus.FieldLogger
+}
+
+// NewRegistry created a new client Registry with the provided parameters.
+func NewRegistry(trustedURI *url.URL, logger logrus.FieldLogger) (*Registry, error) {
+	return &Registry{
+		trustedURI: trustedURI,
+
+		logger: logger,
+	}, nil
+}
 
 // Lookup returns the cleitns Detail information for the provided id and uri.
 func (r *Registry) Lookup(ctx context.Context, id string, uri *url.URL) (*Details, error) {
 	// TODO(longsleep): Implement secure clients configuration and check
 	// their ID and redirect URI.
-	// TODO(longsleep): Implement implicit trust for web clients running on
-	// the same origin as the issuer (ourselves).
 	var trusted bool
 	var displayName string
+
+	// Implicit trust for web clients running on the same origin as the issuer
+	// (ourselves).
+	if r.trustedURI != nil {
+		if r.trustedURI.Scheme == uri.Scheme && r.trustedURI.Host == uri.Host {
+			trusted = true
+		}
+	}
 
 	// Some hardcoded ID's for testing.
 	switch id {
@@ -44,9 +65,18 @@ func (r *Registry) Lookup(ctx context.Context, id string, uri *url.URL) (*Detail
 		displayName = "OIDC Playground"
 	}
 
+	uriString := uri.String()
+
+	r.logger.WithFields(logrus.Fields{
+		"trusted":   trusted,
+		"client_id": id,
+		"uri":       uriString,
+		"known":     displayName != "",
+	}).Debugln("identifier client lookup")
+
 	return &Details{
 		ID:          id,
-		URI:         uri.String(),
+		URI:         uriString,
 		DisplayName: displayName,
 		Trusted:     trusted,
 	}, nil

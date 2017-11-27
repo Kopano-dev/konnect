@@ -154,7 +154,7 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	identifierClientPath, _ := cmd.Flags().GetString("identifier-client-path")
 
-	clientRegistry := &identifierClients.Registry{}
+	clientRegistry, _ := identifierClients.NewRegistry(issuerIdentifierURI, logger)
 
 	var activeIdentifier *identifier.Identifier
 
