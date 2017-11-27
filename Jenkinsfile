@@ -21,6 +21,16 @@ pipeline {
 				sh 'go get -v github.com/tebeka/go2xunit'
 			}
 		}
+		stage('Yarn') {
+			steps {
+				echo 'Installing Yarn..'
+				sh 'apt-get update && apt-get install apt-transport-https'
+				sh 'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -'
+				sh 'echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list'
+				sh 'curl -sL https://deb.nodesource.com/setup_8.x | bash -'
+				sh 'apt-get install -y yarn'
+			}
+		}
 		stage('Lint') {
 			steps {
 				echo 'Linting..'

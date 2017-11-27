@@ -30,7 +30,7 @@ export GOPATH CGO_ENABLED
 # Build
 
 .PHONY: all
-all: fmt lint vendor | $(CMDS)
+all: fmt lint vendor | $(CMDS) identifier-webapp
 
 $(BASE): ; $(info creating local GOPATH ...)
 	@mkdir -p $(dir $@)
@@ -44,6 +44,10 @@ $(CMDS): vendor | $(BASE) ; $(info building $@ ...) @
 		-gcflags '-trimpath=$(GOPATH)' \
 		-ldflags '-s -w -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -linkmode external -extldflags -static' \
 		-o bin/$(notdir $@) $(PACKAGE)/$@
+
+.PHONY: identifier-webapp
+identifier-webapp:
+	$(MAKE) -C identifier build
 
 # Helpers
 
@@ -120,6 +124,7 @@ clean: ; $(info cleaning ...)	@
 	@rm -rf $(GOPATH)
 	@rm -rf bin
 	@rm -rf test/test.*
+	@$(MAKE) -C identifier clean
 
 .PHONY: version
 version:
