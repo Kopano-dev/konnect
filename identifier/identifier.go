@@ -91,6 +91,7 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/chooseaccount", i).Methods(http.MethodGet)
 	r.Handle("/consent", i).Methods(http.MethodGet)
 	r.Handle("/welcome", i).Methods(http.MethodGet)
+	r.Handle("/index.html", i).Methods(http.MethodGet) // For service worker.
 	r.Handle("/identifier/_/logon", i.secureHandler(http.HandlerFunc(i.handleLogon))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/hello", i.secureHandler(http.HandlerFunc(i.handleHello))).Methods(http.MethodPost)
@@ -107,6 +108,7 @@ func (i *Identifier) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rw.Header().Set("Cache-Control", "no-cache, max-age=0, public")
 	rw.Header().Set("Content-Security-Policy", "object-src 'none'; script-src 'self'; base-uri 'none'; frame-ancestors 'none';")
 
+	req.URL.Path = "/" //NOTE(longsleep): Hack to make http.ServeFile not redirect for requests ending with /index.html.
 	http.ServeFile(rw, req, i.staticFolder+"/index.html")
 }
 
