@@ -109,6 +109,7 @@ dist: ; $(info building dist tarball ...)
 	cp -avf ../LICENSE.txt "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../README.md "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../bin/* "${PACKAGE_NAME}-${VERSION}" && \
+	cp -avr ../identifier/build "${PACKAGE_NAME}-${VERSION}/identifier-webapp" && \
 	tar --owner=0 --group=0 -czvf ${PACKAGE_NAME}-${VERSION}.tar.gz "${PACKAGE_NAME}-${VERSION}" && \
 	cd ..
 
