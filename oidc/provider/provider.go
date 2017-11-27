@@ -108,9 +108,9 @@ func (p *Provider) SetSigningKey(id string, key crypto.Signer, signingMethod jwt
 func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	switch path := req.URL.Path; {
 	case path == p.wellKnownPath:
-		p.WellKnownHandler(rw, req)
+		cors.Default().ServeHTTP(rw, req, p.WellKnownHandler)
 	case path == p.jwksPath:
-		p.JwksHandler(rw, req)
+		cors.Default().ServeHTTP(rw, req, p.JwksHandler)
 	case path == p.authorizationPath:
 		p.AuthorizeHandler(rw, req)
 	case path == p.tokenPath:
