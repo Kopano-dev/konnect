@@ -14,12 +14,13 @@ ExecStart=/usr/bin/rkt \
 	run $RKT_ARGS \
 	--volume key,kind=host,source=${KEY} \
 	--volume etc-ssl-certs,kind=host,source=/etc/ssl/certs \
+	--volume run=/run \
 	${IMAGE} \
 	-- \
-	--sign-in-uri=${KOPANO_WEBAPP_URL} \
+	--iss=https://kopano.local \
+	--sign-in-uri=${SIGN_IN_URL} \
 	--secret="${ENCRYPTION_SECRET}" $ARGS \
-	cookie "${KOPANO_WEBAPP_URL}?load=custom&name=oidcuser" \
-	KOPANO_WEBAPP encryption-store-key
+	$IDENTITY_MANAGER
 ExecStopPost=/usr/bin/rkt gc --mark-only
 KillMode=mixed
 Restart=always

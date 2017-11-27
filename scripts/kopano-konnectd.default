@@ -8,8 +8,15 @@ KEY=/etc/kopano/konnectd-tokens-signing-key.pem
 # can be generated with `openssl rand -hex 32`.
 ENCRYPTION_SECRET=
 
-# URL to the Kopano Webapp.
-KOPANO_WEBAPP_URL=https://your-kopano.local/webapp/index.php
+# Identity manager Kopano Core via direct connection.
+IDENTITY_MANAGER=kc
+KOPANO_SERVER_DEFAULT_URI=file:///run/kopano-server.sock
+KOPANO_SERVER_USERNAME=SYSTEM
+KOPANO_SERVER_PASSWORD=
+
+# Identity manager Kopano Webapp via Cookie pass through.
+#SIGN_IN_URL=https://your-kopano.local/webapp/index.php
+#IDENTITY_MANAGER=cookie "$SIGN_IN_URL?load=custom&name=oidcuser" KOPANO_WEBAPP encryption-store-key
 
 #IMAGE=/srv/images/kopano-konnectd-latest-linux-amd64.aci
 #RKT_ARGS=--port=www:127.0.0.1:8777
