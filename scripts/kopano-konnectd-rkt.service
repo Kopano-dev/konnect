@@ -14,8 +14,11 @@ ExecStart=/usr/bin/rkt \
 	run $RKT_ARGS \
 	--volume key,kind=host,source=${KEY} \
 	--volume etc-ssl-certs,kind=host,source=/etc/ssl/certs \
-	--volume run=/run \
+	--volume run,kind=host,source=/run \
 	${IMAGE} \
+	--environment=KOPANO_SERVER_DEFAULT_URI="$KOPANO_SERVER_DEFAULT_URI" \
+	--environment=KOPANO_SERVER_USERNAME="$KOPANO_SERVER_USERNAME" \
+	--environment=KOPANO_SERVER_PASSWORD="$KOPANO_SERVER_PASSWORD" \
 	-- \
 	--iss=https://kopano.local \
 	--sign-in-uri=${SIGN_IN_URL} \
