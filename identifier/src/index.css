@@ -4,10 +4,41 @@ body {
   margin: 0;
   padding: 0;
   height: 100vh;
+}
+
+#bg {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+#bg > div {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background-size: cover;
-  background-image: url(./images/loginscreen-bg.jpg);
   background-repeat: no-repeat;
   background-position: bottom;
+  z-index: 0;
+}
+
+#bg-thumb {
+  /* NOTE(longsleep): This is the URL encoded svg, inlined directly to show this image as early as possible. */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%0A%20%20%20%20%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%0A%20%20%20%20%20width%3D%223703%22%20height%3D%222469%22%0A%20%20%20%20%20viewBox%3D%220%200%203703%202469%22%3E%0A%20%20%3Cfilter%20id%3D%22blur%22%20filterUnits%3D%22userSpaceOnUse%22%20color-interpolation-filters%3D%22sRGB%22%3E%0A%20%20%20%20%3CfeGaussianBlur%20stdDeviation%3D%2220%2020%22%20edgeMode%3D%22duplicate%22%20%2F%3E%0A%20%20%20%20%3CfeComponentTransfer%3E%0A%20%20%20%20%20%20%3CfeFuncA%20type%3D%22discrete%22%20tableValues%3D%221%201%22%20%2F%3E%0A%20%20%20%20%3C%2FfeComponentTransfer%3E%0A%20%20%3C%2Ffilter%3E%0A%20%20%3Cimage%20filter%3D%22url(%23blur)%22%0A%20%20%20%20%20%20%20%20%20xlink%3Ahref%3D%22data%3Aimage%2Fjpeg%3Bbase64%2C%2F9j%2F4AAQSkZJRgABAQEASABIAAD%2F2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT%2F2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT%2FwAARCAAbACgDAREAAhEBAxEB%2F8QAHAAAAAYDAAAAAAAAAAAAAAAAAAMEBQYIAQIH%2F8QALRAAAQMDAgMIAQUAAAAAAAAAAQIDBAAFESExBghBEhMVIjJRYWIHFkJSgbH%2FxAAaAQEBAAMBAQAAAAAAAAAAAAABAAIDBAUG%2F8QAGxEBAAIDAQEAAAAAAAAAAAAAAAESAxETAiH%2F2gAMAwEAAhEDEQA%2FALYOWLOdK%2BlvDwai%2FAPqabqgeAfBquqMiwD2NV4VBrdiwdjRc1dJPD31rzujto1%2FTv1q6KgeADXQeXfXam5oTRokKY4pDEhl1aDhSULBI1x%2FulU%2B9CkFqeHtfSKLmioETm8u7rbiDdl9rBCXPIdcb7dK0TnxN%2FL2UM819yftiY796X3iV6OsYBUke6twc5o7Yzz9o1xJzM3429kW%2B7PRJXeFb8iNkOOD9oJ64ydxrgU9scqMfqJNV35s%2BJbzCkRZdyWGHfWlLSWyFDBS4lQHaStKgFAgggpBGKuuMRj9oTe%2Bdn8hi2MRV3%2BcJsdwKVPaZDTbqQNlAD336afNHTzr6ypO9q4QLhJQB2X1jToa4dQ6dndu5SgnPfrJ%2BTmjUETIustKTh9f9nNZagbMk66TFJ1kuddlYomIW0YuM2QtJKn3DgfzPtWEsn%2F%2F2Q%3D%3D%22%0A%20%20%20%20%20%20%20%20%20x%3D%220%22%20y%3D%220%22%0A%20%20%20%20%20%20%20%20%20height%3D%22100%25%22%20width%3D%22100%25%22%2F%3E%0A%3C%2Fsvg%3E%0A");
+}
+
+#bg-enhanced {
+  opacity: 0;
+  transition: opacity 1s;
+}
+
+#bg-enhanced.enhanced {
+  background-image: url(./images/loginscreen-bg.jpg);
+  opacity: 1;
 }
 
 #loader {

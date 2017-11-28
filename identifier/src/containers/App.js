@@ -4,6 +4,7 @@ import injectTapEventPlugin from 'react-tap-event-plugin';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
+import { enhanceBodyBackground } from '../utils';
 import Loginscreen from '../components/Loginscreen';
 import Welcomescreen from '../components/Welcomescreen';
 import PrivateRoute from '../components/PrivateRoute';
@@ -11,6 +12,9 @@ import PrivateRoute from '../components/PrivateRoute';
 // Needed for onTouchTap
 // http://stackoverflow.com/a/34015469/988941
 injectTapEventPlugin();
+
+// Trigger loading of background image.
+enhanceBodyBackground();
 
 class App extends Component {
   render() {
