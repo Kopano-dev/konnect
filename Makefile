@@ -16,8 +16,8 @@ CGO_ENABLED ?= 0
 # Variables
 PWD     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null || \
-			cat $(CURDIR)/.version 2> /dev/null || echo v0.0.0-unreleased)
+VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null | sed 's/^v//' || \
+			cat $(CURDIR)/.version 2> /dev/null || echo 0.0.0-unreleased)
 GOPATH   = $(CURDIR)/.gopath
 BASE     = $(GOPATH)/src/$(PACKAGE)
 PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "^$(PACKAGE)/vendor/"))
