@@ -1,7 +1,8 @@
 import {
   RECEIVE_ERROR,
   RESET_HELLO,
-  RECEIVE_HELLO
+  RECEIVE_HELLO,
+  SERVICE_WORKER_NEW_CONTENT
 } from '../actions/action-types';
 import queryString from 'query-string';
 
@@ -13,7 +14,8 @@ const defaultState = {
   hello: null,
   error: null,
   flow: flow,
-  query: query
+  query: query,
+  updateAvailable: false
 };
 
 function commonReducer(state = defaultState, action) {
@@ -37,6 +39,12 @@ function commonReducer(state = defaultState, action) {
           details: action.hello
         }
       });
+
+    case SERVICE_WORKER_NEW_CONTENT:
+      return Object.assign({}, state, {
+        updateAvailable: true
+      });
+
     default:
       return state;
   }

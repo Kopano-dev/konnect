@@ -8,6 +8,11 @@
 // To learn more about the benefits of this model, read https://goo.gl/KwvDNy.
 // This link also includes instructions on opting out of this behavior.
 
+/*global process: true*/
+/*eslint-disable no-console*/
+
+import { newContent, readyForOfflineUse, registrationError, isOfflineMode } from './actions/serviceWorker-actions';
+
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
     // [::1] is the IPv6 localhost address.
@@ -18,7 +23,7 @@ const isLocalhost = Boolean(
     )
 );
 
-export default function register() {
+export default function register(store) {
   if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
     // The URL constructor is available in all browsers that support SW.
     const publicUrl = new URL(process.env.PUBLIC_URL, window.location);
@@ -34,16 +39,16 @@ export default function register() {
 
       if (!isLocalhost) {
         // Is not local host. Just register service worker
-        registerValidSW(swUrl);
+        registerValidSW(swUrl, store);
       } else {
         // This is running on localhost. Lets check if a service worker still exists or not.
-        checkValidServiceWorker(swUrl);
+        checkValidServiceWorker(swUrl, store);
       }
     });
   }
 }
 
-function registerValidSW(swUrl) {
+function registerValidSW(swUrl, store) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
@@ -57,11 +62,13 @@ function registerValidSW(swUrl) {
               // It's the perfect time to display a "New content is
               // available; please refresh." message in your web app.
               console.log('New content is available; please refresh.');
+              store.dispatch(newContent());
             } else {
               // At this point, everything has been precached.
               // It's the perfect time to display a
               // "Content is cached for offline use." message.
               console.log('Content is cached for offline use.');
+              store.dispatch(readyForOfflineUse());
             }
           }
         };
@@ -69,10 +76,11 @@ function registerValidSW(swUrl) {
     })
     .catch(error => {
       console.error('Error during service worker registration:', error);
+      store.dispatch(registrationError(error));
     });
 }
 
-function checkValidServiceWorker(swUrl) {
+function checkValidServiceWorker(swUrl, store) {
   // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl)
     .then(response => {
@@ -89,13 +97,14 @@ function checkValidServiceWorker(swUrl) {
         });
       } else {
         // Service worker found. Proceed as normal.
-        registerValidSW(swUrl);
+        registerValidSW(swUrl, store);
       }
     })
     .catch(() => {
       console.log(
         'No internet connection found. App is running in offline mode.'
       );
+      store.dispatch(isOfflineMode());
     });
 }
 
