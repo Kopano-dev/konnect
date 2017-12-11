@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import { Provider } from 'react-redux';
 
 import store from './store';
-import registerServiceWorker from './registerServiceWorker';
+import { unregister } from './registerServiceWorker';
 
 function LoadingComponent(props) {
   if (props.error) {
@@ -43,4 +43,4 @@ ReactDOM.render(
   document.getElementById('root')
 );
 
-registerServiceWorker(store);
+unregister();
