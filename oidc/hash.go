@@ -38,7 +38,7 @@ func LeftmostHash(data []byte, hash crypto.Hash) LeftmostHashBytes {
 
 // String returns the Base64URL encoded string of the accociated bytes.
 func (lmhb LeftmostHashBytes) String() string {
-	return base64.URLEncoding.EncodeToString(lmhb)
+	return base64.RawURLEncoding.EncodeToString(lmhb)
 }
 
 // HashFromSigningMethod returns the matching crypto.Hash for the provided
