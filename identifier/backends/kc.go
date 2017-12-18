@@ -36,6 +36,10 @@ const (
 	kcSessionRetryDelay = 50 * time.Millisecond
 )
 
+// KCServerDefaultUsername is the default username used by KCIdentifierBackend
+// for KCC when the provided username is empty.
+var KCServerDefaultUsername = "SYSTEM"
+
 // KCIdentifierBackend is a backend for the Identifier which connects to
 // Kopano Core via kcc-go.
 type KCIdentifierBackend struct {
@@ -80,6 +84,10 @@ func (u *kcUser) Username() string {
 // NewKCIdentifierBackend creates a new KCIdentifierBackend with the provided
 // parameters.
 func NewKCIdentifierBackend(c *config.Config, client *kcc.KCC, username string, password string) (*KCIdentifierBackend, error) {
+	if username == "" {
+		username = KCServerDefaultUsername
+	}
+
 	b := &KCIdentifierBackend{
 		c:        client,
 		username: username,
