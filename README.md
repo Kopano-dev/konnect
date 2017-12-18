@@ -23,11 +23,19 @@ use any cookie aware login area which supports the ?continue parameter and
 is based on cookies.
 
 All backends require certain general parameters to be present. Create a  RSA
-key-pair and provide the provide key file with the `--key` parameter. If you
-skip this, Konnect will create a key pair on startup.
+key-pair and provide the key file with the `--key` parameter. If you skip this,
+Konnect will create a random non-persistent key pair on startup.
 
 To encrypt certain values, Konnect needs a secure key. Create a hex-key with
 `openssl rand -hex 32` and provide it with via the `--secret` parameter.
+
+## URL endpoints
+
+Take a look at `Caddyfile.example` on the URL endpoints provided by Konnect and
+how to expose them through a TLS proxy.
+
+The base URL of the frontend proxy is what will become the value of the `--iss`
+parameter when starting up Konnect and needs to TLS encrypted (https://).
 
 ### Kopano Webapp backend (Cookie backend)
 
@@ -72,3 +80,9 @@ bin/konnectd serve --listen 127.0.0.1:8777 \
 cd ~/go/src/stash.kopano.io/kc/konnect
 make test
 ```
+
+### Development
+
+As Konnect includes a web application (identifier), a `Caddyfile.dev` file is
+provided which exposes the identifier's web application directly via a
+webpack dev server.
