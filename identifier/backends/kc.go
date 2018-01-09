@@ -201,10 +201,10 @@ func (b *KCIdentifierBackend) ResolveUser(ctx context.Context, username string) 
 }
 
 // GetUser implements the Backend interface, providing user meta data retrieval
-// for the user specified by the userEntryID. Requests are bound to the provided
+// for the user specified by the userID. Requests are bound to the provided
 // context.
-func (b *KCIdentifierBackend) GetUser(ctx context.Context, userEntryID string) (identity.User, error) {
-	response, err := b.getUser(ctx, userEntryID)
+func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string) (identity.User, error) {
+	response, err := b.getUser(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("kc identifier backend get user error: %v", err)
 	}
@@ -212,7 +212,7 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userEntryID string) (
 	switch response.Er {
 	case kcc.KCSuccess:
 		// success.
-		if response.User.UserEntryID != userEntryID {
+		if response.User.UserEntryID != userID {
 			return nil, fmt.Errorf("kc identifier backend get user returned wrong user")
 		}
 

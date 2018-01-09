@@ -89,6 +89,27 @@ bin/konnectd serve --listen 127.0.0.1:8777 \
   kc
 ```
 
+### LDAP backend
+
+This assumes that Konnect can directly connect to an LDAP server via TCP.
+
+```
+export LDAP_URI=ldap://myldap.local:389
+export LDAP_BINDDN="cn=admin,dc=example,dc=local"
+export LDAP_BINDPW="its-a-secret"
+export LDAP_BASEDN="dc=example,dc=local"
+export LDAP_SCOPE=sub
+export LDAP_LOGIN_ATTRIBUTE=uid
+export LDAP_EMAIL_ATTRIBUTE=mail
+export LDAP_NAME_ATTRIBUTE=cn
+export LDAP_FILTER="(objectClass=organizationalPerson)"
+
+bin/konnectd serve --listen 0.0.0.0:8777 \
+  --iss=https://mylonnect.local \
+  --insecure \
+  ldap
+```
+
 ## Run unit tests
 
 ```

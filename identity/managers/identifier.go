@@ -35,9 +35,9 @@ import (
 	"stash.kopano.io/kc/konnect/utils"
 )
 
-// KCIdentityManager implements an identity manager which connects to Kopano
-// Groupware Core server.
-type KCIdentityManager struct {
+// IdentifierIdentityManager implements an identity manager which relies on
+// Konnect its identifier to provide identity.
+type IdentifierIdentityManager struct {
 	signInFormURI string
 
 	identifier *identifier.Identifier
@@ -45,10 +45,10 @@ type KCIdentityManager struct {
 	logger     logrus.FieldLogger
 }
 
-// NewKCIdentityManager creates a new KCIdentityManager from the provided
+// NewIdentifierIdentityManager creates a new IdentifierIdentityManager from the provided
 // parameters.
-func NewKCIdentityManager(c *identity.Config, i *identifier.Identifier, clients *clients.Registry) *KCIdentityManager {
-	im := &KCIdentityManager{
+func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier, clients *clients.Registry) *IdentifierIdentityManager {
+	im := &IdentifierIdentityManager{
 		signInFormURI: c.SignInFormURI.String(),
 
 		identifier: i,
@@ -60,7 +60,7 @@ func NewKCIdentityManager(c *identity.Config, i *identifier.Identifier, clients 
 }
 
 // Authenticate implements the identity.Manager interface.
-func (im *KCIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
 	var user *identifier.IdentifiedUser
 	var err error
 
@@ -69,7 +69,7 @@ func (im *KCIdentityManager) Authenticate(ctx context.Context, rw http.ResponseW
 		user = identifiedUser
 	} else {
 		// Not signed in.
-		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "KCIdentityManager: not signed in")
+		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
 	}
 
 	// Check prompt value.
@@ -82,12 +82,12 @@ func (im *KCIdentityManager) Authenticate(ctx context.Context, rw http.ResponseW
 	case ar.Prompts[oidc.PromptLogin] == true:
 		if err == nil {
 			// Enforce to show sign-in, when signed in.
-			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "KCIdentityManager: prompt=login request")
+			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: prompt=login request")
 		}
 	case ar.Prompts[oidc.PromptSelectAccount] == true:
 		if err == nil {
 			// Enforce to show sign-in, when signed in.
-			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "KCIdentityManager: prompt=select_account request")
+			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: prompt=select_account request")
 		}
 	default:
 		// Let all other prompt values pass.
@@ -108,7 +108,7 @@ func (im *KCIdentityManager) Authenticate(ctx context.Context, rw http.ResponseW
 }
 
 // Authorize implements the identity.Manager interface.
-func (im *KCIdentityManager) Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (identity.AuthRecord, error) {
+func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (identity.AuthRecord, error) {
 	promptConsent := false
 	var approvedScopes map[string]bool
 
@@ -201,7 +201,7 @@ func (im *KCIdentityManager) Authorize(ctx context.Context, rw http.ResponseWrit
 }
 
 // ApproveScopes implements the Backend interface.
-func (im *KCIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
+func (im *IdentifierIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
 	ref := rndm.GenerateRandomString(32)
 
 	// TODO(longsleep): Store generated ref with provided data.
@@ -209,28 +209,28 @@ func (im *KCIdentityManager) ApproveScopes(ctx context.Context, userid string, a
 }
 
 // ApprovedScopes implements the Backend interface.
-func (im *KCIdentityManager) ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error) {
+func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error) {
 	if ref == "" {
-		return nil, fmt.Errorf("KCIdentityManager: invalid ref")
+		return nil, fmt.Errorf("IdentifierIdentityManager: invalid ref")
 	}
 
 	return nil, nil
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *KCIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+func (im *IdentifierIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
 	user, err := im.identifier.GetUserFromSubject(ctx, sub)
 	if err != nil {
-		im.logger.WithError(err).Errorln("KCIdentityManager: identifier error")
-		return nil, false, fmt.Errorf("KCIdentityManager: identifier error")
+		im.logger.WithError(err).Errorln("IdentifierIdentityManager: identifier error")
+		return nil, false, fmt.Errorf("IdentifierIdentityManager: identifier error")
 	}
 
 	if user == nil {
-		return nil, false, fmt.Errorf("KCIdentityManager: no user")
+		return nil, false, fmt.Errorf("IdentifierIdentityManager: no user")
 	}
 
 	if user.Subject() != sub {
-		return nil, false, fmt.Errorf("KCIdentityManager: wrong user")
+		return nil, false, fmt.Errorf("IdentifierIdentityManager: wrong user")
 	}
 
 	authorizedScopes, claims := authorizeScopes(user, scopes)
@@ -242,7 +242,7 @@ func (im *KCIdentityManager) Fetch(ctx context.Context, sub string, scopes map[s
 }
 
 // ScopesSupported implements the identity.Manager interface.
-func (im *KCIdentityManager) ScopesSupported() []string {
+func (im *IdentifierIdentityManager) ScopesSupported() []string {
 	return []string{
 		oidc.ScopeProfile,
 		oidc.ScopeEmail,
@@ -252,7 +252,7 @@ func (im *KCIdentityManager) ScopesSupported() []string {
 }
 
 // ClaimsSupported implements the identity.Manager interface.
-func (im *KCIdentityManager) ClaimsSupported() []string {
+func (im *IdentifierIdentityManager) ClaimsSupported() []string {
 	return []string{
 		oidc.NameClaim,
 		oidc.EmailClaim,

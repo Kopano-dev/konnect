@@ -192,7 +192,7 @@ func serve(cmd *cobra.Command, args []string) error {
 			"backend": backendURI,
 			"signIn":  signInFormURI,
 			"cookies": cookieNames,
-		}).Infoln("using cookie backend identity manager")
+		}).Infoln("using cookie backed identity manager")
 		identityManager = cookieIdentityManager
 	case "kc":
 		if authorizationEndpointURI.String() != "" {
@@ -243,9 +243,68 @@ func serve(cmd *cobra.Command, args []string) error {
 			Logger: logger,
 		}
 
-		kcIdentityManager := identityManagers.NewKCIdentityManager(identityManagerConfig, activeIdentifier, clientRegistry)
-		logger.WithFields(logrus.Fields{}).Infoln("using kc backend identity manager")
-		identityManager = kcIdentityManager
+		identifierIdentityManager := identityManagers.NewIdentifierIdentityManager(identityManagerConfig, activeIdentifier, clientRegistry)
+		logger.WithFields(logrus.Fields{}).Infoln("using identifier backed identity manager")
+		identityManager = identifierIdentityManager
+	case "ldap":
+		if authorizationEndpointURI.String() != "" {
+			return fmt.Errorf("ldap backend is incompatible with authorization-endpoint-uri parameter")
+		}
+		authorizationEndpointURI.Path = "/signin/v1/identifier/_/authorize"
+
+		if signInFormURI.EscapedPath() == "" {
+			signInFormURI.Path = "/signin/v1/identifier"
+		}
+
+		identifierBackend, identifierErr := identifierBackends.NewLDAPIdentifierBackend(
+			cfg,
+			httpTransport.TLSClientConfig,
+			os.Getenv("LDAP_URI"),
+			os.Getenv("LDAP_BINDDN"),
+			os.Getenv("LDAP_BINDPW"),
+			os.Getenv("LDAP_BASEDN"),
+			os.Getenv("LDAP_SCOPE"),
+			os.Getenv("LDAP_LOGIN_ATTRIBUTE"),
+			os.Getenv("LDAP_EMAIL_ATTRIBUTE"),
+			os.Getenv("LDAP_NAME_ATTRIBUTE"),
+			os.Getenv("LDAP_FILTER"),
+		)
+		if identifierErr != nil {
+			return fmt.Errorf("failed to create identifier backend: %v", identifierErr)
+		}
+
+		fullAuthorizationEndpointURL, _ := url.Parse(issuerIdentifierURI.String())
+		fullAuthorizationEndpointURL.Path = authorizationEndpointURI.Path
+
+		activeIdentifier, err = identifier.NewIdentifier(&identifier.Config{
+			Config: cfg,
+
+			PathPrefix:      "/signin/v1",
+			StaticFolder:    identifierClientPath,
+			LogonCookieName: "__Secure-KKT", // Kopano-Konnect-Token
+
+			AuthorizationEndpointURI: fullAuthorizationEndpointURL,
+
+			Backend: identifierBackend,
+			Clients: clientRegistry,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create identifier: %v", err)
+		}
+		err = activeIdentifier.SetKey(encryptionSecret)
+		if err != nil {
+			return fmt.Errorf("invalid --secret parameter value: %v", err)
+		}
+
+		identityManagerConfig := &identity.Config{
+			SignInFormURI: signInFormURI,
+
+			Logger: logger,
+		}
+
+		identifierIdentityManager := identityManagers.NewIdentifierIdentityManager(identityManagerConfig, activeIdentifier, clientRegistry)
+		logger.WithFields(logrus.Fields{}).Infoln("using identifier backed identity manager")
+		identityManager = identifierIdentityManager
 	case "dummy":
 		dummyIdentityManager := &identityManagers.DummyIdentityManager{
 			Sub: "dummy",
