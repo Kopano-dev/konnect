@@ -34,3 +34,6 @@ import:
   version: v2.5.1
 - package: gopkg.in/asn1-ber.v1
   version: v1.2
+- package: golang.org/x/time
+  subpackages:
+  - rate

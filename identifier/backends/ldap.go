@@ -23,11 +23,13 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"time"
 
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/identity"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	"gopkg.in/ldap.v2"
 )
 
@@ -44,11 +46,13 @@ type LDAPIdentifierBackend struct {
 	getFilter    string
 
 	attributeMapping *ldapAttributeMapping
-	timeout          int
 
 	logger    logrus.FieldLogger
 	dialer    *net.Dialer
 	tlsConfig *tls.Config
+
+	timeout int
+	limiter *rate.Limiter
 }
 
 type ldapAttributeMapping struct {
@@ -196,7 +200,6 @@ func NewLDAPIdentifierBackend(
 			email: emailAttribute,
 			name:  nameAttribute,
 		},
-		timeout: 60,
 
 		logger: c.Logger,
 		dialer: &net.Dialer{
@@ -204,6 +207,9 @@ func NewLDAPIdentifierBackend(
 			DualStack: true,
 		},
 		tlsConfig: tlsConfig,
+
+		timeout: 60,                        //XXX(longsleep): make timeout configuration.
+		limiter: rate.NewLimiter(100, 200), //XXX(longsleep): make rate limits configuration.
 	}
 
 	b.logger.WithField("ldap", fmt.Sprintf("%s://%s ", uri.Scheme, addr)).Infoln("ldap server identifier backend set up")
@@ -275,6 +281,11 @@ func (b *LDAPIdentifierBackend) ResolveUser(ctx context.Context, username string
 // for the user specified by the useID. Requests are bound to the provided
 // context.
 func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string) (identity.User, error) {
+	_, err := ldap.ParseDN(userID)
+	if err != nil {
+		return nil, fmt.Errorf("ldap identifier backend get user invalid user ID: %v", err)
+	}
+
 	l, err := b.connect(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user connect error: %v", err)
@@ -295,7 +306,18 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string) (ide
 	}, nil
 }
 
-func (b *LDAPIdentifierBackend) connect(ctx context.Context) (*ldap.Conn, error) {
+func (b *LDAPIdentifierBackend) connect(parentCtx context.Context) (*ldap.Conn, error) {
+	// A timeout for waiting for a limiter slot. The timeout also includes the
+	// time to connect to the LDAP server which as a consequence means that both
+	// getting a free slot and establishing the connection are one timeout.
+	ctx, cancel := context.WithTimeout(parentCtx, time.Duration(b.timeout)*time.Second)
+	defer cancel()
+
+	err := b.limiter.Wait(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	c, err := b.dialer.DialContext(ctx, "tcp", b.addr)
 	if err != nil {
 		return nil, ldap.NewError(ldap.ErrorNetwork, err)
