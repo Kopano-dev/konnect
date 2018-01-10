@@ -72,7 +72,7 @@ func NewMemoryMapManager(ctx context.Context) code.Manager {
 }
 
 func (cm *memoryMapManager) purgeExpired() {
-	expired := make([]string, 0)
+	var expired []string
 	deadline := time.Now().Add(-codeValidDuration)
 	var record *codeRequestRecord
 	for entry := range cm.table.IterBuffered() {

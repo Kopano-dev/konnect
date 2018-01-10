@@ -25,7 +25,7 @@ import (
 )
 
 func uniqueStrings(s []string) []string {
-	res := make([]string, 0)
+	var res []string
 	m := make(map[string]bool)
 	for _, s := range s {
 		if _, ok := m[s]; ok {
