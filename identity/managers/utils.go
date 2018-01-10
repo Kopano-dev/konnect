@@ -32,6 +32,7 @@ func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]boo
 		if !authorizedScope {
 			continue
 		}
+		// Only authorize the scopes we know.
 		switch scope {
 		case oidc.ScopeOpenID:
 			// breaks
@@ -51,6 +52,7 @@ func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]boo
 		case konnect.ScopeID:
 			// breaks
 		default:
+			// Unknown scopes end up here and are not getting authorized.
 			authorizedScope = false
 		}
 		if authorizedScope {
