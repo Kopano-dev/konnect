@@ -1,10 +1,15 @@
 # Konnect
 
-## TL;DW
+Kopano Konnect implements an [OpenID provider](openid.net/specs/openid-connect-core-1_0.html) (OP) with integrated web login and consent forms.
 
-Make sure you have Go 1.8 installed. This assumes your GOPATH is `~/go` and
+## Quick start
+
+Make sure you have Go 1.8 or later installed. This assumes your GOPATH is `~/go` and
 you have `~/go/bin` in your $PATH and you have [Glide](https://github.com/Masterminds/glide)
 installed as well.
+
+Konnect also includes a modern web app which requires [Yarn](https://yarnpkg.com). Thus it
+is furthermore assumed that you have `yarn` in your $PATH.
 
 ## Building from source
 
@@ -16,15 +21,24 @@ cd konnect
 make
 ```
 
+### Optional build dependencies
+
+Some optional build dependencies are required for linting and continous
+integration. Those tools are mostly used by make to perform various tasks and
+are expected to be found in your $PATH.
+
+  - https://github.com/golang/lint
+  - https://github.com/tebeka/go2xunit
+
 ## Running Konnect
 
-Konnect can provide a full user login with Kopano Groupware Core as backend or
-use any cookie aware login area which supports the ?continue parameter and
-is based on cookies.
+Konnect can provide user login with Kopano Groupware Core as backend, use a
+cookie aware web login area which supports the ?continue parameter, or also can
+directly connect to a LDAP server.
 
-All backends require certain general parameters to be present. Create a  RSA
+All backends require certain general parameters to be present. Create a RSA
 key-pair and provide the key file with the `--key` parameter. If you skip this,
-Konnect will create a random non-persistent key pair on startup.
+Konnect will create a random non-persistent key on startup.
 
 To encrypt certain values, Konnect needs a secure key. Create a hex-key with
 `openssl rand -hex 32` and provide it with via the `--secret` parameter.
@@ -35,14 +49,15 @@ Take a look at `Caddyfile.example` on the URL endpoints provided by Konnect and
 how to expose them through a TLS proxy.
 
 The base URL of the frontend proxy is what will become the value of the `--iss`
-parameter when starting up Konnect and needs to TLS encrypted (https://).
+parameter when starting up Konnect. OIDC requires the Issuer Identifier to be
+secure (https:// required).
 
 ### Kopano Webapp backend (Cookie backend)
 
 This assumes that you have a set-up Konano with a reverse proxy on
 `https://mykopano.local` together with the proper proxy configuration to
 pass through all requests to the `/konnect/v1/` prefix to `127.0.0.1:8777`. also
-do not forget to reverse proxy `/.well-known/openid-configuration` as well.
+do not forget to reverse proxy `/.well-known/openid-configuration`.
 
 Kopano Webapp needs to support the `?continue=` request parameter and the domains
 of possible OIDC clients need to be added into `webapp/config.php` with the
