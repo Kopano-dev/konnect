@@ -146,22 +146,17 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	// Params is an array like this [$username, $password, $mode], definig a
+	// extensible way to extend login modes over time. The minimal length of
+	// the params array is 1 with only [$username]. Second field is the password
+	// but its intepretation depends on the third field ($mode). The rest of the
+	// fields are mode specific.
 	params := r.Params
-	// Params is an array like this [$username, $password, $mode].
 	for {
-		if len(params) >= 3 && params[1] == "" && params[2] == "1" {
-			// Check if same user is logged in via cookie.
-			// XXX(longsleep): Under what situtation is this behavior needed?
-			identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req, 0)
-			if cookieErr != nil {
-				i.logger.WithError(cookieErr).Debugln("identifier failed to decode logon cookie in logon request")
-			}
-			if identifiedUser != nil {
-				if identifiedUser.Username() == params[0] {
-					user = identifiedUser
-					break
-				}
-			}
+		paramSize := len(params)
+		if paramSize == 0 {
+			i.ErrorPage(rw, http.StatusBadRequest, "", "params required")
+			break
 		}
 
 		promptLogin := false
@@ -170,50 +165,57 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		if !promptLogin {
+			// SSO support - check if request passed through a trusted proxy.
 			trusted, _ := utils.IsRequestFromTrustedSource(req, i.Config.Config.TrustedProxyIPs, i.Config.Config.TrustedProxyNets)
-
 			if trusted {
-				// Check forwarded user if allowed.
+				// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
 				forwardedUser := req.Header.Get("X-Forwarded-User")
 				if forwardedUser != "" {
-					// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
-					if len(params) >= 1 && forwardedUser == params[0] {
-						user, err = i.resolveUser(req.Context(), params[0])
-						if err != nil {
-							i.logger.WithError(err).Errorln("identifier failed to resolve user with backend")
+					if forwardedUser == params[0] {
+						resolvedUser, resolveErr := i.resolveUser(req.Context(), params[0])
+						if resolveErr != nil {
+							i.logger.WithError(resolveErr).Errorln("identifier failed to resolve user with backend")
 							i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
 							return
 						}
+
+						// Success, use resolved user.
+						user = resolvedUser
 					}
 					break
 				}
 			}
 		}
 
-		if len(params) >= 2 && params[1] == "" {
-			// Empty password, stop here.
+		if paramSize < 3 {
+			// Unsupported logon mode.
+			break
+		}
+		if params[1] == "" {
+			// Empty password, stop here - never allowed in any mode.
 			break
 		}
 
-		if len(params) >= 3 && params[2] == "1" {
-			// Username and password.
-			var success bool
-			var subject *string
-			success, subject, err = i.backend.Logon(req.Context(), params[0], params[1])
-			if err != nil {
-				i.logger.WithError(err).Errorln("identifier failed to logon with backend")
+		switch params[2] {
+		case ModeLogonUsernamePassword:
+			// Username and password validation mode.
+			success, subject, logonErr := i.backend.Logon(req.Context(), params[0], params[1])
+			if logonErr != nil {
+				i.logger.WithError(logonErr).Errorln("identifier failed to logon with backend")
 				i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to logon")
 				return
 			}
 			if success {
-				// Construct user from logon result.
+				// Construct logged on user from logon result.
 				user = &IdentifiedUser{
 					sub: *subject,
 
 					username: params[0],
 				}
 			}
-			break
+
+		default:
+			i.logger.Debugln("identifier unknown logon mode: %v", params[2])
 		}
 
 		break
