@@ -87,7 +87,8 @@ func (u *IdentifiedUser) Claims() jwt.MapClaims {
 	return claims
 }
 
-func (u *IdentifiedUser) loggedOn() (bool, time.Time) {
+// LoggedOn returns true if the accociated user has a logonAt time set.
+func (u *IdentifiedUser) LoggedOn() (bool, time.Time) {
 	return !u.logonAt.IsZero(), u.logonAt
 }
 

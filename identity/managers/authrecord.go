@@ -18,6 +18,8 @@
 package managers
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 
 	"stash.kopano.io/kc/konnect/identity"
@@ -28,7 +30,8 @@ type authRecord struct {
 	authorizedScopes map[string]bool
 	claims           map[string]jwt.Claims
 
-	user identity.User
+	user     identity.User
+	authTime time.Time
 }
 
 // NewAuthRecord returns a implementation of identity.AuthRecord holding
@@ -86,4 +89,14 @@ func (r *authRecord) User() identity.User {
 // SetUser implements the identity.AuthRecord interface.
 func (r *authRecord) SetUser(u identity.User) {
 	r.user = u
+}
+
+// LoggedOn implements the identity.AuthRecord interface
+func (r *authRecord) LoggedOn() (bool, time.Time) {
+	return !r.authTime.IsZero(), r.authTime
+}
+
+// SetAuthTime implements the identity.AuthRecord interface.
+func (r *authRecord) SetAuthTime(authTime time.Time) {
+	r.authTime = authTime
 }

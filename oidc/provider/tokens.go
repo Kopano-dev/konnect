@@ -109,6 +109,15 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 		idTokenClaims.CodeHash = oidc.LeftmostHash([]byte(codeString), hash).String()
 	}
+	if ar.MaxAge > 0 {
+		// Add AuthTime.
+		if loggedOn, logonAt := auth.LoggedOn(); loggedOn {
+			idTokenClaims.AuthTime = logonAt.Unix()
+		} else {
+			// NOTE(longsleep): Return current time to be spec compliant.
+			idTokenClaims.AuthTime = time.Now().Unix()
+		}
+	}
 
 	idToken := jwt.NewWithClaims(p.signingMethod, idTokenClaims)
 	idToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID

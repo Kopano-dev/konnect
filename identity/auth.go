@@ -18,6 +18,8 @@
 package identity
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -30,4 +32,7 @@ type AuthRecord interface {
 
 	User() User
 	SetUser(User)
+
+	LoggedOn() (bool, time.Time)
+	SetAuthTime(time.Time)
 }

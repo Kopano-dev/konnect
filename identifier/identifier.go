@@ -163,7 +163,7 @@ func (i *Identifier) ErrorPage(rw http.ResponseWriter, code int, title string, m
 // SetUserToLogonCookie serializes the provided user into an encrypted string
 // and sets it as cookie on the provided http.ResponseWriter.
 func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseWriter, user *IdentifiedUser) error {
-	loggedOn, logonAt := user.loggedOn()
+	loggedOn, logonAt := user.LoggedOn()
 	if !loggedOn {
 		return fmt.Errorf("refused to set cookie for not logged on user")
 	}
@@ -218,7 +218,7 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		logonAt: claims.IssuedAt.Time(),
 	}
 
-	loggedOn, logonAt := user.loggedOn()
+	loggedOn, logonAt := user.LoggedOn()
 	if !loggedOn {
 		// Ignore logons which are not valid.
 		return nil, nil
