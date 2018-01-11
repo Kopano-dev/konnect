@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 func uniqueStrings(s []string) []string {
@@ -38,11 +37,11 @@ func uniqueStrings(s []string) []string {
 	return res
 }
 
-func getRequestURL(req *http.Request) *url.URL {
+func getRequestURL(req *http.Request, isTrustedSource bool) *url.URL {
 	u, _ := url.Parse(req.URL.String())
 
-	// TODO(longsleep): Add trusted proxy white list.
-	if strings.HasPrefix(req.RemoteAddr, "127.") {
+	if isTrustedSource {
+		// Look at proxy injected values to rewrite URLs if trusted.
 		for {
 			prefix := req.Header.Get("X-Forwarded-Prefix")
 			if prefix != "" {

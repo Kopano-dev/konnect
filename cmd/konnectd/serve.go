@@ -71,6 +71,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")
 	serveCmd.Flags().String("identifier-client-path", "./identifier/build", "Path to the identifier web client base folder")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
+	serveCmd.Flags().StringArray("trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
 
 	return serveCmd
 }
@@ -125,6 +126,24 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 		logger.Warnln("insecure mode, TLS client connections are susceptible to man-in-the-middle attacks")
 		logger.Debugln("http2 client support is disabled (insecure mode)")
+	}
+
+	trustedProxies, _ := cmd.Flags().GetStringArray("trusted-proxy")
+	for _, trustedProxy := range trustedProxies {
+		if ip := net.ParseIP(trustedProxy); ip != nil {
+			cfg.TrustedProxyIPs = append(cfg.TrustedProxyIPs, &ip)
+			continue
+		}
+		if _, ipNet, errParseCIDR := net.ParseCIDR(trustedProxy); errParseCIDR == nil {
+			cfg.TrustedProxyNets = append(cfg.TrustedProxyNets, ipNet)
+			continue
+		}
+	}
+	if len(cfg.TrustedProxyIPs) > 0 {
+		logger.Infoln("trusted proxy IPs", cfg.TrustedProxyIPs)
+	}
+	if len(cfg.TrustedProxyNets) > 0 {
+		logger.Infoln("trusted proxy networks", cfg.TrustedProxyNets)
 	}
 
 	cfg.HTTPTransport = httpTransport

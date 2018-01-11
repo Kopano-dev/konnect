@@ -42,8 +42,7 @@ func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interf
 		if asFragment {
 			uriString = fmt.Sprintf("%s#%s", uri.String(), queryString.Encode())
 		} else {
-			uri.RawQuery = queryString.Encode()
-			uriString = uri.String()
+			uriString = fmt.Sprintf("%s?%s", uri.String(), queryString.Encode())
 		}
 	} else {
 		uriString = uri.String()

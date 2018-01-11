@@ -133,8 +133,32 @@ func (p *Provider) ErrorPage(rw http.ResponseWriter, code int, title string, mes
 func (p *Provider) Found(rw http.ResponseWriter, uri *url.URL, params interface{}, asFragment bool) {
 	err := utils.WriteRedirect(rw, http.StatusFound, uri, params, asFragment)
 	if err != nil {
+		p.logger.WithError(err).Debugln("failed to write to response")
 		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		return
 	}
+}
+
+// LoginRequiredPage writes a HTTP 30 to the provided ResponseWrite with the
+// URL of the provided request (set to the scheme and host of issuer) as
+// continue parameter.
+func (p *Provider) LoginRequiredPage(rw http.ResponseWriter, req *http.Request, uri *url.URL) {
+	issURI, _ := url.Parse(p.issuerIdentifier)
+
+	trusted, _ := utils.IsRequestFromTrustedSource(req, p.Config.Config.TrustedProxyIPs, p.Config.Config.TrustedProxyNets)
+
+	continueURI := getRequestURL(req, trusted)
+	continueURI.Scheme = issURI.Scheme
+	continueURI.Host = issURI.Host
+
+	uri, err := url.Parse(fmt.Sprintf("%s?continue=%s&oauth=1", uri.String(), url.QueryEscape(continueURI.String())))
+	if err != nil {
+		p.logger.WithError(err).Debugln("failed to parse sign-in URL")
+		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		return
+	}
+
+	p.Found(rw, uri, nil, false)
 }
 
 // GetAccessTokenClaimsFromRequest reads incoming request, validates the

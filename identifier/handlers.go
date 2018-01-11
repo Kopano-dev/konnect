@@ -169,20 +169,24 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 			promptLogin, _ = r.Hello.Prompts[oidc.PromptLogin]
 		}
 
-		// Check forwarded user if allowed.
 		if !promptLogin {
-			forwardedUser := req.Header.Get("X-Forwarded-User")
-			if forwardedUser != "" {
-				// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
-				if len(params) >= 1 && forwardedUser == params[0] {
-					user, err = i.resolveUser(req.Context(), params[0])
-					if err != nil {
-						i.logger.WithError(err).Errorln("identifier failed to resolve user with backend")
-						i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
-						return
+			trusted, _ := utils.IsRequestFromTrustedSource(req, i.Config.Config.TrustedProxyIPs, i.Config.Config.TrustedProxyNets)
+
+			if trusted {
+				// Check forwarded user if allowed.
+				forwardedUser := req.Header.Get("X-Forwarded-User")
+				if forwardedUser != "" {
+					// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
+					if len(params) >= 1 && forwardedUser == params[0] {
+						user, err = i.resolveUser(req.Context(), params[0])
+						if err != nil {
+							i.logger.WithError(err).Errorln("identifier failed to resolve user with backend")
+							i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
+							return
+						}
 					}
+					break
 				}
-				break
 			}
 		}
 

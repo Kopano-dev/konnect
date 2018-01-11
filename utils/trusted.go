@@ -15,22 +15,34 @@
  *
  */
 
-package config
+package utils
 
 import (
 	"net"
 	"net/http"
-
-	"github.com/sirupsen/logrus"
 )
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	ListenAddr string
+// IsRequestFromTrustedSource checks if the provided requests remote address is
+// one either one of the provided ips or in one of the provided networks.
+func IsRequestFromTrustedSource(req *http.Request, ips []*net.IP, nets []*net.IPNet) (bool, error) {
+	ipString, _, err := net.SplitHostPort(req.RemoteAddr)
+	if err != nil {
+		return false, err
+	}
 
-	Logger        logrus.FieldLogger
-	HTTPTransport http.RoundTripper
+	ip := net.ParseIP(ipString)
 
-	TrustedProxyIPs  []*net.IP
-	TrustedProxyNets []*net.IPNet
+	for _, checkIP := range ips {
+		if checkIP.Equal(ip) {
+			return true, nil
+		}
+	}
+
+	for _, checkNet := range nets {
+		if checkNet.Contains(ip) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
