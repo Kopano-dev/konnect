@@ -22,24 +22,12 @@ import (
 	"net/http"
 
 	blake2b "github.com/minio/blake2b-simd"
-	jwt "gopkg.in/square/go-jose.v2/jwt"
 )
 
-func (i *Identifier) setLogonCookie(rw http.ResponseWriter, user *IdentifiedUser) error {
-	// Encrypt cookie value.
-	claims := jwt.Claims{
-		Subject: user.Subject(),
-	}
-
-	userClaims := map[string]interface{}(user.Claims())
-	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(userClaims).CompactSerialize()
-	if err != nil {
-		return err
-	}
-
+func (i *Identifier) setLogonCookie(rw http.ResponseWriter, value string) error {
 	cookie := http.Cookie{
 		Name:  i.logonCookieName,
-		Value: serialized,
+		Value: value,
 
 		Path:     i.pathPrefix + "/identifier/_/",
 		Secure:   true,
@@ -69,20 +57,15 @@ func (i *Identifier) removeLogonCookie(rw http.ResponseWriter) error {
 	return nil
 }
 
-func (i *Identifier) setConsentCookie(rw http.ResponseWriter, req *http.Request, cr *ConsentRequest, consent *Consent) error {
+func (i *Identifier) setConsentCookie(rw http.ResponseWriter, cr *ConsentRequest, value string) error {
 	name, err := i.getConsentCookieName(cr)
-	if err != nil {
-		return err
-	}
-
-	serialized, err := jwt.Encrypted(i.encrypter).Claims(consent).CompactSerialize()
 	if err != nil {
 		return err
 	}
 
 	cookie := http.Cookie{
 		Name:   name,
-		Value:  serialized,
+		Value:  value,
 		MaxAge: 60,
 
 		Path:     i.pathPrefix + "/identifier/_/",

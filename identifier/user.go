@@ -19,6 +19,7 @@ package identifier
 
 import (
 	"context"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 
@@ -36,6 +37,8 @@ type IdentifiedUser struct {
 	displayName   string
 
 	id int64
+
+	logonAt time.Time
 }
 
 // Subject returns the associated users subject field. The subject is the main
@@ -82,6 +85,10 @@ func (u *IdentifiedUser) Claims() jwt.MapClaims {
 	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
 
 	return claims
+}
+
+func (u *IdentifiedUser) loggedOn() (bool, time.Time) {
+	return !u.logonAt.IsZero(), u.logonAt
 }
 
 func (i *Identifier) resolveUser(ctx context.Context, username string) (*IdentifiedUser, error) {

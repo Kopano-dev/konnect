@@ -81,7 +81,6 @@ func (hr *HelloRequest) parse() error {
 			hr.Prompts[prompt] = true
 		}
 	}
-
 	if hr.RawMaxAge != "" {
 		maxAgeInt, err := strconv.ParseInt(hr.RawMaxAge, 10, 64)
 		if err != nil {

@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -165,10 +166,33 @@ func (i *Identifier) ErrorPage(rw http.ResponseWriter, code int, title string, m
 	utils.WriteErrorPage(rw, code, title, message)
 }
 
+// SetUserToLogonCookie serializes the provided user into an encrypted string
+// and sets it as cookie on the provided http.ResponseWriter.
+func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseWriter, user *IdentifiedUser) error {
+	loggedOn, logonAt := user.loggedOn()
+	if !loggedOn {
+		return fmt.Errorf("refused to set cookie for not logged on user")
+	}
+
+	// Encrypt cookie value.
+	claims := jwt.Claims{
+		Subject:  user.Subject(),
+		IssuedAt: jwt.NewNumericDate(logonAt),
+	}
+
+	userClaims := map[string]interface{}(user.Claims())
+	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(userClaims).CompactSerialize()
+	if err != nil {
+		return err
+	}
+
+	return i.setLogonCookie(rw, serialized)
+}
+
 // GetUserFromLogonCookie looks up the associated cookie name from the provided
 // request, parses it and returns the user containing the information found in
 // the coookie payload data.
-func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Request) (*IdentifiedUser, error) {
+func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Request, maxAge time.Duration) (*IdentifiedUser, error) {
 	cookie, err := i.getLogonCookie(req)
 	if err != nil {
 		if err == http.ErrNoCookie {
@@ -196,8 +220,22 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	}
 
 	user := &IdentifiedUser{
-		sub: claims.Subject,
+		sub:     claims.Subject,
+		logonAt: claims.IssuedAt.Time(),
 	}
+
+	loggedOn, logonAt := user.loggedOn()
+	if !loggedOn {
+		// Ignore logons which are not valid.
+		return nil, nil
+	}
+	if maxAge > 0 {
+		if logonAt.Add(maxAge).Before(time.Now()) {
+			// Ignore logon as it is no longer valid within maxAge.
+			return nil, nil
+		}
+	}
+
 	if v, _ := userClaims[konnect.IdentifiedUsernameClaim]; v != nil {
 		user.username = v.(string)
 	}
@@ -236,6 +274,17 @@ func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*Ident
 	}
 
 	return identifiedUser, nil
+}
+
+// SetConsentToConsentCookie serializses the provided Consent using the provided
+// ConsentRequest and sets it as cookie on the provided ReponseWriter.
+func (i *Identifier) SetConsentToConsentCookie(ctx context.Context, rw http.ResponseWriter, cr *ConsentRequest, consent *Consent) error {
+	serialized, err := jwt.Encrypted(i.encrypter).Claims(consent).CompactSerialize()
+	if err != nil {
+		return err
+	}
+
+	return i.setConsentCookie(rw, cr, serialized)
 }
 
 // GetConsentFromConsentCookie extract consent information for the provided

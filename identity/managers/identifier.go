@@ -64,7 +64,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 	var user *identifier.IdentifiedUser
 	var err error
 
-	if identifiedUser, _ := im.identifier.GetUserFromLogonCookie(ctx, req); identifiedUser != nil {
+	if identifiedUser, _ := im.identifier.GetUserFromLogonCookie(ctx, req, ar.MaxAge); identifiedUser != nil {
 		// TODO(longsleep): Add other user meta data.
 		user = identifiedUser
 	} else {

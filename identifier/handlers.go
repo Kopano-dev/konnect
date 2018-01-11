@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -150,7 +151,8 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	for {
 		if len(params) >= 3 && params[1] == "" && params[2] == "1" {
 			// Check if same user is logged in via cookie.
-			identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req)
+			// XXX(longsleep): Under what situtation is this behavior needed?
+			identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req, 0)
 			if cookieErr != nil {
 				i.logger.WithError(cookieErr).Debugln("identifier failed to decode logon cookie in logon request")
 			}
@@ -202,7 +204,8 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 			if success {
 				// Construct user from logon result.
 				user = &IdentifiedUser{
-					sub:      *subject,
+					sub: *subject,
+
 					username: params[0],
 				}
 			}
@@ -227,6 +230,9 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		i.logger.WithError(err).Debugln("identifier failed to update user data in logon request")
 	}
 
+	// Set logon time.
+	user.logonAt = time.Now()
+
 	if r.Hello != nil {
 		hello, errHello := i.newHelloResponse(rw, req, r.Hello, user)
 		if errHello != nil {
@@ -243,7 +249,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		response.Hello = hello
 	}
 
-	err = i.setLogonCookie(rw, user)
+	err = i.SetUserToLogonCookie(req.Context(), rw, user)
 	if err != nil {
 		i.logger.WithError(err).Errorln("failed to serialize logon ticket")
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to serialize logon ticket")
@@ -307,7 +313,7 @@ func (i *Identifier) handleConsent(rw http.ResponseWriter, req *http.Request) {
 		consent.RawScope = r.RawScope
 	}
 
-	err = i.setConsentCookie(rw, req, &r, consent)
+	err = i.SetConsentToConsentCookie(req.Context(), rw, &r, consent)
 	if err != nil {
 		i.logger.WithError(err).Errorln("failed to serialize consent ticket")
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to serialize consent ticket")
@@ -396,7 +402,7 @@ handleHelloLoop:
 
 		if identifiedUser == nil {
 			// Check if logged in via cookie.
-			identifiedUser, err = i.GetUserFromLogonCookie(req.Context(), req)
+			identifiedUser, err = i.GetUserFromLogonCookie(req.Context(), req, r.MaxAge)
 			if err != nil {
 				i.logger.WithError(err).Debugln("identifier failed to decode logon cookie in hello")
 			}
@@ -421,6 +427,7 @@ handleHelloLoop:
 
 		break
 	}
+
 	if !response.Success {
 		return response, nil
 	}
