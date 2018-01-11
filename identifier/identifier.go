@@ -19,7 +19,6 @@ package identifier
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -117,7 +116,7 @@ func (i *Identifier) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 func (i *Identifier) SetKey(key []byte) error {
 	var ce jose.ContentEncryption
 	var algo jose.KeyAlgorithm
-	switch hex.DecodedLen(len(key)) {
+	switch len(key) {
 	case 16:
 		ce = jose.A128GCM
 		algo = jose.A128GCMKW
@@ -128,18 +127,13 @@ func (i *Identifier) SetKey(key []byte) error {
 		ce = jose.A256GCM
 		algo = jose.A256GCMKW
 	default:
-		return fmt.Errorf("identifier: invalid encryption key size. Need hex encded 128, 192 or 256 bytes")
-	}
-
-	dst := make([]byte, hex.DecodedLen(len(key)))
-	if _, err := hex.Decode(dst, key); err == nil {
-		key = dst
-	} else {
-		return fmt.Errorf("identifier: failed to hex decode encryption key: %v", err)
+		return fmt.Errorf("identifier invalid encryption key size. Need 16, 24 or 32 bytes")
 	}
 
 	if len(key) < 32 {
-		i.logger.Warnf("using encryption key size with %d bytes which is below 32 bytes", len(key))
+		i.logger.Warnf("identifier using encryption key size with %d bytes which is below 32 bytes", len(key))
+	} else {
+		i.logger.Infof("identifier set up with %v:%v security", ce, algo)
 	}
 
 	recipient := jose.Recipient{

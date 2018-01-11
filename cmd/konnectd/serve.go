@@ -64,8 +64,8 @@ func commandServe() *cobra.Command {
 	}
 	serveCmd.Flags().String("listen", "127.0.0.1:8777", "TCP listen address")
 	serveCmd.Flags().String("iss", "http://localhost:8777", "OIDC issuer URL")
-	serveCmd.Flags().String("key", "", "PEM key file (RSA)")
-	serveCmd.Flags().String("secret", "", fmt.Sprintf("Encryption secret (length must be %d)", encryption.KeySize))
+	serveCmd.Flags().String("signing-private-key", "", "Full path to PEM encoded private key file (must match the --signing-method algorithm)")
+	serveCmd.Flags().String("encryption-secret", "", fmt.Sprintf("Full path to a file containing a %d bytes secret key", encryption.KeySize))
 	serveCmd.Flags().String("signing-method", "RS256", "JWT signing method")
 	serveCmd.Flags().String("sign-in-uri", "", "Custom redirection URI to sign-in form")
 	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")
@@ -149,10 +149,17 @@ func serve(cmd *cobra.Command, args []string) error {
 	cfg.HTTPTransport = httpTransport
 
 	var encryptionSecret []byte
-	if encryptionSecretString, _ := cmd.Flags().GetString("secret"); encryptionSecretString != "" {
-		encryptionSecret = []byte(encryptionSecretString)
+	if encryptionSecretFilename, _ := cmd.Flags().GetString("encryption-secret"); encryptionSecretFilename != "" {
+		logger.WithField("file", encryptionSecretFilename).Infoln("loading encryption secret from file")
+		encryptionSecret, err = ioutil.ReadFile(encryptionSecretFilename)
+		if err != nil {
+			return fmt.Errorf("failed to load encryption secret from file: %v", err)
+		}
+		if len(encryptionSecret) != encryption.KeySize {
+			return fmt.Errorf("invalid encryption secret size - must be %d bytes", encryption.KeySize)
+		}
 	} else {
-		logger.Warnln("missing --secret parameter, using random encyption secret")
+		logger.Warnln("missing --encryption-secret parameter, using random encyption secret")
 		encryptionSecret = rndm.GenerateRandomBytes(encryption.KeySize)
 	}
 
@@ -163,8 +170,9 @@ func serve(cmd *cobra.Command, args []string) error {
 	}
 	err = encryptionManager.SetKey(encryptionSecret)
 	if err != nil {
-		return fmt.Errorf("invalid --secret parameter value: %v", err)
+		return fmt.Errorf("invalid --encryption-secret parameter value for encryption: %v", err)
 	}
+	logger.Infof("encryption set up with %d key size", encryptionManager.GetKeySize())
 
 	codeManager := codeManagers.NewMemoryMapManager(ctx)
 
@@ -253,7 +261,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 		err = activeIdentifier.SetKey(encryptionSecret)
 		if err != nil {
-			return fmt.Errorf("invalid --secret parameter value: %v", err)
+			return fmt.Errorf("invalid --encryption-secret parameter value for identifier: %v", err)
 		}
 
 		identityManagerConfig := &identity.Config{
@@ -312,7 +320,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 		err = activeIdentifier.SetKey(encryptionSecret)
 		if err != nil {
-			return fmt.Errorf("invalid --secret parameter value: %v", err)
+			return fmt.Errorf("invalid --encryption-secret parameter value for identifier: %v", err)
 		}
 
 		identityManagerConfig := &identity.Config{
@@ -369,15 +377,15 @@ func serve(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create server: %v", err)
 	}
 
-	if keyFn, _ := cmd.Flags().GetString("key"); keyFn != "" {
+	if signingKeyFn, _ := cmd.Flags().GetString("signing-private-key"); signingKeyFn != "" {
 		signingMethodString, _ := cmd.Flags().GetString("signing-method")
 		signingMethod := jwt.GetSigningMethod(signingMethodString)
 		if signingMethod == nil {
 			return fmt.Errorf("unknown signing method: %s", signingMethodString)
 		}
 
-		logger.WithField("file", keyFn).Infoln("loading key from file")
-		err := addKeysToProvider(keyFn, activeProvider, signingMethod)
+		logger.WithField("file", signingKeyFn).Infoln("loading signing key from file")
+		err := addKeysToProvider(signingKeyFn, activeProvider, signingMethod)
 		if err != nil {
 			return err
 		}
@@ -386,7 +394,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		//XXX(longsleep): remove me - create keypair for testing.
 		key, _ := rsa.GenerateKey(rand.Reader, 512)
 		activeProvider.SetSigningKey("default", key, jwt.SigningMethodRS256)
-		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random RSA key pair")
+		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random signing key with signing method RS256")
 	}
 
 	logger.Infoln("serve started")

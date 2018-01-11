@@ -59,6 +59,11 @@ func (em *EncryptionManager) SetKey(key []byte) error {
 	return nil
 }
 
+// GetKeySize returns the size of the accociated manager's key.
+func (em *EncryptionManager) GetKeySize() int {
+	return len(em.key)
+}
+
 // EncryptStringToHexString encrypts a plaintext string with the accociated
 // key and returns the hex encoded ciphertext as string.
 func (em *EncryptionManager) EncryptStringToHexString(plaintext string) (string, error) {
