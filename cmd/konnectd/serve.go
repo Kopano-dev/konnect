@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -391,10 +392,10 @@ func serve(cmd *cobra.Command, args []string) error {
 		}
 		logger.WithField("alg", signingMethodString).Infoln("token signing set up")
 	} else {
-		//XXX(longsleep): remove me - create keypair for testing.
-		key, _ := rsa.GenerateKey(rand.Reader, 512)
-		activeProvider.SetSigningKey("default", key, jwt.SigningMethodRS256)
+		//NOTE(longsleep): remove me - create keypair a random key pair.
+		key, _ := rsa.GenerateKey(rand.Reader, 2048)
 		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random signing key with signing method RS256")
+		activeProvider.SetSigningKey("default", key, jwt.SigningMethodRS256)
 	}
 
 	logger.Infoln("serve started")
@@ -421,12 +422,29 @@ func addKeysToProvider(fn string, p *provider.Provider, signingMethod jwt.Signin
 		if block == nil {
 			return fmt.Errorf("no PEM block found")
 		}
-		key, errParse := x509.ParsePKCS1PrivateKey(block.Bytes)
-		if err != nil {
-			return fmt.Errorf("failed to parse key: %v", errParse)
+
+		var signer crypto.Signer
+		for {
+			pkcs1Key, errParse1 := x509.ParsePKCS1PrivateKey(block.Bytes)
+			if errParse1 == nil {
+				signer = pkcs1Key
+				break
+			}
+
+			pkcs8Key, errParse2 := x509.ParsePKCS8PrivateKey(block.Bytes)
+			if errParse2 == nil {
+				signerSigner, ok := pkcs8Key.(crypto.Signer)
+				if !ok {
+					return fmt.Errorf("failed to use key as crypto signer")
+				}
+				signer = signerSigner
+				break
+			}
+
+			return fmt.Errorf("failed to parse key - valid PKCS#1 or PKCS#8? %v, %v", errParse1, errParse2)
 		}
 
-		err = p.SetSigningKey("default", key, signingMethod)
+		err = p.SetSigningKey("default", signer, signingMethod)
 	}
 
 	return err
