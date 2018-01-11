@@ -6,13 +6,16 @@ After=network-online.target
 [Service]
 Slice=machine.slice
 Environment=RKT_ARGS=--port=www:127.0.0.1:8777
-Environment=KEY=/etc/kopano/konnectd-tokens-signing-key.pem
+Environment=ISS=https://konnect.local
+Environment=SIGNING_PRIVATE_KEY=/etc/kopano/konnectd-tokens-signing-key.pem
+Environment=ENCRYPTION_SECRET=/etc/kopano/konnectd-encryption.key
 Environment=IMAGE=/srv/images/kopano-konnectd-latest-linux-amd64.aci
 EnvironmentFile=/etc/default/kopano-konnectd
 ExecStart=/usr/bin/rkt \
 	--insecure-options=image \
 	run $RKT_ARGS \
-	--volume key,kind=host,source=${KEY} \
+	--volume signing-private-key,kind=host,source=${SIGNING_PRIVATE_KEY} \
+	--volume encryption-secret,kind=host,source=${ENCRYPTION_SECRET} \
 	--volume etc-ssl-certs,kind=host,source=/etc/ssl/certs \
 	--volume run,kind=host,source=/run \
 	${IMAGE} \
@@ -20,10 +23,9 @@ ExecStart=/usr/bin/rkt \
 	--environment=KOPANO_SERVER_USERNAME="$KOPANO_SERVER_USERNAME" \
 	--environment=KOPANO_SERVER_PASSWORD="$KOPANO_SERVER_PASSWORD" \
 	-- \
-	--iss=https://kopano.local \
+	--iss=${ISS} \
 	--sign-in-uri=${SIGN_IN_URL} \
-	--secret="${ENCRYPTION_SECRET}" $ARGS \
-	$IDENTITY_MANAGER
+	$ARGS $IDENTITY_MANAGER
 ExecStopPost=/usr/bin/rkt gc --mark-only
 KillMode=mixed
 Restart=always
