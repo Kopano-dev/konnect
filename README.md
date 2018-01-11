@@ -37,7 +37,7 @@ cookie aware web login area which supports the ?continue parameter, or also can
 directly connect to a LDAP server.
 
 All backends require certain general parameters to be present. Create a RSA
-key-pair file with `openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048`
+key-pair file with `openssl genpkey -algorithm RSA -out private-key.pem -pkeyopt rsa_keygen_bits:4096`
 and provide the key file with the `--signing-private-key` parameter. Konnect can
 load PKCS#1 and PKCS#8 key files. If you skip this, Konnect will create a random
 non-persistent RSA key on startup.
@@ -68,9 +68,8 @@ of possible OIDC clients need to be added into `webapp/config.php` with the
 `REDIRECT_ALLOWED_DOMAINS` setting.
 
 ```
-bin/konnectd serve --listen 127.0.0.1:8777 \
+bin/konnectd serve --listen=127.0.0.1:8777 \
   --iss=https://mykopano.local \
-  --insecure \
   --sign-in-uri=https://mykopano.local/webapp/ \
   cookie https://mykopano.local/webapp/?load=custom&name=oidcuser "KOPANO_WEBAPP encryption-store-key"
 ```
@@ -85,9 +84,8 @@ export KOPANO_SERVER_DEFAULT_URI=http://mykopano.local:236
 export KOPANO_SERVER_USERNAME=my-kopano-user
 export KOPANO_SERVER_PASSWORD=my-kopano-password
 
-bin/konnectd serve --listen 127.0.0.1:8777 \
-  --iss=https://mykonnect.local \
-  --insecure
+bin/konnectd serve --listen=127.0.0.1:8777 \
+  --iss=https://mykonnect.local
   kc
 ```
 
@@ -106,9 +104,8 @@ export LDAP_EMAIL_ATTRIBUTE=mail
 export LDAP_NAME_ATTRIBUTE=cn
 export LDAP_FILTER="(objectClass=organizationalPerson)"
 
-bin/konnectd serve --listen 127.0.0.1:8777 \
+bin/konnectd serve --listen=127.0.0.1:8777 \
   --iss=https://mykonnect.local \
-  --insecure \
   ldap
 ```
 
