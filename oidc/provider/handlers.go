@@ -126,8 +126,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	err = ar.Validate(func(token *jwt.Token) (interface{}, error) {
-		// Validator for incoming IDToken hints.
-		// TODO(longsleep): Validate claims.
+		// Validator for incoming IDToken hints, looks up key.
 		return p.validateJWT(token)
 	})
 	if err != nil {
@@ -279,8 +278,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	err = tr.Validate(func(token *jwt.Token) (interface{}, error) {
-		// Validator for incoming refresh tokens.
-		// TODO(longsleep): Validate claims.
+		// Validator for incoming refresh tokens, looks up key.
 		return p.validateJWT(token)
 	}, &konnect.RefreshTokenClaims{})
 	if err != nil {

@@ -118,10 +118,6 @@ func (tr *TokenRequest) Validate(keyFunc jwt.Keyfunc, claims jwt.Claims) error {
 
 				return nil, fmt.Errorf("Not validated")
 			})
-			if err == nil {
-				// TODO(longsleep): Validate all claims.
-				err = claims.Valid()
-			}
 			if err != nil {
 				return oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
 			}

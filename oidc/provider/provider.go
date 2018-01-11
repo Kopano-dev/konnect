@@ -178,12 +178,9 @@ func (p *Provider) GetAccessTokenClaimsFromRequest(req *http.Request) (*konnect.
 		}
 		claims = &konnect.AccessTokenClaims{}
 		_, err = jwt.ParseWithClaims(auth[1], claims, func(token *jwt.Token) (interface{}, error) {
+			// Validator for incoming access tokens, looks up key.
 			return p.validateJWT(token)
 		})
-		if err == nil {
-			// TODO(longsleep): Validate all claims.
-			err = claims.Valid()
-		}
 		if err != nil {
 			// Wrap as OAuth2 error.
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error())
