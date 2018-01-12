@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/identity"
@@ -145,4 +146,8 @@ func (im *DummyIdentityManager) ClaimsSupported() []string {
 		oidc.NameClaim,
 		oidc.EmailClaim,
 	}
+}
+
+// AddRoutes implements the identity.Manager interface.
+func (im *DummyIdentityManager) AddRoutes(ctx context.Context, router *mux.Router) {
 }

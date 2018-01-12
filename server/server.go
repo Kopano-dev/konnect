@@ -90,12 +90,12 @@ func (s *Server) AddRoutes(ctx context.Context, router *mux.Router) {
 	// TODO(longsleep): Add subpath support to all handlers and paths.
 	router.HandleFunc("/health-check", s.HealthCheckHandler)
 
-	if s.Config.Identifier != nil {
-		s.Config.Identifier.AddRoutes(ctx, router)
+	for _, route := range s.Config.Routes {
+		route.AddRoutes(ctx, router)
 	}
-	if s.Config.Provider != nil {
+	if s.Config.Handler != nil {
 		// Delegate rest to provider which is also a handler.
-		router.NotFoundHandler = s.Config.Provider
+		router.NotFoundHandler = s.Config.Handler
 	}
 }
 

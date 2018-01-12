@@ -93,15 +93,37 @@ func (p *Provider) makeIssURL(path string) string {
 	return fmt.Sprintf("%s%s", p.issuerIdentifier, path)
 }
 
-// SetSigningKey sets the provided signer as key for token signing and uses the provided id as key id. The public key of the provided
-// signer is also added as validation key with the same id.
+// SetSigningKey sets the provided signer as key for token signing and uses the
+// provided id as key id. The public key of the provided signer is also added as
+// validation key with the same id.
 func (p *Provider) SetSigningKey(id string, key crypto.Signer, signingMethod jwt.SigningMethod) error {
-	p.logger.Infof("provider set up with signing key of type %T", key)
+	p.logger.WithFields(logrus.Fields{
+		"type": fmt.Sprintf("%T", key),
+		"id":   id,
+	}).Infoln("set provider signing key")
 
-	p.validationKeys[id] = key.Public()
 	p.signingKey = key
 	p.signingKeyID = id
 	p.signingMethod = signingMethod
+
+	p.SetValidationKey(id, key.Public(), signingMethod)
+
+	return nil
+}
+
+// SetValidationKey sets the provider public key as validation key for token
+// validation for tokens with the provided key.
+func (p *Provider) SetValidationKey(id string, key crypto.PublicKey, signingMethod jwt.SigningMethod) error {
+	if p.signingMethod != signingMethod {
+		return fmt.Errorf("signing method mismatch")
+	}
+
+	p.logger.WithFields(logrus.Fields{
+		"type": fmt.Sprintf("%T", key),
+		"id":   id,
+	}).Infoln("set provider validation key")
+
+	p.validationKeys[id] = key
 
 	return nil
 }

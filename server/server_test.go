@@ -66,7 +66,7 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 	server, err := NewServer(&Config{
 		Config: cfg,
 
-		Provider: p,
+		Handler: p,
 	})
 	if err != nil {
 		t.Fatal(err)

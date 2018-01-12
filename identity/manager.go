@@ -21,6 +21,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gorilla/mux"
+
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
@@ -36,4 +38,6 @@ type Manager interface {
 
 	ScopesSupported() []string
 	ClaimsSupported() []string
+
+	AddRoutes(ctx context.Context, router *mux.Router)
 }

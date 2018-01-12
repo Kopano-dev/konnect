@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2018 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -15,26 +15,20 @@
  *
  */
 
-package server
+package main
 
 import (
-	"context"
-	"net/http"
-
-	"github.com/gorilla/mux"
-
-	"stash.kopano.io/kc/konnect/config"
+	"stash.kopano.io/kc/konnect/identity"
+	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 )
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
+func newDummyIdentityManager(bs *bootstrap) (identity.Manager, error) {
+	logger := bs.cfg.Logger
 
-	Handler http.Handler
-	Routes  []WithRoutes
-}
+	dummyIdentityManager := &identityManagers.DummyIdentityManager{
+		Sub: "dummy",
+	}
+	logger.WithField("sub", dummyIdentityManager.Sub).Warnln("using dummy identity manager")
 
-// WithRoutes provide http routing withing a context.
-type WithRoutes interface {
-	AddRoutes(ctx context.Context, router *mux.Router)
+	return dummyIdentityManager, nil
 }

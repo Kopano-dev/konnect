@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"stash.kopano.io/kgol/rndm"
 
@@ -261,4 +262,9 @@ func (im *IdentifierIdentityManager) ClaimsSupported() []string {
 		oidc.NameClaim,
 		oidc.EmailClaim,
 	}
+}
+
+// AddRoutes implements the identity.Manager interface.
+func (im *IdentifierIdentityManager) AddRoutes(ctx context.Context, router *mux.Router) {
+	im.identifier.AddRoutes(ctx, router)
 }

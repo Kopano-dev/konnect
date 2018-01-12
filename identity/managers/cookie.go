@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"stash.kopano.io/kgol/rndm"
 
@@ -406,4 +407,8 @@ func (im *CookieIdentityManager) ClaimsSupported() []string {
 		oidc.NameClaim,
 		oidc.EmailClaim,
 	}
+}
+
+// AddRoutes implements the identity.Manager interface.
+func (im *CookieIdentityManager) AddRoutes(ctx context.Context, router *mux.Router) {
 }

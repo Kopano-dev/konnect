@@ -133,7 +133,7 @@ func (i *Identifier) SetKey(key []byte) error {
 	if len(key) < 32 {
 		i.logger.Warnf("identifier using encryption key size with %d bytes which is below 32 bytes", len(key))
 	} else {
-		i.logger.Infof("identifier set up with %v:%v security", ce, algo)
+		i.logger.WithField("security", fmt.Sprintf("%s:%s", ce, algo)).Infoln("identifier set up")
 	}
 
 	recipient := jose.Recipient{
