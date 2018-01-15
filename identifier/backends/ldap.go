@@ -147,6 +147,9 @@ func NewLDAPIdentifierBackend(
 
 		break
 	}
+	if err != nil {
+		return nil, fmt.Errorf("ldap identifier backend %v", err)
+	}
 
 	if loginAttribute == "" {
 		loginAttribute = "uid"
@@ -180,7 +183,6 @@ func NewLDAPIdentifierBackend(
 	default:
 		err = fmt.Errorf("invalid URI scheme: %v", uri.Scheme)
 	}
-
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend %v", err)
 	}
