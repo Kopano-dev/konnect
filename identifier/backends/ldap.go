@@ -234,9 +234,16 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, username, password st
 	defer l.Close()
 
 	// Search for the given username.
-	entry, err := b.searchUsername(l, username, []string{"dn"})
+	entry, err := b.searchUsername(l, username, []string{"dn", b.attributeMapping.login})
+	switch {
+	case ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject):
+		return false, nil, nil
+	}
 	if err != nil {
 		return false, nil, fmt.Errorf("ldap identifier backend logon search error: %v", err)
+	}
+	if entry.GetAttributeValue(b.attributeMapping.login) != username {
+		return false, nil, fmt.Errorf("ldap identifier backend logon search returned wrong user")
 	}
 
 	userDN := entry.DN
@@ -266,11 +273,15 @@ func (b *LDAPIdentifierBackend) ResolveUser(ctx context.Context, username string
 
 	// Search for the given username.
 	entry, err := b.searchUsername(l, username, []string{"dn", b.attributeMapping.login})
+	switch {
+	case ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject):
+		return nil, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend resolve search error: %v", err)
 	}
 	if entry.GetAttributeValue(b.attributeMapping.login) != username {
-		return nil, fmt.Errorf("ldap identifier backend resolve returned wrong user")
+		return nil, fmt.Errorf("ldap identifier backend resolve search returned wrong user")
 	}
 
 	return &ldapUser{
@@ -365,11 +376,18 @@ func (b *LDAPIdentifierBackend) searchUsername(l *ldap.Conn, username string, at
 	if err != nil {
 		return nil, err
 	}
-	if len(sr.Entries) != 1 {
-		return nil, fmt.Errorf("user does not exist or too many entries returned")
-	}
 
-	return sr.Entries[0], nil
+	switch len(sr.Entries) {
+	case 0:
+		// Nothing found.
+		return nil, ldap.NewError(ldap.LDAPResultNoSuchObject, err)
+	case 1:
+		// Exactly one found, success.
+		return sr.Entries[0], nil
+	default:
+		// Invalid when multiple matched.
+		return nil, fmt.Errorf("user too many entries returned")
+	}
 }
 
 func (b *LDAPIdentifierBackend) getUser(l *ldap.Conn, userDN string, attributes []string) (*ldap.Entry, error) {
