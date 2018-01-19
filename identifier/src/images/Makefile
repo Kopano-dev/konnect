@@ -1,4 +1,4 @@
-LOGINSCREEN_BG_SRC ?= kopano-augmenting-teamwork-2142x1080.png
+LOGINSCREEN_BG_SRC ?= kopano-augmenting-teamwork-bg-7680.jpg
 
 LOGINSCREEN_BG_WIDTH            = $(shell identify -format '%w' loginscreen-bg.jpg)
 LOGINSCREEN_BG_HEIGHT           = $(shell identify -format '%h' loginscreen-bg.jpg)
@@ -9,7 +9,7 @@ all: loginscreen-bg.css
 
 .PHONY: loginscreen-bg.jpg
 loginscreen-bg.jpg: $(LOGINSCREEN_BG_SRC)
-	convert -strip -interlace Plane -gaussian-blur 0.05 -define jpeg:dct-method=float -quality 80% $< $@
+	convert -geometry x1080 -strip -interlace Plane -gaussian-blur 0.05 -define jpeg:dct-method=float -quality 80% $< $@
 	jpegoptim -v --all-progressive --strip-all -m75 $@
 
 loginscreen-bg-thumb.jpg: loginscreen-bg.jpg
