@@ -30,7 +30,7 @@ export function propertyFromStylesheet(selector, attribute, asURL=false) {
     });
   });
 
-  if (asURL) {
+  if (value && asURL) {
     // This removes url() shit if there.
     value = value.match(/(?:\(['|"]?)(.*?)(?:['|"]?\))/)[1];
     if (!value) {
@@ -47,15 +47,31 @@ export function propertyFromStylesheet(selector, attribute, asURL=false) {
 }
 
 export function enhanceBodyBackground() {
-  const url = propertyFromStylesheet('#bg-enhanced.enhanced', 'background-image', true);
+  const bg = propertyFromStylesheet('#bg-enhanced.enhanced', 'background-image', true);
+  const overlay = propertyFromStylesheet('#bg-enhanced.enhanced::after', 'background-image', true);
 
-  if (url) {
-    const img = new Image();
-    img.onload = () => {
-      window.document.getElementById('bg-enhanced').className += ' enhanced';
-    };
-
-    // Set image source to whatever the url from css holds.
-    img.src = url;
+  const promises = [];
+  if (bg) {
+    promises.push(new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        resolve();
+      };
+      // Set image source to whatever the url from css holds.
+      img.src = bg;
+    }));
   }
+  if (overlay) {
+    promises.push(new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        resolve();
+      };
+      // Set image source to whatever the url from css holds.
+      img.src = overlay;
+    }));
+  }
+  Promise.all(promises).then(() => {
+    window.document.getElementById('bg-enhanced').className += ' enhanced';
+  });
 }
