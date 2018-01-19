@@ -2,6 +2,7 @@ import {
   RECEIVE_VALIDATE_LOGON,
   REQUEST_LOGON,
   RECEIVE_LOGON,
+  RECEIVE_LOGOFF,
   REQUEST_CONSENT_ALLOW,
   REQUEST_CONSENT_CANCEL,
   RECEIVE_CONSENT,
@@ -38,6 +39,12 @@ function loginReducer(state = {
         });
       }
       return state;
+
+    case RECEIVE_LOGOFF:
+      return Object.assign({}, state, {
+        username: '',
+        password: ''
+      });
 
     case UPDATE_INPUT:
       delete state.errors[action.name];
