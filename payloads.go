@@ -22,11 +22,10 @@ import (
 )
 
 // UserInfoResponse defines the data returned from the Konnect UserInfo
-// endpoint. It is the standard ODIC response, extended with additional fields.
+// endpoint. It is the standard ODIC response, extended with additional claims.
 type UserInfoResponse struct {
 	*payload.UserInfoResponse
 
-	// Note(longsleep): Additional response data for compatibility.
-	ID       int64  `json:"id,omitempty"`
-	Username string `json:"username,omitempty"`
+	*IDClaims
+	*UniqueUserIDClaims
 }

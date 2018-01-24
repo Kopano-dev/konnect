@@ -20,4 +20,6 @@ package konnect
 const (
 	// ScopeID is the string value for the Konnect ID scope.
 	ScopeID = "konnect/id"
+	// ScopeUniqueUserID is the string value for the Konnect Unique User ID scope.
+	ScopeUniqueUserID = "konnect/uuid"
 )

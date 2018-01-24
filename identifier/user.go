@@ -36,7 +36,8 @@ type IdentifiedUser struct {
 	emailVerified bool
 	displayName   string
 
-	id int64
+	id  int64
+	uid string
 
 	logonAt time.Time
 }
@@ -64,11 +65,19 @@ func (u *IdentifiedUser) Name() string {
 }
 
 // ID returns the associated users numeric user id. If it is 0, it means that
-// this user does not have a numeric ID. Do not use this field to identiy a
+// this user does not have a numeric ID. Do not use this field to identify a
 // user - always use the subject instead. The numeric ID is kept for compatibilty
 // with systems which require user identification to be numeric.
 func (u *IdentifiedUser) ID() int64 {
 	return u.id
+}
+
+// UniqueID returns the accociated users unique user id. When empty, then this
+// user does not have a unique ID. This field can be used for unique user mapping
+// to external systems which use the same authentication source as Konnect. The
+// value depends entirely on the identifier backend.
+func (u *IdentifiedUser) UniqueID() string {
+	return u.uid
 }
 
 // Username returns the accociated users username. This might be different or

@@ -499,18 +499,49 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		},
 	}
 
-	// Include ID when scope authorized.
-	if withKonnectID, _ := auth.AuthorizedScopes()[konnect.ScopeID]; withKonnectID {
-		user := auth.User()
+	// Helper to receive user from auth, but only once.
+	withUser := func() func() identity.User {
+		var u identity.User
+		var fetched bool
+		return func() identity.User {
+			if !fetched {
+				fetched = true
+				u = auth.User()
+			}
+			return u
+		}
+	}()
+	authorizedScopes := auth.AuthorizedScopes()
+	var user identity.User
+
+	// Include additional claims when corresponding scopes are authorized.
+	if ok, _ := authorizedScopes[konnect.ScopeID]; ok {
+		user = withUser()
 		if user != nil {
 			if userWithID, ok := user.(identity.UserWithID); ok {
-				response.ID = userWithID.ID()
+				claims := &konnect.IDClaims{
+					KCID: userWithID.ID(),
+				}
+				if userWithUsername, ok := user.(identity.UserWithUsername); ok {
+					claims.KCIDUsername = userWithUsername.Username()
+				}
+				if claims.KCIDUsername == "" {
+					claims.KCIDUsername = user.Subject()
+				}
+
+				response.IDClaims = claims
 			}
-			if userWithUsername, ok := user.(identity.UserWithUsername); ok {
-				response.Username = userWithUsername.Username()
-			}
-			if response.Username == "" {
-				response.Username = user.Subject()
+		}
+	}
+	if ok, _ := authorizedScopes[konnect.ScopeUniqueUserID]; ok {
+		user = withUser()
+		if user != nil {
+			if userWithUniqueID, ok := user.(identity.UserWithUniqueID); ok {
+				claims := &konnect.UniqueUserIDClaims{
+					KCUniqueUserID: userWithUniqueID.UniqueID(),
+				}
+
+				response.UniqueUserIDClaims = claims
 			}
 		}
 	}

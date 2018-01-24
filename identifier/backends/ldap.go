@@ -20,6 +20,7 @@ package backends
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"net/url"
@@ -45,7 +46,7 @@ type LDAPIdentifierBackend struct {
 	searchFilter string
 	getFilter    string
 
-	attributeMapping *ldapAttributeMapping
+	attributeMapping ldapAttributeMapping
 
 	logger    logrus.FieldLogger
 	dialer    *net.Dialer
@@ -55,22 +56,55 @@ type LDAPIdentifierBackend struct {
 	limiter *rate.Limiter
 }
 
-type ldapAttributeMapping struct {
-	login string
-	email string
-	name  string
+const (
+	ldapAttributeDN              = "dn"
+	ldapAttributeLogin           = "login"
+	ldapAttributeEmail           = "email"
+	ldapAttributeName            = "name"
+	ldapAttributeUUID            = "uuid"
+	ldapAttributeValueTypeText   = "text"
+	ldapAttributeValueTypeBinary = "binary"
+)
+
+type ldapAttributeMapping map[string]string
+
+func (m ldapAttributeMapping) attributes() []string {
+	attributes := make([]string, len(m)+1)
+	attributes[0] = ldapAttributeDN
+	idx := 1
+	for _, attribute := range m {
+		attributes[idx] = attribute
+		idx++
+	}
+
+	return attributes
 }
 
 type ldapUser struct {
-	mapping *ldapAttributeMapping
+	mapping ldapAttributeMapping
 	entry   *ldap.Entry
+}
+
+func newLdapUser(mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
+	// TODO(longsleep): Map stuff only once.
+	return &ldapUser{
+		mapping: mapping,
+		entry:   entry,
+	}
 }
 
 func (u *ldapUser) getAttributeValue(n string) string {
 	if n == "" {
 		return ""
 	}
-	return u.entry.GetAttributeValue(n)
+
+	switch u.mapping[fmt.Sprintf("%s_type", n)] {
+	case ldapAttributeValueTypeBinary:
+		// Encode binary values base64.
+		return base64.StdEncoding.EncodeToString(u.entry.GetRawAttributeValue(n))
+	default:
+		return u.entry.GetAttributeValue(n)
+	}
 }
 
 func (u *ldapUser) Subject() string {
@@ -78,7 +112,7 @@ func (u *ldapUser) Subject() string {
 }
 
 func (u *ldapUser) Email() string {
-	return u.getAttributeValue(u.mapping.email)
+	return u.getAttributeValue(u.mapping[ldapAttributeEmail])
 }
 
 func (u *ldapUser) EmailVerified() bool {
@@ -86,11 +120,15 @@ func (u *ldapUser) EmailVerified() bool {
 }
 
 func (u *ldapUser) Name() string {
-	return u.getAttributeValue(u.mapping.name)
+	return u.getAttributeValue(u.mapping[ldapAttributeName])
 }
 
 func (u *ldapUser) Username() string {
-	return u.getAttributeValue(u.mapping.login)
+	return u.getAttributeValue(u.mapping[ldapAttributeLogin])
+}
+
+func (u *ldapUser) UniqueID() string {
+	return u.getAttributeValue(u.mapping[ldapAttributeUUID])
 }
 
 // NewLDAPIdentifierBackend creates a new LDAPIdentifierBackend with the provided
@@ -106,6 +144,8 @@ func NewLDAPIdentifierBackend(
 	loginAttribute,
 	emailAttribute,
 	nameAttribute,
+	uuidAttribute,
+	uuidAttributeType,
 	filter string,
 ) (*LDAPIdentifierBackend, error) {
 	var err error
@@ -197,10 +237,11 @@ func NewLDAPIdentifierBackend(
 		searchFilter: fmt.Sprintf("(&(%s)(%s=%%s))", filter, loginAttribute),
 		getFilter:    filter,
 
-		attributeMapping: &ldapAttributeMapping{
-			login: loginAttribute,
-			email: emailAttribute,
-			name:  nameAttribute,
+		attributeMapping: map[string]string{
+			ldapAttributeLogin: loginAttribute,
+			ldapAttributeEmail: emailAttribute,
+			ldapAttributeName:  nameAttribute,
+			ldapAttributeUUID:  uuidAttribute,
 		},
 
 		logger: c.Logger,
@@ -212,6 +253,9 @@ func NewLDAPIdentifierBackend(
 
 		timeout: 60,                        //XXX(longsleep): make timeout configuration.
 		limiter: rate.NewLimiter(100, 200), //XXX(longsleep): make rate limits configuration.
+	}
+	if uuidAttribute != "" && uuidAttributeType == ldapAttributeValueTypeBinary {
+		b.attributeMapping[fmt.Sprintf("%s_type", uuidAttribute)] = ldapAttributeValueTypeBinary
 	}
 
 	b.logger.WithField("ldap", fmt.Sprintf("%s://%s ", uri.Scheme, addr)).Infoln("ldap server identifier backend set up")
@@ -227,6 +271,11 @@ func (b *LDAPIdentifierBackend) RunWithContext(ctx context.Context) error {
 // Logon implements the Backend interface, enabling Logon with user name and
 // password as provided. Requests are bound to the provided context.
 func (b *LDAPIdentifierBackend) Logon(ctx context.Context, username, password string) (bool, *string, error) {
+	loginAttributeName := b.attributeMapping[ldapAttributeLogin]
+	if loginAttributeName == "" {
+		return false, nil, fmt.Errorf("ldap identifier backend logon impossible as no login attribute is set")
+	}
+
 	l, err := b.connect(ctx)
 	if err != nil {
 		return false, nil, fmt.Errorf("ldap identifier backend logon connect error: %v", err)
@@ -234,7 +283,7 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, username, password st
 	defer l.Close()
 
 	// Search for the given username.
-	entry, err := b.searchUsername(l, username, []string{"dn", b.attributeMapping.login})
+	entry, err := b.searchUsername(l, username, b.attributeMapping.attributes())
 	switch {
 	case ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject):
 		return false, nil, nil
@@ -242,7 +291,7 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, username, password st
 	if err != nil {
 		return false, nil, fmt.Errorf("ldap identifier backend logon search error: %v", err)
 	}
-	if entry.GetAttributeValue(b.attributeMapping.login) != username {
+	if entry.GetAttributeValue(loginAttributeName) != username {
 		return false, nil, fmt.Errorf("ldap identifier backend logon search returned wrong user")
 	}
 
@@ -265,6 +314,11 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, username, password st
 // ResolveUser implements the Beckend interface, providing lookup for user by
 // providing the username. Requests are bound to the provided context.
 func (b *LDAPIdentifierBackend) ResolveUser(ctx context.Context, username string) (identity.UserWithUsername, error) {
+	loginAttributeName := b.attributeMapping[ldapAttributeLogin]
+	if loginAttributeName == "" {
+		return nil, fmt.Errorf("ldap identifier backend resolve impossible as no login attribute is set")
+	}
+
 	l, err := b.connect(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend resolve connect error: %v", err)
@@ -272,7 +326,7 @@ func (b *LDAPIdentifierBackend) ResolveUser(ctx context.Context, username string
 	defer l.Close()
 
 	// Search for the given username.
-	entry, err := b.searchUsername(l, username, []string{"dn", b.attributeMapping.login})
+	entry, err := b.searchUsername(l, username, b.attributeMapping.attributes())
 	switch {
 	case ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject):
 		return nil, nil
@@ -280,14 +334,11 @@ func (b *LDAPIdentifierBackend) ResolveUser(ctx context.Context, username string
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend resolve search error: %v", err)
 	}
-	if entry.GetAttributeValue(b.attributeMapping.login) != username {
+	if entry.GetAttributeValue(loginAttributeName) != username {
 		return nil, fmt.Errorf("ldap identifier backend resolve search returned wrong user")
 	}
 
-	return &ldapUser{
-		mapping: b.attributeMapping,
-		entry:   entry,
-	}, nil
+	return newLdapUser(b.attributeMapping, entry), nil
 }
 
 // GetUser implements the Backend interface, providing user meta data retrieval
@@ -305,7 +356,7 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string) (ide
 	}
 	defer l.Close()
 
-	entry, err := b.getUser(l, userID, nil)
+	entry, err := b.getUser(l, userID, b.attributeMapping.attributes())
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user error: %v", err)
 	}
@@ -313,10 +364,7 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string) (ide
 		return nil, fmt.Errorf("ldap identifier backend get user returned wrong user")
 	}
 
-	return &ldapUser{
-		mapping: b.attributeMapping,
-		entry:   entry,
-	}, nil
+	return newLdapUser(b.attributeMapping, entry), nil
 }
 
 func (b *LDAPIdentifierBackend) connect(parentCtx context.Context) (*ldap.Conn, error) {

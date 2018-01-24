@@ -51,6 +51,8 @@ func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]boo
 			}
 		case konnect.ScopeID:
 			// breaks
+		case konnect.ScopeUniqueUserID:
+			// breaks
 		default:
 			// Unknown scopes end up here and are not getting authorized.
 			authorizedScope = false

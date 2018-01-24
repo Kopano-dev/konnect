@@ -253,6 +253,7 @@ func (im *IdentifierIdentityManager) ScopesSupported() []string {
 		oidc.ScopeEmail,
 		oidc.ScopeOfflineAccess,
 		konnect.ScopeID,
+		konnect.ScopeUniqueUserID,
 	}
 }
 

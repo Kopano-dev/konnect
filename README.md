@@ -102,6 +102,8 @@ export LDAP_SCOPE=sub
 export LDAP_LOGIN_ATTRIBUTE=uid
 export LDAP_EMAIL_ATTRIBUTE=mail
 export LDAP_NAME_ATTRIBUTE=cn
+export LDAP_UUID_ATTRIBUTE=uidNumber
+export LDAP_UUID_ATTRIBUTE_TYPE=text
 export LDAP_FILTER="(objectClass=organizationalPerson)"
 
 bin/konnectd serve --listen=127.0.0.1:8777 \

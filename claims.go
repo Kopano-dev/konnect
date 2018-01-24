@@ -98,3 +98,32 @@ func (c RefreshTokenClaims) Valid() error {
 	}
 	return errors.New("kc.isRefreshToken claim not valid")
 }
+
+// IDClaims define the claims used with the konnect/id scope.
+type IDClaims struct {
+	// NOTE(longsleep): Always keep these claims compatible with the GitLab API
+	// https://docs.gitlab.com/ce/api/users.html#for-user.
+	KCID         int64  `json:"id,omitempty"`
+	KCIDUsername string `json:"username,omitempty"`
+}
+
+// Valid implements the jwt.Claims interface.
+func (c IDClaims) Valid() error {
+	if c.KCIDUsername == "" {
+		return errors.New("username claim not valid")
+	}
+	return nil
+}
+
+// UniqueUserIDClaims define the claims used with the konnect/uuid scope.
+type UniqueUserIDClaims struct {
+	KCUniqueUserID string `json:"kc.uuid,omitempty"`
+}
+
+// Valid implements the jwt.Claims interface.
+func (c UniqueUserIDClaims) Valid() error {
+	if c.KCUniqueUserID == "" {
+		return errors.New("kc.uuid claim not valid")
+	}
+	return nil
+}

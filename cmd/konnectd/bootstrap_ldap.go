@@ -51,6 +51,8 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		os.Getenv("LDAP_LOGIN_ATTRIBUTE"),
 		os.Getenv("LDAP_EMAIL_ATTRIBUTE"),
 		os.Getenv("LDAP_NAME_ATTRIBUTE"),
+		os.Getenv("LDAP_UUID_ATTRIBUTE"),
+		os.Getenv("LDAP_UUID_ATTRIBUTE_TYPE"),
 		os.Getenv("LDAP_FILTER"),
 	)
 	if identifierErr != nil {

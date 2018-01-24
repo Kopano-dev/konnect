@@ -263,6 +263,9 @@ func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*Ident
 	if userWithID, ok := user.(identity.UserWithID); ok {
 		identifiedUser.id = userWithID.ID()
 	}
+	if userWithUniqueID, ok := user.(identity.UserWithUniqueID); ok {
+		identifiedUser.uid = userWithUniqueID.UniqueID()
+	}
 	if userWithUsername, ok := user.(identity.UserWithUsername); ok {
 		identifiedUser.username = userWithUsername.Username()
 	}

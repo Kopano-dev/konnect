@@ -39,10 +39,16 @@ type UserWithProfile interface {
 	Name() string
 }
 
-// UserWithID is a User with a numeric id.
+// UserWithID is a User with a locally unique numeric id.
 type UserWithID interface {
 	User
 	ID() int64
+}
+
+// UserWithUniqueID is a User with a unique string id.
+type UserWithUniqueID interface {
+	User
+	UniqueID() string
 }
 
 // UserWithUsername is a User with an username different from subject.
