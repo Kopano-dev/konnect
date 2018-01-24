@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	"stash.kopano.io/kc/konnect/config"
@@ -81,15 +82,36 @@ func (m ldapAttributeMapping) attributes() []string {
 }
 
 type ldapUser struct {
-	mapping ldapAttributeMapping
-	entry   *ldap.Entry
+	data ldapAttributeMapping
 }
 
 func newLdapUser(mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
-	// TODO(longsleep): Map stuff only once.
+	// NOTE(longsleep): Copy all mapped results to a local data set.
+	data := make(ldapAttributeMapping)
+	data[ldapAttributeDN] = entry.DN
+	// Go through all returned attributes, add them to the local data set if
+	// we know them in the mapping.
+	for _, attribute := range entry.Attributes {
+		if len(attribute.Values) == 0 {
+			continue
+		}
+		for n, mapped := range mapping {
+			// LDAP attribute descriptors / short names are case insensitive. See
+			// https://tools.ietf.org/html/rfc4512#page-4.
+			if strings.ToLower(attribute.Name) == strings.ToLower(mapped) {
+				// Check if we need conversion.
+				switch mapping[fmt.Sprintf("%s_type", mapped)] {
+				case ldapAttributeValueTypeBinary:
+					data[n] = base64.StdEncoding.EncodeToString(attribute.ByteValues[0])
+				default:
+					data[n] = attribute.Values[0]
+				}
+			}
+		}
+	}
+
 	return &ldapUser{
-		mapping: mapping,
-		entry:   entry,
+		data: data,
 	}
 }
 
@@ -98,21 +120,15 @@ func (u *ldapUser) getAttributeValue(n string) string {
 		return ""
 	}
 
-	switch u.mapping[fmt.Sprintf("%s_type", n)] {
-	case ldapAttributeValueTypeBinary:
-		// Encode binary values base64.
-		return base64.StdEncoding.EncodeToString(u.entry.GetRawAttributeValue(n))
-	default:
-		return u.entry.GetAttributeValue(n)
-	}
+	return u.data[n]
 }
 
 func (u *ldapUser) Subject() string {
-	return u.entry.DN
+	return u.getAttributeValue(ldapAttributeDN)
 }
 
 func (u *ldapUser) Email() string {
-	return u.getAttributeValue(u.mapping[ldapAttributeEmail])
+	return u.getAttributeValue(ldapAttributeEmail)
 }
 
 func (u *ldapUser) EmailVerified() bool {
@@ -120,15 +136,15 @@ func (u *ldapUser) EmailVerified() bool {
 }
 
 func (u *ldapUser) Name() string {
-	return u.getAttributeValue(u.mapping[ldapAttributeName])
+	return u.getAttributeValue(ldapAttributeName)
 }
 
 func (u *ldapUser) Username() string {
-	return u.getAttributeValue(u.mapping[ldapAttributeLogin])
+	return u.getAttributeValue(ldapAttributeLogin)
 }
 
 func (u *ldapUser) UniqueID() string {
-	return u.getAttributeValue(u.mapping[ldapAttributeUUID])
+	return u.getAttributeValue(ldapAttributeUUID)
 }
 
 // NewLDAPIdentifierBackend creates a new LDAPIdentifierBackend with the provided
