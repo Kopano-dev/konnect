@@ -30,6 +30,7 @@ import (
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/identity"
 
+	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	"gopkg.in/ldap.v2"
@@ -65,6 +66,7 @@ const (
 	ldapAttributeUUID            = "uuid"
 	ldapAttributeValueTypeText   = "text"
 	ldapAttributeValueTypeBinary = "binary"
+	ldapAttributeValueTypeUUID   = "uuid"
 )
 
 type ldapAttributeMapping map[string]string
@@ -102,7 +104,14 @@ func newLdapUser(mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
 				// Check if we need conversion.
 				switch mapping[fmt.Sprintf("%s_type", mapped)] {
 				case ldapAttributeValueTypeBinary:
+					// Binary gets encoded witih Base64.
 					data[n] = base64.StdEncoding.EncodeToString(attribute.ByteValues[0])
+				case ldapAttributeValueTypeUUID:
+					// Try to decode as UUID https://tools.ietf.org/html/rfc4122 and
+					// serialize to string.
+					if value, err := uuid.FromBytes(attribute.ByteValues[0]); err == nil {
+						data[n] = value.String()
+					}
 				default:
 					data[n] = attribute.Values[0]
 				}
@@ -270,8 +279,8 @@ func NewLDAPIdentifierBackend(
 		timeout: 60,                        //XXX(longsleep): make timeout configuration.
 		limiter: rate.NewLimiter(100, 200), //XXX(longsleep): make rate limits configuration.
 	}
-	if uuidAttribute != "" && uuidAttributeType == ldapAttributeValueTypeBinary {
-		b.attributeMapping[fmt.Sprintf("%s_type", uuidAttribute)] = ldapAttributeValueTypeBinary
+	if uuidAttribute != "" && uuidAttributeType != "" {
+		b.attributeMapping[fmt.Sprintf("%s_type", uuidAttribute)] = uuidAttributeType
 	}
 
 	b.logger.WithField("ldap", fmt.Sprintf("%s://%s ", uri.Scheme, addr)).Infoln("ldap server identifier backend set up")

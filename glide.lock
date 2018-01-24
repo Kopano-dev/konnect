@@ -1,5 +1,5 @@
-hash: 1f3bdec9bdf4b7680d2f6c2aab78ff2ed7b16ffb15e20edc21422e640f2b4af6
-updated: 2018-01-10T17:30:21.669479243+01:00
+hash: 430fd53ad1ea4766bcf3d2ffdb5b007425faf0113ddee92f892ff67f90be8dfc
+updated: 2018-01-24T17:36:51.800150813+01:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -10,7 +10,7 @@ imports:
   subpackages:
   - query
 - name: github.com/gorilla/context
-  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+  version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
   version: bcd8bc72b08df0f70df986b97f95590779502d31
 - name: github.com/gorilla/schema
@@ -30,6 +30,8 @@ imports:
   version: 2ae17bc4c860c83513ee50feb9746f3e50d7515d
 - name: github.com/rs/cors
   version: 8dd4211afb5d08dbb39a533b9bb9e4b486351df6
+- name: github.com/satori/go.uuid
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra
@@ -44,6 +46,10 @@ imports:
   - nacl/secretbox
   - poly1305
   - salsa20/salsa
+- name: golang.org/x/net
+  version: d866cfc389cec985d6fda2859936a575a55a3ab6
+  subpackages:
+  - context
 - name: golang.org/x/sys
   version: 833a04a10549a95dc34458c195cbad61bbb6cb4d
   subpackages:
