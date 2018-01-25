@@ -259,6 +259,8 @@ func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*Ident
 	}
 	if userWithProfile, ok := user.(identity.UserWithProfile); ok {
 		identifiedUser.displayName = userWithProfile.Name()
+		identifiedUser.familyName = userWithProfile.FamilyName()
+		identifiedUser.givenName = userWithProfile.GivenName()
 	}
 	if userWithID, ok := user.(identity.UserWithID); ok {
 		identifiedUser.id = userWithID.ID()

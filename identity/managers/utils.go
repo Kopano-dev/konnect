@@ -46,7 +46,9 @@ func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]boo
 		case oidc.ScopeProfile:
 			if userWithProfile, ok := user.(identity.UserWithProfile); ok {
 				claims[oidc.ScopeProfile] = &oidc.ProfileClaims{
-					Name: userWithProfile.Name(),
+					Name:       userWithProfile.Name(),
+					FamilyName: userWithProfile.FamilyName(),
+					GivenName:  userWithProfile.GivenName(),
 				}
 			}
 		case konnect.ScopeID:

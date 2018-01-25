@@ -24,6 +24,7 @@ import (
 
 	"stash.kopano.io/kc/konnect/identifier"
 	identifierBackends "stash.kopano.io/kc/konnect/identifier/backends"
+	ldapDefinitions "stash.kopano.io/kc/konnect/identifier/backends/ldap"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 )
@@ -40,6 +41,16 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		bs.signInFormURI.Path = "/signin/v1/identifier"
 	}
 
+	attributeMapping := map[string]string{
+		ldapDefinitions.AttributeLogin:                        os.Getenv("LDAP_LOGIN_ATTRIBUTE"),
+		ldapDefinitions.AttributeEmail:                        os.Getenv("LDAP_EMAIL_ATTRIBUTE"),
+		ldapDefinitions.AttributeName:                         os.Getenv("LDAP_NAME_ATTRIBUTE"),
+		ldapDefinitions.AttributeFamilyName:                   os.Getenv("LDAP_FAMILY_NAME_ATTRIBUTE"),
+		ldapDefinitions.AttributeGivenName:                    os.Getenv("LDAP_GIVEN_NAME_ATTRIBUTE"),
+		ldapDefinitions.AttributeUUID:                         os.Getenv("LDAP_UUID_ATTRIBUTE"),
+		fmt.Sprintf("%s_type", ldapDefinitions.AttributeUUID): os.Getenv("LDAP_UUID_ATTRIBUTE_TYPE"),
+	}
+
 	identifierBackend, identifierErr := identifierBackends.NewLDAPIdentifierBackend(
 		bs.cfg,
 		bs.tlsClientConfig,
@@ -48,12 +59,8 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		os.Getenv("LDAP_BINDPW"),
 		os.Getenv("LDAP_BASEDN"),
 		os.Getenv("LDAP_SCOPE"),
-		os.Getenv("LDAP_LOGIN_ATTRIBUTE"),
-		os.Getenv("LDAP_EMAIL_ATTRIBUTE"),
-		os.Getenv("LDAP_NAME_ATTRIBUTE"),
-		os.Getenv("LDAP_UUID_ATTRIBUTE"),
-		os.Getenv("LDAP_UUID_ATTRIBUTE_TYPE"),
 		os.Getenv("LDAP_FILTER"),
+		attributeMapping,
 	)
 	if identifierErr != nil {
 		return nil, fmt.Errorf("failed to create identifier backend: %v", identifierErr)

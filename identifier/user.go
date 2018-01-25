@@ -35,6 +35,8 @@ type IdentifiedUser struct {
 	email         string
 	emailVerified bool
 	displayName   string
+	familyName    string
+	givenName     string
 
 	id  int64
 	uid string
@@ -62,6 +64,16 @@ func (u *IdentifiedUser) EmailVerified() bool {
 // the accociated user.
 func (u *IdentifiedUser) Name() string {
 	return u.displayName
+}
+
+// FamilyName returns the associated users family name field.
+func (u *IdentifiedUser) FamilyName() string {
+	return u.familyName
+}
+
+// GivenName returns the associated users given name field.
+func (u *IdentifiedUser) GivenName() string {
+	return u.givenName
 }
 
 // ID returns the associated users numeric user id. If it is 0, it means that

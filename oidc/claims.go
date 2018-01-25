@@ -30,9 +30,23 @@ const (
 	IssuedAtClaim          = "iat"
 )
 
-// Additional claims supported by Konnect and defined by OIDC.
+// Additional claims as defined by OIDC.
 const (
-	NameClaim          = "name"
+	NameClaim              = "name"
+	FamilyNameClaim        = "family_name"
+	GivenNameClaim         = "given_name"
+	MiddleNameClaim        = "middle_name"
+	NicknameClaim          = "nickname"
+	PreferredUsernameClaim = "preferred_username"
+	ProfileClaim           = "profile"
+	PictureClaim           = "picture"
+	WebsiteClaim           = "website"
+	GenderClaim            = "gender"
+	BirthdateClaim         = "birthdate"
+	ZoneinfoClaim          = "zoneinfo"
+	LocaleClaim            = "locale"
+	UpdatedAtClaim         = "updated_at"
+
 	EmailClaim         = "email"
 	EmailVerifiedClaim = "email_verified"
 )
@@ -56,7 +70,9 @@ func (c IDTokenClaims) Valid() (err error) {
 // ProfileClaims define the claims for the OIDC profile scope.
 // https://openid.net/specs/openid-connect-basic-1_0.html#Scopes
 type ProfileClaims struct {
-	Name string `json:"name,omitempty"`
+	Name       string `json:"name,omitempty"`
+	FamilyName string `json:"family_name,omitempty"`
+	GivenName  string `json:"given_name,omitempty"`
 }
 
 // NewProfileClaims return a new ProfileClaims set from the provided

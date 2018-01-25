@@ -406,6 +406,7 @@ func (im *CookieIdentityManager) ClaimsSupported() []string {
 	return []string{
 		oidc.NameClaim,
 		oidc.EmailClaim,
+		oidc.EmailVerifiedClaim,
 	}
 }
 

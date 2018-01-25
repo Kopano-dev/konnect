@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -73,12 +74,31 @@ func (u *kcUser) Name() string {
 	return u.user.FullName
 }
 
+func (u *kcUser) FamilyName() string {
+	return u.splitFullName()[1]
+}
+
+func (u *kcUser) GivenName() string {
+	return u.splitFullName()[0]
+}
+
 func (u *kcUser) ID() int64 {
 	return int64(u.user.ID)
 }
 
 func (u *kcUser) Username() string {
 	return u.user.Username
+}
+
+func (u *kcUser) splitFullName() [2]string {
+	// TODO(longsleep): Cache this, instead of doing every time.
+	result := [2]string{"", ""}
+	parts := strings.SplitN(u.user.FullName, " ", 2)
+	if len(parts) == 2 {
+		result[0] = parts[0]
+		result[1] = parts[1]
+	}
+	return result
 }
 
 // NewKCIdentifierBackend creates a new KCIdentifierBackend with the provided

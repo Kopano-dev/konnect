@@ -261,7 +261,10 @@ func (im *IdentifierIdentityManager) ScopesSupported() []string {
 func (im *IdentifierIdentityManager) ClaimsSupported() []string {
 	return []string{
 		oidc.NameClaim,
+		oidc.FamilyNameClaim,
+		oidc.GivenNameClaim,
 		oidc.EmailClaim,
+		oidc.EmailVerifiedClaim,
 	}
 }
 

@@ -37,6 +37,8 @@ type UserWithEmail interface {
 type UserWithProfile interface {
 	User
 	Name() string
+	FamilyName() string
+	GivenName() string
 }
 
 // UserWithID is a User with a locally unique numeric id.

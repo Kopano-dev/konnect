@@ -145,6 +145,7 @@ func (im *DummyIdentityManager) ClaimsSupported() []string {
 	return []string{
 		oidc.NameClaim,
 		oidc.EmailClaim,
+		oidc.EmailVerifiedClaim,
 	}
 }
 
