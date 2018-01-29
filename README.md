@@ -85,7 +85,7 @@ export KOPANO_SERVER_USERNAME=my-kopano-user
 export KOPANO_SERVER_PASSWORD=my-kopano-password
 
 bin/konnectd serve --listen=127.0.0.1:8777 \
-  --iss=https://mykonnect.local
+  --iss=https://mykonnect.local \
   kc
 ```
 
