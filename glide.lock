@@ -1,5 +1,5 @@
-hash: 430fd53ad1ea4766bcf3d2ffdb5b007425faf0113ddee92f892ff67f90be8dfc
-updated: 2018-01-24T17:36:51.800150813+01:00
+hash: 3bcbd425eaefa785f52420ef3b3977843d3e87fc2b1f97393564224581783fd5
+updated: 2018-01-29T14:52:02.741687521+01:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -69,7 +69,7 @@ imports:
   - json
   - jwt
 - name: stash.kopano.io/kgol/kcc-go
-  version: f71f6eafea3662c518a7948be4d8df2ba293de07
+  version: 3ffe6b646618f5151a21deae400e6731492eb68e
 - name: stash.kopano.io/kgol/rndm
   version: 69ff9c69d5ce12d2fb19a552eab58ad657a5e8b2
 testImports: []

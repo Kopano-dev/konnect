@@ -41,6 +41,12 @@ const (
 // for KCC when the provided username is empty.
 var KCServerDefaultUsername = "SYSTEM"
 
+// Property mappings for Kopano Server user meta data.
+var (
+	KCServerDefaultFamilyNameProperty = kcc.PR_SURNAME_A
+	KCServerDefaultGivenNameProperty  = kcc.PR_GIVEN_NAME_A
+)
+
 // KCIdentifierBackend is a backend for the Identifier which connects to
 // Kopano Core via kcc-go.
 type KCIdentifierBackend struct {
@@ -75,11 +81,23 @@ func (u *kcUser) Name() string {
 }
 
 func (u *kcUser) FamilyName() string {
-	return u.splitFullName()[1]
+	var n string
+	if u.user.Props != nil {
+		n, _ = u.user.Props.Get(KCServerDefaultFamilyNameProperty)
+	} else {
+		n = u.splitFullName()[1]
+	}
+	return n
 }
 
 func (u *kcUser) GivenName() string {
-	return u.splitFullName()[0]
+	var n string
+	if u.user.Props != nil {
+		n, _ = u.user.Props.Get(KCServerDefaultGivenNameProperty)
+	} else {
+		n = u.splitFullName()[0]
+	}
+	return n
 }
 
 func (u *kcUser) ID() int64 {
@@ -92,13 +110,11 @@ func (u *kcUser) Username() string {
 
 func (u *kcUser) splitFullName() [2]string {
 	// TODO(longsleep): Cache this, instead of doing every time.
-	result := [2]string{"", ""}
 	parts := strings.SplitN(u.user.FullName, " ", 2)
 	if len(parts) == 2 {
-		result[0] = parts[0]
-		result[1] = parts[1]
+		return [2]string{parts[0], parts[1]}
 	}
-	return result
+	return [2]string{"", ""}
 }
 
 // NewKCIdentifierBackend creates a new KCIdentifierBackend with the provided
