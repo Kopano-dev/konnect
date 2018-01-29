@@ -29,6 +29,14 @@ import (
 	"stash.kopano.io/kc/konnect/server"
 )
 
+// Defaults.
+const (
+	defaultListenAddr           = "127.0.0.1:8777"
+	defaultIdentifierClientPath = "./identifier-webapp"
+	defaultSigningKeyID         = "default"
+	defaultSigningKeyBits       = 2048
+)
+
 func commandServe() *cobra.Command {
 	serveCmd := &cobra.Command{
 		Use:   "serve <identity-manager> [...args]",
@@ -40,14 +48,14 @@ func commandServe() *cobra.Command {
 			}
 		},
 	}
-	serveCmd.Flags().String("listen", "127.0.0.1:8777", "TCP listen address")
-	serveCmd.Flags().String("iss", "http://localhost:8777", "OIDC issuer URL")
+	serveCmd.Flags().String("listen", "", fmt.Sprintf("TCP listen address (default \"%s\")", defaultListenAddr))
+	serveCmd.Flags().String("iss", "", "OIDC issuer URL")
 	serveCmd.Flags().String("signing-private-key", "", "Full path to PEM encoded private key file (must match the --signing-method algorithm)")
 	serveCmd.Flags().String("encryption-secret", "", fmt.Sprintf("Full path to a file containing a %d bytes secret key", encryption.KeySize))
 	serveCmd.Flags().String("signing-method", "RS256", "JWT signing method")
 	serveCmd.Flags().String("sign-in-uri", "", "Custom redirection URI to sign-in form")
 	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")
-	serveCmd.Flags().String("identifier-client-path", "./identifier/build", "Path to the identifier web client base folder")
+	serveCmd.Flags().String("identifier-client-path", "", fmt.Sprintf("Path to the identifier web client base folder (default \"%s\")", defaultIdentifierClientPath))
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 	serveCmd.Flags().StringArray("trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
 

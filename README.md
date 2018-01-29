@@ -111,6 +111,59 @@ bin/konnectd serve --listen=127.0.0.1:8777 \
   ldap
 ```
 
+### Run with Docker
+
+This project includes a Dockerfile which can be used to build a Docker container
+to run Kopano Konnect inside a container. The Dockerfile supports all features
+of Kopano Konnect and can make use of Docker Secrets to manage sensitive
+data like keys.
+
+#### Docker Swarm
+
+Make sure to have built this project (see above), then build and setup the Docker
+container in swarm mode like this:
+
+```
+docker build -t kopano/konnectd .
+openssl rand 32 | docker secret create konnectd_encryption_secret -
+docker service create \
+	--read-only \
+	--volume /etc/ssl/certs:/etc/ssl/certs:ro \
+	--secret konnectd_signing_private_key \
+	--secret konnectd_encryption_secret \
+	--env KONNECTD_KOPANO_SERVER_URI=file://run/kopano/server.sock \
+	--volume /run/kopano:/run/kopano:rw \
+	--publish 8777:8777 \
+	--name=konnectd \
+	kopano/konnectd \
+	serve \
+	--iss=https://mykonnect.local \
+	kc
+```
+
+#### Without Docker Swarm - running the Docker image
+
+```
+docker build -t kopano/konnectd .
+openssl rand 32 -out /etc/kopano/konnectd-encryption-secret.key
+docker run --rm=true --name=konnectd \
+	--read-only \
+	--volume /etc/ssl/certs:/etc/ssl/certs:ro \
+	--volume /etc/kopano/konnectd-tokens-signing-key.pem:/run/secrets/konnectd_signing_private_key:ro \
+	--volume /etc/kopano/konnectd-encryption.key:/run/secrets/konnectd_encryption_secret:ro \
+	--env KOPANO_SERVER_DEFAULT_URI=file://run/kopano/server.sock \
+	--volume /run/kopano:/run/kopano:rw \
+	--publish 127.0.0.1:8777:8777 \
+	kopano/konnectd \
+	serve \
+	--iss=https://mykonnect.local \
+	kc
+```
+
+Of course modify the paths and ports according to your requirements. The Docker
+examples are for the kc identity manager, but work for the others as well if
+you adapt the parameters and environment variables.
+
 ## Run unit tests
 
 ```

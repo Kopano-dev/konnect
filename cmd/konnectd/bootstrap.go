@@ -28,6 +28,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -47,8 +48,6 @@ const (
 	identityManagerNameKC     = "kc"
 	identityManagerNameLDAP   = "ldap"
 )
-
-const defaultSigningKeyID = "default"
 
 // bootstrap is a data structure to hold configuration required to start
 // konnectd.
@@ -80,6 +79,22 @@ func (bs *bootstrap) initialize() error {
 	cmd := bs.cmd
 	logger := bs.cfg.Logger
 	var err error
+
+	if len(bs.args) == 0 {
+		return fmt.Errorf("identity-manager argument missing, use one of kc, ldap, cookie, dummy")
+	}
+
+	issuerIdentifier, _ := cmd.Flags().GetString("iss")
+	bs.issuerIdentifierURI, err = url.Parse(issuerIdentifier)
+	if err != nil {
+		return fmt.Errorf("invalid iss value, iss is not a valid URL), %v", err)
+	} else if issuerIdentifier == "" {
+		return fmt.Errorf("missing iss value, did you provide the --iss parameter?")
+	} else if bs.issuerIdentifierURI.Scheme != "https" {
+		return fmt.Errorf("invalid iss value, URL must start with https://")
+	} else if bs.issuerIdentifierURI.Host == "" {
+		return fmt.Errorf("invalid iss value, URL must have a host")
+	}
 
 	signInFormURIString, _ := cmd.Flags().GetString("sign-in-uri")
 	bs.signInFormURI, err = url.Parse(signInFormURIString)
@@ -124,9 +139,13 @@ func (bs *bootstrap) initialize() error {
 		logger.Infoln("trusted proxy networks", bs.cfg.TrustedProxyNets)
 	}
 
-	if encryptionSecretFilename, _ := cmd.Flags().GetString("encryption-secret"); encryptionSecretFilename != "" {
-		logger.WithField("file", encryptionSecretFilename).Infoln("loading encryption secret from file")
-		bs.encryptionSecret, err = ioutil.ReadFile(encryptionSecretFilename)
+	encryptionSecretFn, _ := cmd.Flags().GetString("encryption-secret")
+	if encryptionSecretFn == "" {
+		encryptionSecretFn = os.Getenv("KONNECTD_ENCRYPTION_SECRET")
+	}
+	if encryptionSecretFn != "" {
+		logger.WithField("file", encryptionSecretFn).Infoln("loading encryption secret from file")
+		bs.encryptionSecret, err = ioutil.ReadFile(encryptionSecretFn)
 		if err != nil {
 			return fmt.Errorf("failed to load encryption secret from file: %v", err)
 		}
@@ -134,21 +153,35 @@ func (bs *bootstrap) initialize() error {
 			return fmt.Errorf("invalid encryption secret size - must be %d bytes", encryption.KeySize)
 		}
 	} else {
-		logger.Warnln("missing --encryption-secret parameter, using random encyption secret")
+		logger.Warnf("missing --encryption-secret parameter, using random encyption secret with %d bytes", encryption.KeySize)
 		bs.encryptionSecret = rndm.GenerateRandomBytes(encryption.KeySize)
 	}
 
 	bs.cfg.ListenAddr, _ = cmd.Flags().GetString("listen")
+	if bs.cfg.ListenAddr == "" {
+		bs.cfg.ListenAddr = os.Getenv("KONNECTD_LISTEN")
+	}
+	if bs.cfg.ListenAddr == "" {
+		bs.cfg.ListenAddr = defaultListenAddr
+	}
 
-	issuerIdentifier, _ := cmd.Flags().GetString("iss") // TODO(longsleep): Validate iss value.
-	bs.issuerIdentifierURI, _ = url.Parse(issuerIdentifier)
 	bs.identifierClientPath, _ = cmd.Flags().GetString("identifier-client-path")
+	if bs.identifierClientPath == "" {
+		bs.identifierClientPath = os.Getenv("KONNECTD_IDENTIFIER_CLIENT_PATH")
+	}
+	if bs.identifierClientPath == "" {
+		bs.identifierClientPath = defaultIdentifierClientPath
+	}
 
 	if bs.signingKeyID == "" {
 		bs.signingKeyID = defaultSigningKeyID
 	}
 
-	if signingKeyFn, _ := cmd.Flags().GetString("signing-private-key"); signingKeyFn != "" {
+	signingKeyFn, _ := cmd.Flags().GetString("signing-private-key")
+	if signingKeyFn == "" {
+		signingKeyFn = os.Getenv("KONNECTD_SIGNING_PRIVATE_KEY")
+	}
+	if signingKeyFn != "" {
 		signingMethodString, _ := cmd.Flags().GetString("signing-method")
 		bs.signingMethod = jwt.GetSigningMethod(signingMethodString)
 		if bs.signingMethod == nil {
@@ -162,8 +195,8 @@ func (bs *bootstrap) initialize() error {
 		}
 	} else {
 		//NOTE(longsleep): remove me - create keypair a random key pair.
-		signer, _ := rsa.GenerateKey(rand.Reader, 2048)
-		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnln("created random signing key with signing method RS256")
+		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnf("missing --signing-private-key parameter, using random %d bit signing key with signing method RS256", defaultSigningKeyBits)
+		signer, _ := rsa.GenerateKey(rand.Reader, defaultSigningKeyBits)
 		bs.signingMethod = jwt.SigningMethodRS256
 		bs.signers = make(map[string]crypto.Signer)
 		bs.validators = make(map[string]crypto.PublicKey)
@@ -286,6 +319,8 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 	logger.WithField("alg", bs.signingMethod.Alg()).Infoln("oidc token signing set up")
 
 	bs.managers.handler = activeProvider
+
+	logger.WithField("iss", activeProvider.Config.IssuerIdentifier).Infoln("oidc provider set up")
 
 	return nil
 }

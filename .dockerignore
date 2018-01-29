@@ -1,0 +1,4 @@
+**
+!bin/konnectd
+!scripts/*.sh
+!identifier/build
