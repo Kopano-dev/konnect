@@ -107,9 +107,6 @@ func (bs *bootstrap) initialize() error {
 	if err != nil {
 		return fmt.Errorf("invalid authorization-endpoint-uri, %v", err)
 	}
-	if bs.authorizationEndpointURI.EscapedPath() == "" {
-		bs.authorizationEndpointURI.RawPath = "/konnect/v1/authorize"
-	}
 
 	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
 	if tlsInsecureSkipVerify {

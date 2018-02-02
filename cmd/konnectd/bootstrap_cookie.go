@@ -32,9 +32,14 @@ import (
 func newCookieIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	logger := bs.cfg.Logger
 
+	if bs.authorizationEndpointURI.EscapedPath() == "" {
+		bs.authorizationEndpointURI.Path = "/konnect/v1/authorize"
+	}
+
 	if !strings.HasPrefix(bs.signInFormURI.EscapedPath(), "/") {
 		return nil, fmt.Errorf("URI path must be absolute")
 	}
+
 	if len(bs.args) < 2 {
 		return nil, fmt.Errorf("cookie backend requires the backend URI as argument")
 	}
