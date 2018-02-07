@@ -6,6 +6,10 @@ import { receiveHello } from './common-actions';
 import { newHelloRequest } from '../models/hello';
 import { withClientRequestState } from '../utils';
 
+// Modes for logon.
+export const ModeLogonUsernameEmptyPasswordCookie = '0';
+export const ModeLogonUsernamePassword = '1';
+
 export function updateInput(name, value) {
   return {
     type: types.UPDATE_INPUT,
@@ -55,7 +59,7 @@ export function receiveConsent(logon) {
   };
 }
 
-export function executeLogon(username, password) {
+export function executeLogon(username, password, mode=ModeLogonUsernamePassword) {
   return function(dispatch, getState) {
     dispatch(requestLogon(username, password));
     dispatch(receiveHello({
@@ -64,8 +68,22 @@ export function executeLogon(username, password) {
 
     const { flow, query } = getState().common;
 
+    // Prepare params based on mode.
+    const params = [];
+    switch (mode) {
+      case ModeLogonUsernamePassword:
+        // Username with password.
+        params.push(username, password, mode);
+        break;
+
+      case ModeLogonUsernameEmptyPasswordCookie:
+        // Username with empty password - this only works when the user is already signed in.
+        params.push(username, '', mode);
+        break;
+    }
+
     const r = withClientRequestState({
-      params: [username, password, '1'],
+      params: params,
       hello: newHelloRequest(flow, query)
     });
     return axios.post('./identifier/_/logon', r, {
@@ -200,7 +218,8 @@ export function executeLogonIfFormValid(username, password, isSignedIn) {
     return dispatch(
       validateUsernamePassword(username, password, isSignedIn)
     ).then(() => {
-      return dispatch(executeLogon(username, password));
+      const mode = isSignedIn ? ModeLogonUsernameEmptyPasswordCookie : ModeLogonUsernamePassword;
+      return dispatch(executeLogon(username, password, mode));
     }).catch((errors) => {
       return {
         success: false,

@@ -159,6 +159,21 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 			break
 		}
 
+		if paramSize >= 3 && params[1] == "" && params[2] == ModeLogonUsernameEmptyPasswordCookie {
+			// Special mode to allow when same user is logged in via cookie. This
+			// is used in the select account page logon flow with empty password.
+			identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req, 0)
+			if cookieErr != nil {
+				i.logger.WithError(cookieErr).Debugln("identifier failed to decode logon cookie in logon request")
+			}
+			if identifiedUser != nil {
+				if identifiedUser.Username() == params[0] {
+					user = identifiedUser
+					break
+				}
+			}
+		}
+
 		promptLogin := false
 		if r.Hello != nil {
 			promptLogin, _ = r.Hello.Prompts[oidc.PromptLogin]

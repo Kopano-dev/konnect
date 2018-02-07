@@ -18,6 +18,10 @@
 package identifier
 
 const (
+	// ModeLogonUsernameEmptyPasswordCookie is the logon mode which requires a
+	// username which matches the currently signed in user in the cookie and an
+	// empty password.
+	ModeLogonUsernameEmptyPasswordCookie = "0"
 	// ModeLogonUsernamePassword is the logon mode which requires a username
 	// and a password.
 	ModeLogonUsernamePassword = "1"
