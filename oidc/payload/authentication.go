@@ -169,6 +169,9 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 		if ar.Nonce == "" {
 			return ar.NewError(oidc.ErrorOAuth2InvalidRequest, "nonce is required for implicit flow")
 		}
+	case oidc.ResponseTypeToken:
+		// OAuth2 flow implicit grant.
+		// breaks
 	default:
 		return ar.NewError(oidc.ErrorOAuth2UnsupportedResponseType, "")
 	}
