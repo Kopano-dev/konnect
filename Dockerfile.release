@@ -86,7 +86,7 @@ setup_secrets\n\
 # Download
 RUN apk add --no-cache ca-certificates curl && \
 	pwd && \
-	curl -sSL https://download.kopano.io/community/konnect/kopano-konnect-${VERSION}.tar.gz | \
+	curl -sSL https://download.kopano.io/community/konnect:/kopano-konnect-${VERSION}.tar.gz | \
 	tar -C /var/lib/konnectd-docker --strip 1 -vxzf - && \
 	mv ${EXE} /usr/local/bin/${EXE}
 
