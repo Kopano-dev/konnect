@@ -58,7 +58,7 @@ secure (https:// required).
 
 ### Kopano Webapp backend (Cookie backend)
 
-This assumes that you have a set-up Konano with a reverse proxy on
+This assumes that you have a set-up Kopano with a reverse proxy on
 `https://mykopano.local` together with the proper proxy configuration to
 pass through all requests to the `/konnect/v1/` prefix to `127.0.0.1:8777`. also
 do not forget to reverse proxy `/.well-known/openid-configuration`.
