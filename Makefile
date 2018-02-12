@@ -30,7 +30,7 @@ export GOPATH CGO_ENABLED
 # Build
 
 .PHONY: all
-all: fmt lint vendor | $(CMDS) identifier-webapp
+all: fmt vendor | $(CMDS) identifier-webapp
 
 $(BASE): ; $(info creating local GOPATH ...)
 	@mkdir -p $(dir $@)
