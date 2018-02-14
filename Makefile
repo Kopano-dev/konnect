@@ -106,12 +106,19 @@ vendor: glide.lock | $(BASE) ; $(info retrieving dependencies ...)
 
 # Dist
 
+.PHONY: licenses
+licenses: ; $(info building licenses files ...)
+	scripts/go-license-ranger.py > 3rdparty-LICENSES.md
+
+3rdparty-LICENSES.md: licenses
+
 .PHONY: dist
-dist: ; $(info building dist tarball ...)
+dist: 3rdparty-LICENSES.md ; $(info building dist tarball ...)
 	@mkdir -p "dist/${PACKAGE_NAME}-${VERSION}"
 	@cd dist && \
 	cp -avf ../LICENSE.txt "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../README.md "${PACKAGE_NAME}-${VERSION}" && \
+	cp -avf ../3rdparty-LICENSES.md "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avf ../bin/* "${PACKAGE_NAME}-${VERSION}" && \
 	cp -avr ../identifier/build "${PACKAGE_NAME}-${VERSION}/identifier-webapp" && \
 	tar --owner=0 --group=0 -czvf ${PACKAGE_NAME}-${VERSION}.tar.gz "${PACKAGE_NAME}-${VERSION}" && \
