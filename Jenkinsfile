@@ -3,12 +3,12 @@
 pipeline {
 	agent {
 		docker {
-			image 'golang:1.8'
+			image 'golang:1.9'
 			args '-u 0'
 		 }
 	}
 	environment {
-		GLIDE_VERSION = 'v0.13.0'
+		GLIDE_VERSION = 'v0.13.1'
 		GLIDE_HOME = '/tmp/.glide'
 		GOBIN = '/usr/local/bin'
 		DEBIAN_FRONTEND = 'noninteractive'
