@@ -1,15 +1,31 @@
 # Konnect
 
-Kopano Konnect implements an [OpenID provider](openid.net/specs/openid-connect-core-1_0.html) (OP) with integrated web login and consent forms.
+Kopano Konnect implements an [OpenID provider](openid.net/specs/openid-connect-core-1_0.html)
+(OP) with integrated web login and consent forms.
 
-## Quick start
+## Quickstart
+
+Either download a Konnect binary release from https://download.kopano.io/community/konnect:/
+or use the Docker image from https://hub.docker.com/r/kopano/konnectd/ to run
+Konnect. For details how to run Konnect see below.
+
+## Build dependencies
 
 Make sure you have Go 1.8 or later installed. This assumes your GOPATH is `~/go` and
 you have `~/go/bin` in your $PATH and you have [Glide](https://github.com/Masterminds/glide)
 installed as well.
 
-Konnect also includes a modern web app which requires [Yarn](https://yarnpkg.com). Thus it
-is furthermore assumed that you have `yarn` in your $PATH.
+Konnect also includes a modern web app which requires a couple of additional
+build dependencies which are furthermore also assumed to be in your $PATH.
+
+  - yarn - [Yarn](https://yarnpkg.com)
+  - convert, identify - [Imagemagick](https://www.imagemagick.org)
+  - scour - [Scour](https://github.com/scour-project/scour)
+
+To build Konnect, a `Makefile` is provided, which requires [make](https://www.gnu.org/software/make/manual/make.html).
+
+When building, third party dependencies will tried to be fetched from the Internet
+if not there already.
 
 ## Building from source
 
@@ -27,8 +43,8 @@ Some optional build dependencies are required for linting and continous
 integration. Those tools are mostly used by make to perform various tasks and
 are expected to be found in your $PATH.
 
-  - https://github.com/golang/lint
-  - https://github.com/tebeka/go2xunit
+  - golint - [Golint](https://github.com/golang/lint)
+  - go2xunit - [go2xunit](https://github.com/tebeka/go2xunit)
 
 ## Running Konnect
 
@@ -113,18 +129,21 @@ bin/konnectd serve --listen=127.0.0.1:8777 \
 
 ### Run with Docker
 
-This project includes a Dockerfile which can be used to build a Docker container
-to run Kopano Konnect inside a container. The Dockerfile supports all features
-of Kopano Konnect and can make use of Docker Secrets to manage sensitive
-data like keys.
+Kopano Konnect supports Docker to easily be run inside a container. Running with
+Docker supports all features of Kopano Konnect and can make use of Docker
+Secrets to manage sensitive data like keys.
 
-#### Docker Swarm
-
-Make sure to have built this project (see above), then build and setup the Docker
-container in swarm mode like this:
+Kopano provides [official Docker images for Konnect](https://hub.docker.com/r/kopano/konnectd/).
 
 ```
-docker build -t kopano/konnectd .
+docker pull kopano/konnectd
+```
+
+#### Run Konnect with Docker Swarm
+
+Setup the Docker container in swarm mode like this:
+
+```
 openssl rand 32 | docker secret create konnectd_encryption_secret -
 docker service create \
 	--read-only \
@@ -141,10 +160,9 @@ docker service create \
 	kc
 ```
 
-#### Without Docker Swarm - running the Docker image
+#### Run Konnect from Docker image
 
 ```
-docker build -t kopano/konnectd .
 openssl rand 32 -out /etc/kopano/konnectd-encryption-secret.key
 docker run --rm=true --name=konnectd \
 	--read-only \
@@ -163,6 +181,20 @@ docker run --rm=true --name=konnectd \
 Of course modify the paths and ports according to your requirements. The Docker
 examples are for the kc identity manager, but work for the others as well if
 you adapt the parameters and environment variables.
+
+#### Build Konnect Docker image
+
+This project includes a `Dockerfile` which can be used to build a Docker
+container from the locally build version. Similarly the `Dockerfile.release`
+builds the Docker image locally from the latest release download.
+
+```
+docker build -t kopano/konnectd .
+```
+
+```
+docker build -f Dockerfile.release -t kopano/konnectd .
+```
 
 ## Run unit tests
 
