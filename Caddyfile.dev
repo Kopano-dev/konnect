@@ -2,7 +2,7 @@
 #
 # This assumes Konnect is running with identifier on 127.0.0.1:8777. In addition
 # for development, the identifier is used directly from webpack-dev-server
-# running on 127.0.0.1:3000. Additional examples are included for third party
+# running on 127.0.0.1:3001. Additional examples are included for third party
 # login provides which use cookie passthrough backend.
 
 0.0.0.0:8443 {
@@ -19,15 +19,15 @@
 	proxy /konnect/v1/static 127.0.0.1:8777
 
 	# konnect identifier development via webpack-dev-server
-	proxy /signin/v1/ 127.0.0.1:3000 {
+	proxy /signin/v1/ 127.0.0.1:3001 {
 		header_downstream Cache-Control "no-cache, max-age=0, public"
 		header_downstream Referrer-Policy origin
 		header_downstream Content-Security-Policy "object-src 'none'; script-src 'self'; base-uri 'none'; frame-ancestors 'none';"
 	}
-	proxy /sockjs-node/ 127.0.0.1:3000 {
+	proxy /sockjs-node/ 127.0.0.1:3001 {
 		websocket
 	}
-	proxy /static 127.0.0.1:3000
+	proxy /static 127.0.0.1:3001
 	proxy /signin/v1/identifier/_/ 127.0.0.1:8777 {
 		transparent
 	}
