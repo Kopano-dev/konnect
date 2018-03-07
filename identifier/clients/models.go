@@ -17,10 +17,25 @@
 
 package clients
 
-// Details hold detail information about clients identified by ID.
-type Details struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"display_name"`
-	RedirectURI string `json:"redirect_uri"`
-	Trusted     bool   `json:"trusted"`
+import (
+	_ "gopkg.in/yaml.v2" // Make sure we have yaml.
+)
+
+// RegistryData is the base structur of our client registry configuration file.
+type RegistryData struct {
+	Clients []*ClientRegistration `yaml:"clients,flow"`
+}
+
+// ClientRegistration defines a client with its properties.
+type ClientRegistration struct {
+	ID              string `yaml:"id"`
+	Secret          string `yaml:"secret"`
+	Name            string `yaml:"name"`
+	ApplicationType string `yaml:"application_type"`
+
+	Trusted  bool `yaml:"trusted"`
+	Insecure bool `yaml:"insecure"`
+
+	RedirectURIs []string `yaml:"redirect_uris,flow"`
+	Origins      []string `yaml:"origins,flow"`
 }

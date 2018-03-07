@@ -125,9 +125,14 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 		// Let all other prompt values pass.
 	}
 
-	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, ar.RedirectURI)
+	origin := ""
+	if false {
+		// TODO(longsleep): find a condition when this can be enabled.
+		origin = utils.OriginFromRequestHeaders(req.Header)
+	}
+	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin)
 	if err != nil {
-		return nil, err
+		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, err.Error())
 	}
 
 	// If not trusted, always force consent.

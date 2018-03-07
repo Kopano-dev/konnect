@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -60,8 +61,9 @@ type bootstrap struct {
 
 	tlsClientConfig *tls.Config
 
-	issuerIdentifierURI  *url.URL
-	identifierClientPath string
+	issuerIdentifierURI        *url.URL
+	identifierClientPath       string
+	identifierRegistrationConf string
 
 	encryptionSecret []byte
 	signingMethod    jwt.SigningMethod
@@ -168,6 +170,14 @@ func (bs *bootstrap) initialize() error {
 	}
 	if bs.identifierClientPath == "" {
 		bs.identifierClientPath = defaultIdentifierClientPath
+	}
+
+	bs.identifierRegistrationConf, _ = cmd.Flags().GetString("identifier-registration-conf")
+	if bs.identifierRegistrationConf != "" {
+		bs.identifierRegistrationConf, _ = filepath.Abs(bs.identifierRegistrationConf)
+		if _, errStat := os.Stat(bs.identifierRegistrationConf); errStat != nil {
+			return fmt.Errorf("identifier-registration-conf file not found or unable to access: %v", errStat)
+		}
 	}
 
 	if bs.signingKeyID == "" {

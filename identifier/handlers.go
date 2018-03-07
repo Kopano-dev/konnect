@@ -459,7 +459,8 @@ handleHelloLoop:
 	case FlowConsent:
 		fallthrough
 	case FlowOIDC:
-		clientDetails, err := i.clients.Lookup(req.Context(), r.ClientID, r.RedirectURI)
+		// TODO(longsleep): Add something to validate the parameters.
+		clientDetails, err := i.clients.Lookup(req.Context(), r.ClientID, "", r.RedirectURI, "")
 		if err != nil {
 			return nil, err
 		}
@@ -478,6 +479,8 @@ handleHelloLoop:
 		if !clientDetails.Trusted {
 			promptConsent = true
 		}
+
+		i.logger.Debugln("xxx", clientDetails.Trusted, promptConsent)
 
 		if promptConsent {
 			response.Next = FlowConsent

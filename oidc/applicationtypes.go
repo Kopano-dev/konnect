@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2018 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -15,12 +15,14 @@
  *
  */
 
-package clients
+package oidc
 
-// Details hold detail information about clients identified by ID.
-type Details struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"display_name"`
-	RedirectURI string `json:"redirect_uri"`
-	Trusted     bool   `json:"trusted"`
-}
+const (
+	// ApplicationTypeWeb is the string value for the OpenID Connect client
+	// application_type web.
+	ApplicationTypeWeb = "web"
+
+	// ApplicationTypeNative is the string value for the OpenID Connect client
+	// application_type web.
+	ApplicationTypeNative = "native"
+)

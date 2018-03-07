@@ -59,7 +59,10 @@ func newManagers(ctx context.Context, identityManagerName string, bs *bootstrap)
 	managers.code = codeManagers.NewMemoryMapManager(ctx)
 
 	// Identifier client registry manager.
-	managers.clients, _ = identifierClients.NewRegistry(bs.issuerIdentifierURI, logger)
+	managers.clients, err = identifierClients.NewRegistry(bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client registry: %v", err)
+	}
 
 	return managers, nil
 }

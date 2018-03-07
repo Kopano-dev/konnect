@@ -17,7 +17,7 @@ indent_style = space
 indent_size = 4
 
 ; YAML format, 2 spaces
-[*.yaml, *.yml]
+[*.yaml, *.yml, *.yaml.in]
 indent_style = space
 indent_size = 2
 

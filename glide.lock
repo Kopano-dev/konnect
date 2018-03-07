@@ -1,5 +1,5 @@
-hash: 3bcbd425eaefa785f52420ef3b3977843d3e87fc2b1f97393564224581783fd5
-updated: 2018-01-29T14:52:02.741687521+01:00
+hash: 669a6a7572fed3ddcb588322a02e42d3dc97156954fae487292032bc55abf8f6
+updated: 2018-03-07T17:41:42.388721972+01:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -46,6 +46,7 @@ imports:
   - nacl/secretbox
   - poly1305
   - salsa20/salsa
+  - ssh/terminal
 - name: golang.org/x/net
   version: d866cfc389cec985d6fda2859936a575a55a3ab6
   subpackages:
@@ -68,6 +69,8 @@ imports:
   - cipher
   - json
   - jwt
+- name: gopkg.in/yaml.v2
+  version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
 - name: stash.kopano.io/kgol/kcc-go
   version: 3ffe6b646618f5151a21deae400e6731492eb68e
 - name: stash.kopano.io/kgol/rndm
