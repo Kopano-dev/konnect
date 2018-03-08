@@ -1,6 +1,6 @@
 # Konnect
 
-Kopano Konnect implements an [OpenID provider](openid.net/specs/openid-connect-core-1_0.html)
+Kopano Konnect implements an [OpenID provider](http://openid.net/specs/openid-connect-core-1_0.html)
 (OP) with integrated web login and consent forms.
 
 ## Quickstart
