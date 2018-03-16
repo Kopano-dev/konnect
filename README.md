@@ -63,6 +63,21 @@ suitable key of 32 bytes with `openssl rand -out encryption.key 32` and provide
 the full path to that file via the `--encryption-secret` parameter. If you skip
 this, Konnect will generate a random key on startup.
 
+To run a functional OpenID Connect provider, an issuer identifier is required.
+The `iss` is a full qualified https:// URI pointing to the web server which
+serves the requests to Konnect (example: https://example.com). Provide the
+Issuer Identifier with the `--iss` parametter when starting Konnect.
+
+Furthermore to allow clients to utilize the Konnect services, clients need to
+be known/registered. For now Konnect uses a static configuration file which
+allows clients and their allowed urls to be registered. See the the example at
+`identifier-registration.yaml.in`. Copy and modify that file to include all
+the clients which should be able to use OpenID Connect and/or OAuth2 and start
+Konnect with the `--identifier-registration-conf` parameter pointing to that
+file. Without any explicitly registered clients, Konnect will only accept clients
+which redirect to an URI which starts with the value provided with the `--iss`
+parameter.
+
 ## URL endpoints
 
 Take a look at `Caddyfile.example` on the URL endpoints provided by Konnect and
