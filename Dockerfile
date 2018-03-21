@@ -33,7 +33,7 @@ ENV KONNECTD_LDAP_BIND_DN_FILE=konnectd_ldap_bind_dn
 ENV KONNECTD_LDAP_BIND_PASSWORD_FILE=konnectd_ldap_bind_password
 
 # Defaults which can be overwritten.
-ENV KOPANO_SERVER_DEFAULT_URI=file://run/kopano/server.sock
+ENV KOPANO_SERVER_DEFAULT_URI=file:///run/kopano/server.sock
 ENV KOPANO_SERVER_USERNAME=
 ENV KOPANO_SERVER_PASSWORD=
 ENV LDAP_URI=

@@ -159,15 +159,16 @@ docker pull kopano/konnectd
 Setup the Docker container in swarm mode like this:
 
 ```
+cat /etc/kopano/konnectd-tokens-signing-key.pem | docker secret create konnectd_signing_private_key -
 openssl rand 32 | docker secret create konnectd_encryption_secret -
 docker service create \
 	--read-only \
-	--volume /etc/ssl/certs:/etc/ssl/certs:ro \
+	--mount type=bind,source=/etc/ssl/certs,target=/etc/ssl/certs,readonly \
 	--secret konnectd_signing_private_key \
 	--secret konnectd_encryption_secret \
-	--env KONNECTD_KOPANO_SERVER_URI=file://run/kopano/server.sock \
-	--volume /run/kopano:/run/kopano:rw \
-	--publish 8777:8777 \
+	--env KOPANO_SERVER_DEFAULT_URI=file:///run/kopano/server.sock \
+	--mount type=bind,source=/run/kopano,target=/run/kopano \
+	--publish published=8777,target=8777,mode=host \
 	--name=konnectd \
 	kopano/konnectd \
 	serve \
@@ -184,7 +185,7 @@ docker run --rm=true --name=konnectd \
 	--volume /etc/ssl/certs:/etc/ssl/certs:ro \
 	--volume /etc/kopano/konnectd-tokens-signing-key.pem:/run/secrets/konnectd_signing_private_key:ro \
 	--volume /etc/kopano/konnectd-encryption.key:/run/secrets/konnectd_encryption_secret:ro \
-	--env KOPANO_SERVER_DEFAULT_URI=file://run/kopano/server.sock \
+	--env KOPANO_SERVER_DEFAULT_URI=file:///run/kopano/server.sock \
 	--volume /run/kopano:/run/kopano:rw \
 	--publish 127.0.0.1:8777:8777 \
 	kopano/konnectd \
