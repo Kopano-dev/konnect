@@ -480,8 +480,6 @@ handleHelloLoop:
 			promptConsent = true
 		}
 
-		i.logger.Debugln("xxx", clientDetails.Trusted, promptConsent)
-
 		if promptConsent {
 			response.Next = FlowConsent
 			response.RequestedScopes = r.Scopes
