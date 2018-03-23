@@ -110,6 +110,9 @@ bin/konnectd serve --listen=127.0.0.1:8777 \
 This assumes that Konnect can connect directly to a Kopano server via SOAP
 either using a unix socket or a TCP connection.
 
+Kopano Groupware Core might require a certain unix user to access the unix
+socket. Make sure to run konnectd with an appropriate user.
+
 ```
 export KOPANO_SERVER_DEFAULT_URI=http://mykopano.local:236
 export KOPANO_SERVER_USERNAME=my-kopano-user
@@ -163,6 +166,8 @@ cat /etc/kopano/konnectd-tokens-signing-key.pem | docker secret create konnectd_
 openssl rand 32 | docker secret create konnectd_encryption_secret -
 docker service create \
 	--read-only \
+	--user=$(id -u kopano) \
+	--group=$(id -g kopano) \
 	--mount type=bind,source=/etc/ssl/certs,target=/etc/ssl/certs,readonly \
 	--secret konnectd_signing_private_key \
 	--secret konnectd_encryption_secret \
@@ -176,12 +181,16 @@ docker service create \
 	kc
 ```
 
+This example assumes the local system has a user `kopano` which can access
+the Kopano Groupware Core unix socket as admin user `SYSTEM`.
+
 #### Run Konnect from Docker image
 
 ```
 openssl rand 32 -out /etc/kopano/konnectd-encryption-secret.key
 docker run --rm=true --name=konnectd \
 	--read-only \
+	--user=$(id -u kopano):$(id -g kopano) \
 	--volume /etc/ssl/certs:/etc/ssl/certs:ro \
 	--volume /etc/kopano/konnectd-tokens-signing-key.pem:/run/secrets/konnectd_signing_private_key:ro \
 	--volume /etc/kopano/konnectd-encryption.key:/run/secrets/konnectd_encryption_secret:ro \
@@ -196,7 +205,9 @@ docker run --rm=true --name=konnectd \
 
 Of course modify the paths and ports according to your requirements. The Docker
 examples are for the kc identity manager, but work for the others as well if
-you adapt the parameters and environment variables.
+you adapt the parameters and environment variables. The above example assumes
+the local system has a user `kopano` which can access the Kopano Groupware Core
+unix socket as admin user `SYSTEM`.
 
 #### Build Konnect Docker image
 
