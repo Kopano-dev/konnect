@@ -36,5 +36,10 @@ setup_env() {
 }
 setup_env
 
+# Support additional args provided via environment.
+if [ -n "${ARGS}" ]; then
+	set -- "$@" ${ARGS}
+fi
+
 # Run the service.
 exec "$@"
