@@ -18,6 +18,10 @@
 FROM alpine:3.7
 MAINTAINER Kopano Development <development@kopano.io>
 
+RUN apk add --update \
+	su-exec \
+	&& rm -rf /var/cache/apk/*
+
 # Expose ports.
 EXPOSE 8777
 
@@ -41,6 +45,10 @@ ENV LDAP_URI=
 ENV LDAP_BINDDN=
 ENV LDAP_BINDPW=
 ENV ARGS=
+
+# User and group defaults.
+ENV KONNECTD_USER=nobody
+ENV KONNECTD_GROUP=nogroup
 
 WORKDIR /var/lib/konnectd-docker
 
@@ -87,9 +95,6 @@ ADD identifier/build /var/lib/konnectd-docker/identifier-webapp
 
 # Add project main binary.
 COPY bin/konnectd /usr/local/bin/${EXE}
-
-# Run as nobody by default is always a good idea.
-USER nobody
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD [ \

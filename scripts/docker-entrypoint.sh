@@ -41,5 +41,13 @@ if [ -n "${ARGS}" ]; then
 	set -- "$@" ${ARGS}
 fi
 
-# Run the service.
-exec "$@"
+# Run the service, optionally switching user when running as root.
+if [ $(id -u) = 0 -a -n "${KONNECTD_USER}" ]; then
+	userAndgroup="${KONNECTD_USER}"
+	if [ -n "${KONNECTD_GROUP}" ]; then
+		userAndgroup="${userAndgroup}:${KONNECTD_GROUP}"
+	fi
+	exec su-exec ${userAndgroup} "$@"
+else
+	exec "$@"
+fi
