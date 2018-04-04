@@ -28,6 +28,7 @@ ENV VERSION latest
 ENV EXE=konnectd
 ENV KONNECTD_LISTEN=0.0.0.0:8777
 ENV KONNECTD_IDENTIFIER_CLIENT_PATH=/var/lib/konnectd-docker/identifier-webapp
+ENV KONNECTD_DOCKER_SECRETS_PATH=/run/secrets
 ENV KONNECTD_SIGNING_PRIVATE_KEY_FILE=konnectd_signing_private_key
 ENV KONNECTD_ENCRYPTION_SECRET_FILE=konnectd_encryption_secret
 ENV KONNECTD_KOPANO_SERVER_USERNAME_FILE=konnectd_kopano_server_username
@@ -56,27 +57,27 @@ RUN chmod 755 /usr/local/bin/*.sh
 # Add Docker specific runtime setup functions.
 RUN mkdir /etc/defaults && echo $'\
 setup_secrets() { \n\
-	local signingPrivateKeyFile="/run/secrets/${KONNECTD_SIGNING_PRIVATE_KEY_FILE}" \n\
+	local signingPrivateKeyFile="${KONNECTD_DOCKER_SECRETS_PATH}/${KONNECTD_SIGNING_PRIVATE_KEY_FILE}" \n\
 	if [ -f "${signingPrivateKeyFile}" ]; then \n\
 		export KONNECTD_SIGNING_PRIVATE_KEY="${signingPrivateKeyFile}" \n\
 	fi \n\
-	local encryptionSecretFile="/run/secrets/${KONNECTD_ENCRYPTION_SECRET_FILE}" \n\
+	local encryptionSecretFile="${KONNECTD_DOCKER_SECRETS_PATH}/${KONNECTD_ENCRYPTION_SECRET_FILE}" \n\
 	if [ -f "${encryptionSecretFile}" ]; then \n\
 		export KONNECTD_ENCRYPTION_SECRET="${encryptionSecretFile}" \n\
 	fi \n\
-	local kopanoServerUsernameFile="/run/secrets/${KONNECTD_KOPANO_SERVER_USERNAME_FILE}" \n\
+	local kopanoServerUsernameFile="${KONNECTD_DOCKER_SECRETS_PATH}/${KONNECTD_KOPANO_SERVER_USERNAME_FILE}" \n\
 	if [ -f "${kopanoServerUsernameFile}" ]; then \n\
 		export KOPANO_SERVER_USERNAME="$(cat ${kopanoServerUsernameFile})" \n\
 	fi \n\
-	local kopanoServerPasswordFile="/run/secrets/${KONNECTD_KOPANO_SERVER_PASSWORD_FILE}" \n\
+	local kopanoServerPasswordFile="${KONNECTD_DOCKER_SECRETS_PATH}/${KONNECTD_KOPANO_SERVER_PASSWORD_FILE}" \n\
 	if [ -f "${kopanoServerPasswordFile}" ]; then \n\
 		export KOPANO_SERVER_PASSWORD="$(cat ${kopanoServerPasswordFile})" \n\
 	fi \n\
-	local ldapBindDNFile="/run/secrets/${KONNECTD_LDAP_BIND_DN_FILE}" \n\
+	local ldapBindDNFile="${KONNECTD_DOCKER_SECRETS_PATH}/${KONNECTD_LDAP_BIND_DN_FILE}" \n\
 	if [ -f "${ldapBindDNFile}" ]; then \n\
 		export LDAP_BINDDN="$(cat ${ldapBindDNFile})" \n\
 	fi \n\
-	local ldapBindPasswordFile="/run/secrets/${KONNECTD_LDAP_BIND_PASSWORD_FILE}" \n\
+	local ldapBindPasswordFile="${KONNECTD_DOCKER_SECRETS_PATH}/${KONNECTD_LDAP_BIND_PASSWORD_FILE}" \n\
 	if [ -f "${ldapBindPasswordFile}" ]; then \n\
 		export LDAP_BINDPW="$(cat ${ldapBindPasswordFile})" \n\
 	fi \n\
