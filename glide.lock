@@ -1,5 +1,5 @@
-hash: 4978c774f28fa90ee99dc26be2f590f3804e975d1cfcf9ef14e58eae32bed886
-updated: 2018-04-04T19:27:53.856590414+02:00
+hash: adc41b0b19fe161c1e8b583e52ad3416025c5de2ad5053a391b5cd2f0e5c2f96
+updated: 2018-04-05T12:07:22.437499872+02:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -71,7 +71,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
 - name: stash.kopano.io/kgol/kcc-go
-  version: 26a7663755034ecc527af079c058d77c2cd0b78d
+  version: 369761c853f272177453d59e528750daf4f6c46d
 - name: stash.kopano.io/kgol/rndm
   version: 69ff9c69d5ce12d2fb19a552eab58ad657a5e8b2
 testImports: []

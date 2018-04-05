@@ -184,7 +184,7 @@ func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
 // password as provided. Requests are bound to the provided context.
 func (b *KCIdentifierBackend) Logon(ctx context.Context, username, password string) (bool, *string, error) {
 	var logonFlags kcc.KCFlag
-	logonFlags |= kcc.KOPANO_LOGON_NO_REGISTER_SESSION | kcc.EC_PROFILE_FLAGS_NO_UID_AUTH
+	logonFlags |= kcc.KOPANO_LOGON_NO_REGISTER_SESSION | kcc.KOPANO_LOGON_NO_UID_AUTH
 
 	response, err := b.c.Logon(ctx, username, password, logonFlags)
 	if err != nil {
