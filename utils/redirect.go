@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/go-querystring/query"
 )
@@ -31,7 +32,7 @@ import (
 // asFragment is true, the provided params are added as URL fragment, otherwise
 // they replace the query. If params is nil, the provided uri is taken as is.
 func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interface{}, asFragment bool) error {
-	var uriString string
+	uriString := uri.String()
 
 	if params != nil {
 		queryString, err := query.Values(params)
@@ -39,13 +40,17 @@ func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interf
 			return err
 		}
 
-		if asFragment {
-			uriString = fmt.Sprintf("%s#%s", uri.String(), queryString.Encode())
-		} else {
-			uriString = fmt.Sprintf("%s?%s", uri.String(), queryString.Encode())
+		seperator := "#"
+		if !asFragment {
+			seperator = "?"
 		}
-	} else {
-		uriString = uri.String()
+
+		if strings.Contains(uriString, seperator) {
+			// Avoid generating invalid URLs if the seperator is already part
+			// of the target URL - instead append it in the most likely way.
+			seperator = "&"
+		}
+		uriString = fmt.Sprintf("%s%s%s", uriString, seperator, queryString.Encode())
 	}
 
 	rw.Header().Set("Location", uriString)
