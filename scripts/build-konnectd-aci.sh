@@ -21,10 +21,12 @@ acbuild --debug set-exec -- /srv/konnectd serve \
 	--listen=0.0.0.0:8777 \
 	--signing-private-key=/signing-private-key.pem \
 	--encryption-secret=/encryption.key \
+	--identifier-registration-conf=/identifier-registration.yaml \
 	--identifier-client-path=/srv/identifier-webapp
 acbuild --debug port add www tcp 8777
 acbuild --debug mount add signing-private-key /signing-private-key.pem --read-only
 acbuild --debug mount add encryption-secret /encryption.key --read-only
+acbuild --debug mount add identifier-registration-conf /identifier-registration.yaml --read-only
 acbuild --debug mount add etc-ssl-certs /etc/ssl/certs --read-only
 acbuild --debug mount add run /run
 acbuild --debug label add version $VERSION
