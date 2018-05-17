@@ -34,7 +34,7 @@ LoadingComponent.propTypes = {
 
 // NOTE(longsleep): Load async with loader, this enables code splitting via Webpack.
 const LoadableApp = Loadable({
-  loader: () => import('./containers/App'),
+  loader: () => import(/* webpackChunkName: "identifier-container" */ './containers/App'),
   loading: LoadingComponent,
   timeout: 20000
 });

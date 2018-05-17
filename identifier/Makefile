@@ -2,6 +2,11 @@
 
 YARN ?= yarn
 
+# Variables
+
+VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null | sed 's/^v//' || \
+			cat $(CURDIR)/../.version 2> /dev/null || echo 0.0.0-unreleased)
+
 # Build
 
 .PHONY: all
@@ -16,7 +21,7 @@ all: build
 build: .yarninstall | src ; $(info building identifier Webapp ...)	@
 	@rm -rf build
 
-	$(YARN) run build
+	REACT_APP_KOPANO_BUILD="${VERSION}" $(YARN) run build
 
 .PHONY: src
 src:
@@ -30,3 +35,7 @@ clean:
 	@rm -f .yarninstall
 
 	@$(MAKE) -C src clean
+
+.PHONY: version
+version:
+	@echo $(VERSION)
