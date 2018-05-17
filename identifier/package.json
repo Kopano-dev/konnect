@@ -5,10 +5,12 @@
   "homepage": ".",
   "dependencies": {
     "axios": "^0.16.2",
+    "kpop": "https://download.kopano.io/community/kapp:/kpop-0.2.0.tgz",
     "material-ui": "^1.0.0-beta.21",
     "query-string": "^5.0.1",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
+    "react-intl": "^2.4.0",
     "react-loadable": "^5.3.1",
     "react-redux": "^5.0.6",
     "react-router-dom": "^4.2.2",
@@ -26,5 +28,7 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "eslint-plugin-jest": "^21.15.1"
+  }
 }

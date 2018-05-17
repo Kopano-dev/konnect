@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import injectTapEventPlugin from 'react-tap-event-plugin';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
+
+import { withStyles } from 'material-ui/styles';
 import Snackbar from 'material-ui/Snackbar';
 import Button from 'material-ui/Button';
 import PropTypes from 'prop-types';
@@ -19,13 +21,19 @@ injectTapEventPlugin();
 // Trigger loading of background image.
 enhanceBodyBackground();
 
-class App extends Component {
+const styles = () => ({
+  root: {
+    height: '100vh'
+  }
+});
+
+class Identifier extends Component {
   render() {
-    const { hello, updateAvailable } = this.props;
+    const { classes, hello, updateAvailable } = this.props;
 
     return (
-      <div>
-        <BrowserRouter className="App" basename="/signin/v1">
+      <div className={classes.root}>
+        <BrowserRouter basename="/signin/v1">
           <Switch>
             <PrivateRoute path="/welcome" exact component={Welcomescreen} hello={hello}></PrivateRoute>
             <Route path="/" component={Loginscreen}></Route>
@@ -55,7 +63,9 @@ class App extends Component {
   }
 }
 
-App.propTypes = {
+Identifier.propTypes = {
+  classes: PropTypes.object.isRequired,
+
   hello: PropTypes.object,
   updateAvailable: PropTypes.bool.isRequired
 };
@@ -69,4 +79,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(App);
+export default connect(mapStateToProps)(withStyles(styles)(Identifier));
