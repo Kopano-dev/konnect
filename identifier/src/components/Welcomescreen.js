@@ -42,10 +42,10 @@ class Welcomescreen extends Component {
           <Paper className={classes.paper} elevation={4}>
             <img src={KopanoLogo} className={classes.logo} alt="Kopano"/>
             <div>
-              <Typography type="headline" component="h3">
+              <Typography variant="headline" component="h3">
                 Welcome {hello.displayName}
               </Typography>
-              <Typography type="subheading" className={classes.subHeader}>
+              <Typography variant="subheading" className={classes.subHeader}>
                 {hello.username}
               </Typography>
 
@@ -54,7 +54,7 @@ class Welcomescreen extends Component {
               </Typography>
 
               <Button
-                raised
+                variant="raised"
                 className={classes.button}
                 onClick={(event) => this.logoff(event)}
               >Sign out</Button>

@@ -4,8 +4,11 @@ import Loadable from 'react-loadable';
 import PropTypes from 'prop-types';
 import { Provider } from 'react-redux';
 
+import { MuiThemeProvider } from 'material-ui/styles';
+
 import store from './store';
 import { unregister } from './registerServiceWorker';
+import theme from './theme';
 
 function LoadingComponent(props) {
   if (props.error) {
@@ -38,7 +41,9 @@ const LoadableApp = Loadable({
 
 ReactDOM.render(
   <Provider store={store}>
-    <LoadableApp />
+    <MuiThemeProvider theme={theme}>
+      <LoadableApp />
+    </MuiThemeProvider>
   </Provider>,
   document.getElementById('root')
 );

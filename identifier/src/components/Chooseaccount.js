@@ -38,7 +38,7 @@ class Chooseaccount extends Component {
 
     let errorMessage = null;
     if (errors.http) {
-      errorMessage = <Typography type="body1" color="error" className={classes.message}>{errors.http.message}</Typography>;
+      errorMessage = <Typography variant="body1" color="error" className={classes.message}>{errors.http.message}</Typography>;
     }
 
     let username = '';
@@ -48,10 +48,10 @@ class Chooseaccount extends Component {
 
     return (
       <div>
-        <Typography type="headline" component="h3">
+        <Typography variant="headline" component="h3">
           Choose an account
         </Typography>
-        <Typography type="subheading" className={classes.subHeader}>
+        <Typography variant="subheading" className={classes.subHeader}>
           to sign in to Kopano
         </Typography>
 

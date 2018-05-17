@@ -65,10 +65,10 @@ class Login extends Component {
 
     return (
       <div>
-        <Typography type="headline" component="h3">
+        <Typography variant="headline" component="h3">
           Sign in
         </Typography>
-        <Typography type="subheading" className={classes.subHeader}>
+        <Typography variant="subheading" className={classes.subHeader}>
           with your Kopano account
         </Typography>
 
@@ -98,7 +98,7 @@ class Login extends Component {
               <div className={classes.wrapper}>
                 <Button
                   type="submit"
-                  raised
+                  variant="raised"
                   color="primary"
                   className={classes.button}
                   disabled={!!loading}
@@ -110,7 +110,7 @@ class Login extends Component {
           </div>
 
           {renderIf(errors.http)(() => (
-            <Typography type="body1" color="error" className={classes.message}>{errors.http.message}</Typography>
+            <Typography variant="body1" color="error" className={classes.message}>{errors.http.message}</Typography>
           ))}
         </form>
       </div>

@@ -40,15 +40,15 @@ class Loading extends Component {
           ))}
           {renderIf(error !== null)(() => (
             <div>
-              <Typography type="headline" gutterBottom align="center">
+              <Typography variant="headline" gutterBottom align="center">
                 Failed to connect to Kopano
               </Typography>
-              <Typography type="body1" gutterBottom align="center" color="error">
+              <Typography variant="body1" gutterBottom align="center" color="error">
                 {error.message}
               </Typography>
               <Button
                 autoFocus
-                raised
+                variant="raised"
                 className={classes.button}
                 onClick={(event) => this.retry(event)}
               >Retry</Button>
