@@ -84,6 +84,7 @@ class Login extends Component {
               inputProps={inputProps.username}
               value={username}
               onChange={this.handleChange('username')}
+              autoComplete="kopano-account username"
             />
             <TextField
               type="password"
@@ -93,6 +94,7 @@ class Login extends Component {
               fullWidth
               margin="dense"
               onChange={this.handleChange('password')}
+              autoComplete="kopano-account current-password"
             />
             <div className={classes.buttonGroup}>
               <div className={classes.wrapper}>
