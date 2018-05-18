@@ -79,7 +79,7 @@ class Consent extends Component {
           <div className={classes.buttonGroup}>
             <div className={classes.wrapper}>
               <Button
-                color="primary"
+                color="secondary"
                 className={classes.button}
                 disabled={!!loading}
                 onClick={(event) => this.action(event, false)}
@@ -90,7 +90,6 @@ class Consent extends Component {
             <div className={classes.wrapper}>
               <Button
                 type="submit"
-                variant="raised"
                 color="primary"
                 className={classes.button}
                 disabled={!!loading}

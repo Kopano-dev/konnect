@@ -100,7 +100,6 @@ class Login extends Component {
               <div className={classes.wrapper}>
                 <Button
                   type="submit"
-                  variant="raised"
                   color="primary"
                   className={classes.button}
                   disabled={!!loading}
