@@ -58,6 +58,7 @@ class Consent extends Component {
   render() {
     const { classes, loading, hello, errors, client } = this.props;
 
+    console.log('xxx', client);
     const scopes = hello.details.scopes || {};
     return (
       <div>
@@ -69,7 +70,7 @@ class Consent extends Component {
         </Typography>
 
         <Typography variant="subheading" gutterBottom>
-          <Tooltip placement="bottom" title={`Clicking "Allow" will redirect you to: ${client.uri}`}><ClientDisplayName client={client}/></Tooltip> wants to
+          <Tooltip placement="bottom" title={`Clicking "Allow" will redirect you to: ${client.redirect_uri}`}><ClientDisplayName client={client}/></Tooltip> wants to
         </Typography>
         <ScopeList dense disablePadding className={classes.scopeList} scopes={scopes}></ScopeList>
         <Typography variant="subheading" gutterBottom>Allow <ClientDisplayName client={client}/> to do this?</Typography>
