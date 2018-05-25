@@ -30,6 +30,7 @@ import (
 type Manager interface {
 	Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (AuthRecord, error)
 	Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
+	EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error
 
 	ApproveScopes(ctx context.Context, userid string, audience string, approvedScopesList map[string]bool) (string, error)
 	ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error)

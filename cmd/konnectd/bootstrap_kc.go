@@ -38,6 +38,11 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	}
 	bs.authorizationEndpointURI.Path = "/signin/v1/identifier/_/authorize"
 
+	if bs.endSessionEndpointURI.String() != "" {
+		return nil, fmt.Errorf("kc backend is incompatible with endsession-endpoint-uri parameter")
+	}
+	bs.endSessionEndpointURI.Path = "/signin/v1/identifier/_/endsession"
+
 	if bs.signInFormURI.EscapedPath() == "" {
 		bs.signInFormURI.Path = "/signin/v1/identifier"
 	}

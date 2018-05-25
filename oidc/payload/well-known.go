@@ -24,6 +24,7 @@ type WellKnown struct {
 	AuthorizationEndpoint            string   `json:"authorization_endpoint"`
 	TokenEndpoint                    string   `json:"token_endpoint"`
 	UserInfoEndpoint                 string   `json:"userinfo_endpoint"`
+	EndSessionEndpoint               string   `json:"end_session_endpoint"`
 	JwksURI                          string   `json:"jwks_uri"`
 	ScopesSupported                  []string `json:"scopes_supported"`
 	ResponseTypesSupported           []string `json:"response_types_supported"`

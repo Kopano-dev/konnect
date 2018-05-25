@@ -210,6 +210,19 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 	return auth, nil
 }
 
+// EndSession implements the identity.Manager interface.
+func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
+	identifiedUser, _ := im.identifier.GetUserFromLogonCookie(ctx, req, 0)
+	if identifiedUser != nil {
+		err := esr.Verify(identifiedUser.Subject())
+		if err != nil {
+			return err
+		}
+	}
+
+	return im.identifier.UnsetLogonCookie(ctx, rw)
+}
+
 // ApproveScopes implements the Backend interface.
 func (im *IdentifierIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
 	ref := rndm.GenerateRandomString(32)

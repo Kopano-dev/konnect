@@ -183,6 +183,12 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 	return i.setLogonCookie(rw, serialized)
 }
 
+// UnsetLogonCookie adds cookie remove headers to the provided http.ResponseWriter
+// effectively implementing logout.
+func (i *Identifier) UnsetLogonCookie(ctx context.Context, rw http.ResponseWriter) error {
+	return i.removeLogonCookie(rw)
+}
+
 // GetUserFromLogonCookie looks up the associated cookie name from the provided
 // request, parses it and returns the user containing the information found in
 // the coookie payload data.

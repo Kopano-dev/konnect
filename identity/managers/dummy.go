@@ -105,6 +105,16 @@ func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 	return auth, nil
 }
 
+// EndSession implements the identity.Manager interface.
+func (im *DummyIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
+	err := esr.Verify(im.Sub)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ApproveScopes implements the Backend interface.
 func (im *DummyIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
 	ref := rndm.GenerateRandomString(32)

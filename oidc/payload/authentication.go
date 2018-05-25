@@ -193,7 +193,10 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 	}
 
 	if ar.RawIDTokenHint != "" {
-		idTokenHint, err := jwt.Parse(ar.RawIDTokenHint, func(token *jwt.Token) (interface{}, error) {
+		parser := &jwt.Parser{
+			SkipClaimsValidation: true,
+		}
+		idTokenHint, err := parser.ParseWithClaims(ar.RawIDTokenHint, &oidc.IDTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if keyFunc != nil {
 				return keyFunc(token)
 			}

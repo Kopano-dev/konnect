@@ -58,6 +58,7 @@ type bootstrap struct {
 
 	signInFormURI            *url.URL
 	authorizationEndpointURI *url.URL
+	endSessionEndpointURI    *url.URL
 
 	tlsClientConfig *tls.Config
 
@@ -108,6 +109,12 @@ func (bs *bootstrap) initialize() error {
 	bs.authorizationEndpointURI, err = url.Parse(authorizationEndpointURIString)
 	if err != nil {
 		return fmt.Errorf("invalid authorization-endpoint-uri, %v", err)
+	}
+
+	endSessionEndpointURIString, _ := cmd.Flags().GetString("endsession-endpoint-uri")
+	bs.endSessionEndpointURI, err = url.Parse(endSessionEndpointURIString)
+	if err != nil {
+		return fmt.Errorf("invalid endsession-endpoint-uri, %v", err)
 	}
 
 	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
@@ -299,6 +306,7 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 		AuthorizationPath: bs.authorizationEndpointURI.EscapedPath(),
 		TokenPath:         "/konnect/v1/token",
 		UserInfoPath:      "/konnect/v1/userinfo",
+		EndSessionPath:    bs.endSessionEndpointURI.EscapedPath(),
 
 		IdentityManager: bs.managers.identity,
 		CodeManager:     bs.managers.code,

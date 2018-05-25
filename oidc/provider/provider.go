@@ -47,6 +47,7 @@ type Provider struct {
 	authorizationPath string
 	tokenPath         string
 	userInfoPath      string
+	endSessionPath    string
 
 	identityManager identity.Manager
 	codeManager     code.Manager
@@ -72,6 +73,7 @@ func NewProvider(c *Config) (*Provider, error) {
 		authorizationPath: c.AuthorizationPath,
 		tokenPath:         c.TokenPath,
 		userInfoPath:      c.UserInfoPath,
+		endSessionPath:    c.EndSessionPath,
 
 		identityManager: c.IdentityManager,
 		codeManager:     c.CodeManager,
@@ -142,6 +144,8 @@ func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	case path == p.userInfoPath:
 		// TODO(longsleep): Use more strict CORS.
 		cors.AllowAll().ServeHTTP(rw, req, p.UserInfoHandler)
+	case path == p.endSessionPath:
+		p.EndSessionHandler(rw, req)
 	default:
 		http.NotFound(rw, req)
 	}

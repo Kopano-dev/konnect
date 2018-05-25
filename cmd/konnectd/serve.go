@@ -55,6 +55,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("signing-method", "RS256", "JWT signing method")
 	serveCmd.Flags().String("sign-in-uri", "", "Custom redirection URI to sign-in form")
 	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")
+	serveCmd.Flags().String("endsession-endpoint-uri", "", "Custom endsession endpoint URI")
 	serveCmd.Flags().String("identifier-client-path", "", fmt.Sprintf("Path to the identifier web client base folder (default \"%s\")", defaultIdentifierClientPath))
 	serveCmd.Flags().String("identifier-registration-conf", "", "Path to a identifier-registration.yaml configuration file")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")

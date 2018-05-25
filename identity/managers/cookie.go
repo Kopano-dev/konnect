@@ -309,6 +309,12 @@ func (im *CookieIdentityManager) Authorize(ctx context.Context, rw http.Response
 	return auth, nil
 }
 
+// EndSession implements the identity.Manager interface.
+func (im *CookieIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.EndSessionRequest) error {
+	// XXX
+	return nil
+}
+
 // ApproveScopes implements the Backend interface.
 func (im *CookieIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
 	ref := rndm.GenerateRandomString(32)

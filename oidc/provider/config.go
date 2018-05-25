@@ -33,6 +33,7 @@ type Config struct {
 	AuthorizationPath string
 	TokenPath         string
 	UserInfoPath      string
+	EndSessionPath    string
 
 	IdentityManager identity.Manager
 	CodeManager     code.Manager

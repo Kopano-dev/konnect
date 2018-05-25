@@ -41,6 +41,7 @@ func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
 		AuthorizationEndpoint: p.makeIssURL(p.authorizationPath),
 		TokenEndpoint:         p.makeIssURL(p.tokenPath),
 		UserInfoEndpoint:      p.makeIssURL(p.userInfoPath),
+		EndSessionEndpoint:    p.makeIssURL(p.endSessionPath),
 		JwksURI:               p.makeIssURL(p.jwksPath),
 		ScopesSupported: uniqueStrings(append([]string{
 			oidc.ScopeOpenID,
@@ -114,7 +115,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitValidation
 	err = req.ParseForm()
 	if err != nil {
-		p.logger.WithError(err).Errorln("userinfo request invalid form data")
+		p.logger.WithError(err).Errorln("authorize request invalid form data")
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
 		return
 	}
@@ -549,5 +550,81 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	err = utils.WriteJSON(rw, http.StatusOK, response, "")
 	if err != nil {
 		p.logger.WithError(err).Errorln("userinfo request failed writing response")
+	}
+}
+
+// EndSessionHandler implements the HTTP endpoint for RP initiated logout with
+// OpenID Connect Session Management 1.0 as specified at
+// https://openid.net/specs/openid-connect-session-1_0.html#RPLogout
+func (p *Provider) EndSessionHandler(rw http.ResponseWriter, req *http.Request) {
+	var err error
+
+	addResponseHeaders(rw.Header())
+
+	// Validate request.
+	err = req.ParseForm()
+	if err != nil {
+		p.logger.WithError(err).Errorln("endsession request invalid form data")
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		return
+	}
+
+	esr, err := payload.DecodeEndSessionRequest(req)
+	if err != nil {
+		p.logger.WithError(err).Errorln("authorize request invalid request data")
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		return
+	}
+	err = esr.Validate(func(token *jwt.Token) (interface{}, error) {
+		// Validator for incoming IDToken hints, looks up key.
+		return p.validateJWT(token)
+	})
+	if err != nil {
+		goto done
+	}
+
+	// Authorization unauthenticates end user.
+	err = p.identityManager.EndSession(req.Context(), rw, req, esr)
+	if err != nil {
+		goto done
+	}
+
+done:
+	if err != nil {
+		switch err.(type) {
+		case *payload.AuthenticationBadRequest:
+			p.ErrorPage(rw, http.StatusBadRequest, err.Error(), err.(*payload.AuthenticationBadRequest).Description())
+		case *identity.RedirectError:
+			p.Found(rw, err.(*identity.RedirectError).RedirectURI(), nil, false)
+		case *identity.IsHandledError:
+			// do nothing
+		case *oidc.OAuth2Error:
+			err = esr.NewError(err.Error(), err.(*oidc.OAuth2Error).Description())
+			if esr.PostLogoutRedirectURI == nil {
+				p.ErrorPage(rw, http.StatusForbidden, err.Error(), "oauth2 error")
+			} else {
+				p.Found(rw, esr.PostLogoutRedirectURI, err, false)
+			}
+		default:
+			p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("endsession request failed")
+			p.ErrorPage(rw, http.StatusInternalServerError, err.Error(), "well sorry, but there was a problem")
+		}
+
+		return
+	}
+
+	// Successful Authentication Response
+	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthResponse
+	response := &payload.AuthenticationSuccess{
+		State: esr.State,
+	}
+
+	if esr.PostLogoutRedirectURI == nil {
+		err = utils.WriteJSON(rw, http.StatusOK, response, "")
+		if err != nil {
+			p.logger.WithError(err).Errorln("endsession request failed writing response")
+		}
+	} else {
+		p.Found(rw, esr.PostLogoutRedirectURI, response, false)
 	}
 }

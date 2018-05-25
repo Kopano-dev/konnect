@@ -1,8 +1,8 @@
-hash: adc41b0b19fe161c1e8b583e52ad3416025c5de2ad5053a391b5cd2f0e5c2f96
-updated: 2018-04-05T12:07:22.437499872+02:00
+hash: 61567f6c86248301c0f1b0d79e1a8084bdcbd5942040236ddc69c7771a5bb6d1
+updated: 2018-05-25T13:43:32.195796808+02:00
 imports:
 - name: github.com/dgrijalva/jwt-go
-  version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
+  version: 06ea1031745cb8b3dab3f6a236daf2b0aa468b7e
 - name: github.com/eternnoir/gncp
   version: c70df2d0cd68bfc27074d632653aed73cdb2b078
 - name: github.com/google/go-querystring
@@ -10,7 +10,7 @@ imports:
   subpackages:
   - query
 - name: github.com/gorilla/context
-  version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: bcd8bc72b08df0f70df986b97f95590779502d31
 - name: github.com/gorilla/schema
@@ -35,7 +35,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra
-  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
+  version: 99b5d838ca16c25cc4944e323684f8415e8b10ba
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: golang.org/x/crypto
