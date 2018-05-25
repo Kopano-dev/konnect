@@ -150,7 +150,7 @@ func (r *Registry) Register(client *ClientRegistration) error {
 
 // Validate checks if the provided client registration data complies to the
 // provided parameters and returns error when it does not.
-func (r *Registry) Validate(client *ClientRegistration, clientSecret string, redirectURIString string, originURIString string) error {
+func (r *Registry) Validate(client *ClientRegistration, clientSecret string, redirectURIString string, originURIString string, withoutSecret bool) error {
 	if client.ApplicationType == oidc.ApplicationTypeWeb {
 		if originURIString != "" {
 			// Compare originURI if it was given.
@@ -182,7 +182,7 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 		}
 	}
 
-	if client.Secret != "" && subtle.ConstantTimeCompare([]byte(clientSecret), []byte(client.Secret)) != 1 {
+	if !withoutSecret && client.Secret != "" && subtle.ConstantTimeCompare([]byte(clientSecret), []byte(client.Secret)) != 1 {
 		return fmt.Errorf("invalid client_secret")
 	}
 
@@ -191,7 +191,7 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 
 // Lookup returns and validates the clients Detail information for the provided
 // parameters from the accociated registry.
-func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret string, redirectURI *url.URL, originURIString string) (*Details, error) {
+func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret string, redirectURI *url.URL, originURIString string, withoutSecret bool) (*Details, error) {
 	var err error
 	var trusted bool
 	var displayName string
@@ -228,7 +228,7 @@ func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret str
 			Host:   redirectURI.Host,
 			Path:   redirectURI.Path,
 		}
-		err = r.Validate(registration, clientSecret, redirectURIBase.String(), originURIString)
+		err = r.Validate(registration, clientSecret, redirectURIBase.String(), originURIString, withoutSecret)
 		displayName = registration.Name
 		trusted = registration.Trusted
 	} else {

@@ -130,7 +130,8 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 		// TODO(longsleep): find a condition when this can be enabled.
 		origin = utils.OriginFromRequestHeaders(req.Header)
 	}
-	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin)
+	// TODO(longsleep): Get client secret from request.
+	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin, true)
 	if err != nil {
 		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, err.Error())
 	}

@@ -460,7 +460,7 @@ handleHelloLoop:
 		fallthrough
 	case FlowOIDC:
 		// TODO(longsleep): Add something to validate the parameters.
-		clientDetails, err := i.clients.Lookup(req.Context(), r.ClientID, "", r.RedirectURI, "")
+		clientDetails, err := i.clients.Lookup(req.Context(), r.ClientID, "", r.RedirectURI, "", true)
 		if err != nil {
 			return nil, err
 		}
