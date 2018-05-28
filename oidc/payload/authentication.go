@@ -35,6 +35,8 @@ import (
 // http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest and
 // http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthRequest
 type AuthenticationRequest struct {
+	providerMetadata *WellKnown
+
 	RawScope        string `schema:"scope"`
 	RawResponseType string `schema:"response_type"`
 	ResponseMode    string `schema:"response_mode"`
@@ -63,14 +65,16 @@ type AuthenticationRequest struct {
 
 // DecodeAuthenticationRequest returns a AuthenticationRequest holding the
 // provided requests form data.
-func DecodeAuthenticationRequest(req *http.Request) (*AuthenticationRequest, error) {
-	return NewAuthenticationRequest(req.Form)
+func DecodeAuthenticationRequest(req *http.Request, providerMetadata *WellKnown) (*AuthenticationRequest, error) {
+	return NewAuthenticationRequest(req.Form, providerMetadata)
 }
 
 // NewAuthenticationRequest returns a AuthenticationRequest holding the
 // provided url values.
-func NewAuthenticationRequest(values url.Values) (*AuthenticationRequest, error) {
+func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown) (*AuthenticationRequest, error) {
 	ar := &AuthenticationRequest{
+		providerMetadata: providerMetadata,
+
 		Scopes:        make(map[string]bool),
 		ResponseTypes: make(map[string]bool),
 		Prompts:       make(map[string]bool),

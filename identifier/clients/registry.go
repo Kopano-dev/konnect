@@ -152,7 +152,7 @@ func (r *Registry) Register(client *ClientRegistration) error {
 // provided parameters and returns error when it does not.
 func (r *Registry) Validate(client *ClientRegistration, clientSecret string, redirectURIString string, originURIString string, withoutSecret bool) error {
 	if client.ApplicationType == oidc.ApplicationTypeWeb {
-		if originURIString != "" {
+		if originURIString != "" && (!client.Insecure || len(client.Origins) > 0) {
 			// Compare originURI if it was given.
 			originOK := false
 			for _, urlString := range client.Origins {
@@ -167,7 +167,7 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 		}
 	}
 
-	if !client.Insecure || len(client.RedirectURIs) > 0 {
+	if redirectURIString != "" && (!client.Insecure || len(client.RedirectURIs) > 0) {
 		// Make sure to validate the redirect URI unless client is marked insecure
 		// and has no configured redirect URIs.
 		redirectURIOK := false

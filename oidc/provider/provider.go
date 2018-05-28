@@ -33,6 +33,7 @@ import (
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
+	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -41,6 +42,7 @@ type Provider struct {
 	Config *Config
 
 	issuerIdentifier string
+	metadata         *payload.WellKnown
 
 	wellKnownPath     string
 	jwksPath          string
@@ -126,6 +128,46 @@ func (p *Provider) SetValidationKey(id string, key crypto.PublicKey, signingMeth
 	}).Infoln("set provider validation key")
 
 	p.validationKeys[id] = key
+
+	return nil
+}
+
+// InitializeMetadata creates the accociated providers meta data document. Call
+// this once all other settings at the provider have been done.
+func (p *Provider) InitializeMetadata() error {
+	// Create well-known document.
+	p.metadata = &payload.WellKnown{
+		Issuer:                p.issuerIdentifier,
+		AuthorizationEndpoint: p.makeIssURL(p.authorizationPath),
+		TokenEndpoint:         p.makeIssURL(p.tokenPath),
+		UserInfoEndpoint:      p.makeIssURL(p.userInfoPath),
+		EndSessionEndpoint:    p.makeIssURL(p.endSessionPath),
+		JwksURI:               p.makeIssURL(p.jwksPath),
+		ScopesSupported: uniqueStrings(append([]string{
+			oidc.ScopeOpenID,
+		}, p.identityManager.ScopesSupported()...)),
+		ResponseTypesSupported: []string{
+			oidc.ResponseTypeIDTokenToken,
+			oidc.ResponseTypeIDToken,
+			oidc.ResponseTypeCodeIDToken,
+			oidc.ResponseTypeCodeIDTokenToken,
+		},
+		SubjectTypesSupported: []string{
+			oidc.SubjectIDPublic,
+		},
+		ClaimsSupported: uniqueStrings(append([]string{
+			oidc.IssuerIdentifierClaim,
+			oidc.SubjectIdentifierClaim,
+			oidc.AudienceClaim,
+			oidc.ExpirationClaim,
+			oidc.IssuedAtClaim,
+		}, p.identityManager.ClaimsSupported()...)),
+	}
+	if p.signingMethod != nil {
+		p.metadata.IDTokenSigningAlgValuesSupported = []string{
+			p.signingMethod.Alg(),
+		}
+	}
 
 	return nil
 }

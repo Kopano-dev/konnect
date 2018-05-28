@@ -40,6 +40,7 @@ import (
 // Konnect its identifier to provide identity.
 type IdentifierIdentityManager struct {
 	signInFormURI string
+	signedOutURI  string
 
 	identifier *identifier.Identifier
 	clients    *clients.Registry
@@ -51,6 +52,7 @@ type IdentifierIdentityManager struct {
 func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier, clients *clients.Registry) *IdentifierIdentityManager {
 	im := &IdentifierIdentityManager{
 		signInFormURI: c.SignInFormURI.String(),
+		signedOutURI:  c.SignedOutURI.String(),
 
 		identifier: i,
 		clients:    clients,
@@ -130,6 +132,7 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 		// TODO(longsleep): find a condition when this can be enabled.
 		origin = utils.OriginFromRequestHeaders(req.Header)
 	}
+
 	// TODO(longsleep): Get client secret from request.
 	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin, true)
 	if err != nil {
@@ -213,15 +216,46 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 
 // EndSession implements the identity.Manager interface.
 func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
+	// NOTE(longsleep): For now we always require the id_token_hint.
+	if esr.IDTokenHint == nil {
+		im.logger.Debugln("endsession request without id_token_hint")
+		return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "id_token_hint required")
+	}
+
+	origin := utils.OriginFromRequestHeaders(req.Header)
+	claims := esr.IDTokenHint.Claims.(*oidc.IDTokenClaims)
+	clientDetails, err := im.clients.Lookup(ctx, claims.Audience, "", esr.PostLogoutRedirectURI, origin, true)
+	if err != nil {
+		im.logger.WithError(err).Errorln("IdentifierIdentityManager: id_token_hint does not match request")
+		return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "id_token_hint does not match request")
+	}
+
 	identifiedUser, _ := im.identifier.GetUserFromLogonCookie(ctx, req, 0)
 	if identifiedUser != nil {
-		err := esr.Verify(identifiedUser.Subject())
+		err = esr.Verify(identifiedUser.Subject())
 		if err != nil {
 			return err
 		}
 	}
 
-	return im.identifier.UnsetLogonCookie(ctx, rw)
+	if clientDetails.Trusted {
+		// Directly clear identifier session when a trusted client requests it.
+		err = im.identifier.UnsetLogonCookie(ctx, rw)
+		if err != nil {
+			im.logger.WithError(err).Errorln("IdentifierIdentityManager: failed to unset logon cookie")
+			return err
+		}
+	}
+
+	if !clientDetails.Trusted || esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
+		// Handle directly.by redirecting to our logout confirm url for untrusted
+		// clients or when no URL was set.
+		u, _ := url.Parse(im.signedOutURI)
+		u.RawQuery = fmt.Sprintf("flow=%s", identifier.FlowOIDC)
+		return identity.NewRedirectError(oidc.ErrorOIDCInteractionRequired, u)
+	}
+
+	return nil
 }
 
 // ApproveScopes implements the Backend interface.

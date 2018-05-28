@@ -35,39 +35,7 @@ import (
 // for OpenID Connect 1.0 as specified at https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
 func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
 	// TODO(longsleep): Add caching headers.
-	// Create well known.
-	wellKnown := &payload.WellKnown{
-		Issuer:                p.issuerIdentifier,
-		AuthorizationEndpoint: p.makeIssURL(p.authorizationPath),
-		TokenEndpoint:         p.makeIssURL(p.tokenPath),
-		UserInfoEndpoint:      p.makeIssURL(p.userInfoPath),
-		EndSessionEndpoint:    p.makeIssURL(p.endSessionPath),
-		JwksURI:               p.makeIssURL(p.jwksPath),
-		ScopesSupported: uniqueStrings(append([]string{
-			oidc.ScopeOpenID,
-		}, p.identityManager.ScopesSupported()...)),
-		ResponseTypesSupported: []string{
-			oidc.ResponseTypeIDTokenToken,
-			oidc.ResponseTypeIDToken,
-			oidc.ResponseTypeCodeIDToken,
-			oidc.ResponseTypeCodeIDTokenToken,
-		},
-		SubjectTypesSupported: []string{
-			oidc.SubjectIDPublic,
-		},
-		ClaimsSupported: uniqueStrings(append([]string{
-			oidc.IssuerIdentifierClaim,
-			oidc.SubjectIdentifierClaim,
-			oidc.AudienceClaim,
-			oidc.ExpirationClaim,
-			oidc.IssuedAtClaim,
-		}, p.identityManager.ClaimsSupported()...)),
-	}
-	if p.signingMethod != nil {
-		wellKnown.IDTokenSigningAlgValuesSupported = []string{
-			p.signingMethod.Alg(),
-		}
-	}
+	wellKnown := p.metadata
 
 	err := utils.WriteJSON(rw, http.StatusOK, wellKnown, "")
 	if err != nil {
@@ -120,7 +88,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ar, err := payload.DecodeAuthenticationRequest(req)
+	ar, err := payload.DecodeAuthenticationRequest(req, p.metadata)
 	if err != nil {
 		p.logger.WithError(err).Errorln("authorize request invalid request data")
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
@@ -272,7 +240,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
 		goto done
 	}
-	tr, err = payload.DecodeTokenRequest(req)
+	tr, err = payload.DecodeTokenRequest(req, p.metadata)
 	if err != nil {
 		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
 		goto done
@@ -569,9 +537,9 @@ func (p *Provider) EndSessionHandler(rw http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	esr, err := payload.DecodeEndSessionRequest(req)
+	esr, err := payload.DecodeEndSessionRequest(req, p.metadata)
 	if err != nil {
-		p.logger.WithError(err).Errorln("authorize request invalid request data")
+		p.logger.WithError(err).Errorln("endsession request invalid request data")
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
 		return
 	}
@@ -600,7 +568,7 @@ done:
 			// do nothing
 		case *oidc.OAuth2Error:
 			err = esr.NewError(err.Error(), err.(*oidc.OAuth2Error).Description())
-			if esr.PostLogoutRedirectURI == nil {
+			if esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
 				p.ErrorPage(rw, http.StatusForbidden, err.Error(), "oauth2 error")
 			} else {
 				p.Found(rw, esr.PostLogoutRedirectURI, err, false)
@@ -613,13 +581,12 @@ done:
 		return
 	}
 
-	// Successful Authentication Response
-	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthResponse
+	// EndSession Response.
 	response := &payload.AuthenticationSuccess{
 		State: esr.State,
 	}
 
-	if esr.PostLogoutRedirectURI == nil {
+	if esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
 		err = utils.WriteJSON(rw, http.StatusOK, response, "")
 		if err != nil {
 			p.logger.WithError(err).Errorln("endsession request failed writing response")

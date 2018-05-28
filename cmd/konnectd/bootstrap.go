@@ -57,6 +57,7 @@ type bootstrap struct {
 	args []string
 
 	signInFormURI            *url.URL
+	signedOutURI             *url.URL
 	authorizationEndpointURI *url.URL
 	endSessionEndpointURI    *url.URL
 
@@ -103,6 +104,12 @@ func (bs *bootstrap) initialize() error {
 	bs.signInFormURI, err = url.Parse(signInFormURIString)
 	if err != nil {
 		return fmt.Errorf("invalid sign-in URI, %v", err)
+	}
+
+	signedOutURIString, _ := cmd.Flags().GetString("signed-out-uri")
+	bs.signedOutURI, err = url.Parse(signedOutURIString)
+	if err != nil {
+		return fmt.Errorf("invalid signed-out URI, %v", err)
 	}
 
 	authorizationEndpointURIString, _ := cmd.Flags().GetString("authorization-endpoint-uri")
@@ -332,6 +339,11 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 		}
 	}
 	logger.WithField("alg", bs.signingMethod.Alg()).Infoln("oidc token signing set up")
+
+	err = activeProvider.InitializeMetadata()
+	if err != nil {
+		return fmt.Errorf("failed to initialize provider metadata: %v", err)
+	}
 
 	bs.managers.handler = activeProvider
 

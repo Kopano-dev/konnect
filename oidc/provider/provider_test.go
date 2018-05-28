@@ -82,6 +82,10 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 		t.Fatal(err)
 	}
 	provider.SetSigningKey("default", rsaPrivateKey, jwt.SigningMethodRS256)
+	err = provider.InitializeMetadata()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		provider.ServeHTTP(rw, req)

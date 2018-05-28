@@ -22,7 +22,7 @@ const styles = theme => ({
     maxWidth: 450
   },
   paper: theme.mixins.gutters({
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: 'white',
     paddingTop: 48,
     paddingBottom: 36,
     minHeight: 400,

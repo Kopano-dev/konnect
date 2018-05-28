@@ -23,6 +23,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 )
 
@@ -82,4 +83,16 @@ func loadKeys(fn string, defaultLabel string) (map[string]crypto.Signer, map[str
 
 		return signers, nil, nil
 	}
+}
+
+func withSchemeAndHost(u, base *url.URL) *url.URL {
+	if u.Host != "" && u.Scheme != "" {
+		return u
+	}
+
+	r, _ := url.Parse(u.String())
+	r.Scheme = base.Scheme
+	r.Host = base.Host
+
+	return r
 }

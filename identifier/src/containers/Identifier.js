@@ -11,6 +11,7 @@ import renderIf from 'render-if';
 import { enhanceBodyBackground } from '../utils';
 import Loginscreen from '../components/Loginscreen';
 import Welcomescreen from '../components/Welcomescreen';
+import Goodbyescreen from '../components/Goodbyescreen';
 import PrivateRoute from '../components/PrivateRoute';
 
 // Trigger loading of background image.
@@ -31,6 +32,7 @@ class Identifier extends Component {
         <BrowserRouter basename="/signin/v1">
           <Switch>
             <PrivateRoute path="/welcome" exact component={Welcomescreen} hello={hello}></PrivateRoute>
+            <Route path="/goodbye" exact component={Goodbyescreen}></Route>
             <Route path="/" component={Loginscreen}></Route>
           </Switch>
         </BrowserRouter>

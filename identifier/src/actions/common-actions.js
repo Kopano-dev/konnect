@@ -91,6 +91,7 @@ export function receiveLogoff(state) {
 
 export function executeLogoff() {
   return function(dispatch) {
+    dispatch(resetHello());
     dispatch(requestLogoff());
 
     const r = withClientRequestState({});

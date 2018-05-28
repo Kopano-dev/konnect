@@ -33,6 +33,8 @@ import (
 // the OpenID Connect 1.0 token endpoint as specified at
 // http://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
 type TokenRequest struct {
+	providerMetadata *WellKnown
+
 	GrantType       string `schema:"grant_type"`
 	Code            string `schema:"code"`
 	RawRedirectURI  string `schema:"redirect_uri"`
@@ -49,8 +51,8 @@ type TokenRequest struct {
 
 // DecodeTokenRequest return a TokenRequest holding the provided
 // request's form data.
-func DecodeTokenRequest(req *http.Request) (*TokenRequest, error) {
-	tr, err := NewTokenRequest(req.PostForm)
+func DecodeTokenRequest(req *http.Request, providerMetadata *WellKnown) (*TokenRequest, error) {
+	tr, err := NewTokenRequest(req.PostForm, providerMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +85,10 @@ func DecodeTokenRequest(req *http.Request) (*TokenRequest, error) {
 }
 
 // NewTokenRequest returns a TokenRequest holding the provided url values.
-func NewTokenRequest(values url.Values) (*TokenRequest, error) {
+func NewTokenRequest(values url.Values, providerMetadata *WellKnown) (*TokenRequest, error) {
 	tr := &TokenRequest{
+		providerMetadata: providerMetadata,
+
 		Scopes: make(map[string]bool),
 	}
 

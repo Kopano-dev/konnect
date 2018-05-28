@@ -31,6 +31,8 @@ import (
 // Connect Session Management 1.0 RP initiaed logout requests as specified at
 // https://openid.net/specs/openid-connect-session-1_0.html#RPLogout
 type EndSessionRequest struct {
+	providerMetadata *WellKnown
+
 	RawIDTokenHint           string `schema:"id_token_hint"`
 	RawPostLogoutRedirectURI string `schema:"post_logout_redirect_uri"`
 	State                    string `schema:"state"`
@@ -41,14 +43,16 @@ type EndSessionRequest struct {
 
 // DecodeEndSessionRequest returns a EndSessionRequest holding the
 // provided requests form data.
-func DecodeEndSessionRequest(req *http.Request) (*EndSessionRequest, error) {
-	return NewEndSessionRequest(req.Form)
+func DecodeEndSessionRequest(req *http.Request, providerMetadata *WellKnown) (*EndSessionRequest, error) {
+	return NewEndSessionRequest(req.Form, providerMetadata)
 }
 
 // NewEndSessionRequest returns a EndSessionRequest holding the
 // provided url values.
-func NewEndSessionRequest(values url.Values) (*EndSessionRequest, error) {
-	esr := &EndSessionRequest{}
+func NewEndSessionRequest(values url.Values, providerMetadata *WellKnown) (*EndSessionRequest, error) {
+	esr := &EndSessionRequest{
+		providerMetadata: providerMetadata,
+	}
 	err := DecodeSchema(esr, values)
 	if err != nil {
 		return nil, err

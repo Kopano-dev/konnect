@@ -91,6 +91,7 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/chooseaccount", i).Methods(http.MethodGet)
 	r.Handle("/consent", i).Methods(http.MethodGet)
 	r.Handle("/welcome", i).Methods(http.MethodGet)
+	r.Handle("/goodbye", i).Methods(http.MethodGet)
 	r.Handle("/index.html", i).Methods(http.MethodGet) // For service worker.
 	r.Handle("/identifier/_/logon", i.secureHandler(http.HandlerFunc(i.handleLogon))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)

@@ -19,7 +19,6 @@ package main
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 
 	kcc "stash.kopano.io/kgol/kcc-go"
@@ -47,6 +46,10 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		bs.signInFormURI.Path = "/signin/v1/identifier"
 	}
 
+	if bs.signedOutURI.EscapedPath() == "" {
+		bs.signedOutURI.Path = "/signin/v1/goodbye"
+	}
+
 	identifierBackend, identifierErr := identifierBackends.NewKCIdentifierBackend(
 		bs.cfg,
 		kcc.NewKCC(nil),
@@ -57,8 +60,7 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		return nil, fmt.Errorf("failed to create identifier backend: %v", identifierErr)
 	}
 
-	fullAuthorizationEndpointURL, _ := url.Parse(bs.issuerIdentifierURI.String())
-	fullAuthorizationEndpointURL.Path = bs.authorizationEndpointURI.Path
+	fullAuthorizationEndpointURL := withSchemeAndHost(bs.authorizationEndpointURI, bs.issuerIdentifierURI)
 
 	activeIdentifier, err := identifier.NewIdentifier(&identifier.Config{
 		Config: bs.cfg,
@@ -81,7 +83,8 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	}
 
 	identityManagerConfig := &identity.Config{
-		SignInFormURI: bs.signInFormURI,
+		SignInFormURI: withSchemeAndHost(bs.signInFormURI, bs.issuerIdentifierURI),
+		SignedOutURI:  withSchemeAndHost(bs.signedOutURI, bs.issuerIdentifierURI),
 
 		Logger: logger,
 	}

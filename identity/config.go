@@ -26,6 +26,7 @@ import (
 // Config defines a IdentityManager's configuration settings.
 type Config struct {
 	SignInFormURI *url.URL
+	SignedOutURI  *url.URL
 
 	Logger logrus.FieldLogger
 }
