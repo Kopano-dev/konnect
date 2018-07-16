@@ -58,7 +58,6 @@ class Consent extends Component {
   render() {
     const { classes, loading, hello, errors, client } = this.props;
 
-    console.log('xxx', client);
     const scopes = hello.details.scopes || {};
     return (
       <div>
