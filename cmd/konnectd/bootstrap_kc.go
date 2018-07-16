@@ -87,6 +87,8 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		SignedOutURI:  withSchemeAndHost(bs.signedOutURI, bs.issuerIdentifierURI),
 
 		Logger: logger,
+
+		ScopesSupported: bs.cfg.AllowedScopes,
 	}
 
 	identifierIdentityManager := identityManagers.NewIdentifierIdentityManager(identityManagerConfig, activeIdentifier, bs.managers.clients)

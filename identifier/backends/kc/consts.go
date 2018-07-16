@@ -15,25 +15,9 @@
  *
  */
 
-package main
+package kc
 
-import (
-	"stash.kopano.io/kc/konnect/identity"
-	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+// Define scopes supported by KC.
+const (
+	ScopeKopanoGC = "kopano/gc"
 )
-
-func newDummyIdentityManager(bs *bootstrap) (identity.Manager, error) {
-	logger := bs.cfg.Logger
-
-	identityManagerConfig := &identity.Config{
-		Logger: logger,
-
-		ScopesSupported: bs.cfg.AllowedScopes,
-	}
-
-	sub := "dummy"
-	dummyIdentityManager := identityManagers.NewDummyIdentityManager(identityManagerConfig, sub)
-	logger.WithField("sub", sub).Warnln("using dummy identity manager")
-
-	return dummyIdentityManager, nil
-}

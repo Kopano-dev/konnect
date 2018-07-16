@@ -31,4 +31,6 @@ type Backend interface {
 	Logon(ctx context.Context, username string, password string) (success bool, userID *string, err error)
 	ResolveUser(ctx context.Context, username string) (user identity.UserWithUsername, err error)
 	GetUser(ctx context.Context, userID string) (user identity.User, err error)
+
+	ScopesSupported() []string
 }

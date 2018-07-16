@@ -152,6 +152,12 @@ func (bs *bootstrap) initialize() error {
 		logger.Infoln("trusted proxy networks", bs.cfg.TrustedProxyNets)
 	}
 
+	allowedScopes, _ := cmd.Flags().GetStringArray("allow-scope")
+	if len(allowedScopes) > 0 {
+		bs.cfg.AllowedScopes = allowedScopes
+		logger.Infoln("using custom allowed OAuth 2 scopes", bs.cfg.AllowedScopes)
+	}
+
 	encryptionSecretFn, _ := cmd.Flags().GetString("encryption-secret")
 	if encryptionSecretFn == "" {
 		encryptionSecretFn = os.Getenv("KONNECTD_ENCRYPTION_SECRET")

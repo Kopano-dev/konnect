@@ -27,15 +27,23 @@ import (
 	"strings"
 	"time"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/config"
 	ldapDefinitions "stash.kopano.io/kc/konnect/identifier/backends/ldap"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/oidc"
 
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	"gopkg.in/ldap.v2"
 )
+
+var ldapSupportedScopes = []string{
+	oidc.ScopeProfile,
+	oidc.ScopeEmail,
+	konnect.ScopeUniqueUserID,
+}
 
 // LDAPIdentifierBackend is a backend for the Identifier which connects LDAP.
 type LDAPIdentifierBackend struct {
@@ -389,6 +397,12 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string) (ide
 	}
 
 	return newLdapUser(b.attributeMapping, entry), nil
+}
+
+// ScopesSupported implements the Backend interface, providing supported scopes
+// when running this backend.
+func (b *LDAPIdentifierBackend) ScopesSupported() []string {
+	return ldapSupportedScopes
 }
 
 func (b *LDAPIdentifierBackend) connect(parentCtx context.Context) (*ldap.Conn, error) {

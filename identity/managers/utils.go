@@ -20,22 +20,82 @@ package managers
 import (
 	"github.com/dgrijalva/jwt-go"
 
-	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 )
 
-func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]bool, map[string]jwt.Claims) {
+func setupSupportedScopes(scopes []string, extra []string, override []string) []string {
+	if len(override) > 0 {
+		return override
+	}
+
+	return append(scopes, extra...)
+}
+
+func isKnownScope(scope string) bool {
+	// Only authorize the scopes we know.
+	switch scope {
+	case oidc.ScopeOpenID:
+	default:
+		// Unknown scopes end up here and are not getting authorized.
+		return false
+	}
+
+	return true
+}
+
+func authorizeScopes(manager identity.Manager, user identity.User, scopes map[string]bool) (map[string]bool, map[string]bool) {
+	if user == nil {
+		return nil, nil
+	}
+
 	authorizedScopes := make(map[string]bool)
+	unauthorizedScopes := make(map[string]bool)
+	supportedScopes := make(map[string]bool)
+	for _, scope := range manager.ScopesSupported() {
+		supportedScopes[scope] = true
+	}
+
+	for scope, authorizedScope := range scopes {
+		for {
+			if !authorizedScope {
+				// Incoming not authorized.
+				break
+			}
+
+			authorizedScope = isKnownScope(scope)
+
+			if !authorizedScope {
+				if _, ok := supportedScopes[scope]; ok {
+					authorizedScope = true
+				}
+			}
+
+			break
+		}
+
+		if authorizedScope {
+			authorizedScopes[scope] = true
+		} else {
+			unauthorizedScopes[scope] = false
+		}
+	}
+
+	return authorizedScopes, unauthorizedScopes
+}
+
+func getUserClaimsForScopes(user identity.User, scopes map[string]bool) map[string]jwt.Claims {
+	if user == nil {
+		return nil
+	}
+
 	claims := make(map[string]jwt.Claims)
 	for scope, authorizedScope := range scopes {
 		if !authorizedScope {
 			continue
 		}
-		// Only authorize the scopes we know.
+
 		switch scope {
-		case oidc.ScopeOpenID:
-			// breaks
 		case oidc.ScopeEmail:
 			if userWithEmail, ok := user.(identity.UserWithEmail); ok {
 				claims[oidc.ScopeEmail] = &oidc.EmailClaims{
@@ -51,18 +111,8 @@ func authorizeScopes(user identity.User, scopes map[string]bool) (map[string]boo
 					GivenName:  userWithProfile.GivenName(),
 				}
 			}
-		case konnect.ScopeID:
-			// breaks
-		case konnect.ScopeUniqueUserID:
-			// breaks
-		default:
-			// Unknown scopes end up here and are not getting authorized.
-			authorizedScope = false
-		}
-		if authorizedScope {
-			authorizedScopes[scope] = true
 		}
 	}
 
-	return authorizedScopes, claims
+	return claims
 }

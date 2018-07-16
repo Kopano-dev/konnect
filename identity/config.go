@@ -28,5 +28,7 @@ type Config struct {
 	SignInFormURI *url.URL
 	SignedOutURI  *url.URL
 
+	ScopesSupported []string
+
 	Logger logrus.FieldLogger
 }

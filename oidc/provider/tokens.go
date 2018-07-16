@@ -31,8 +31,9 @@ import (
 )
 
 func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {
+	authorizedScopes := auth.AuthorizedScopes()
 	authorizedScopesList := []string{}
-	for scope, granted := range auth.AuthorizedScopes() {
+	for scope, granted := range authorizedScopes {
 		if granted {
 			authorizedScopesList = append(authorizedScopesList, scope)
 		}

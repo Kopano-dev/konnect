@@ -31,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"stash.kopano.io/kc/konnect/config"
+	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 )
@@ -71,9 +72,10 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 		TokenPath:         "/konnect/v1/token",
 		UserInfoPath:      "/konnect/v1/userinfo",
 
-		IdentityManager: &identityManagers.DummyIdentityManager{
-			Sub: "unittestuser",
-		},
+		IdentityManager: identityManagers.NewDummyIdentityManager(
+			&identity.Config{},
+			"unittestuser",
+		),
 		CodeManager: codeManagers.NewMemoryMapManager(ctx),
 	}
 

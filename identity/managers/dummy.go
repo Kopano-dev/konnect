@@ -34,7 +34,24 @@ import (
 // DummyIdentityManager implements an identity manager which always grants
 // access to a fixed user id.
 type DummyIdentityManager struct {
-	Sub string
+	sub string
+
+	scopesSupported []string
+}
+
+// NewDummyIdentityManager creates a new DummyIdentityManager from the
+// provided parameters.
+func NewDummyIdentityManager(c *identity.Config, sub string) *DummyIdentityManager {
+	im := &DummyIdentityManager{
+		sub: sub,
+
+		scopesSupported: setupSupportedScopes([]string{
+			oidc.ScopeProfile,
+			oidc.ScopeEmail,
+		}, nil, c.ScopesSupported),
+	}
+
+	return im
 }
 
 type dummyUser struct {
@@ -59,7 +76,7 @@ func (u *dummyUser) Name() string {
 
 // Authenticate implements the identity.Manager interface.
 func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
-	return NewAuthRecord(im.Sub, nil, nil), nil
+	return NewAuthRecord(im, im.sub, nil, nil), nil
 }
 
 // Authorize implements the identity.Manager interface.
@@ -107,7 +124,7 @@ func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 // EndSession implements the identity.Manager interface.
 func (im *DummyIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
-	err := esr.Verify(im.Sub)
+	err := esr.Verify(im.sub)
 	if err != nil {
 		return err
 	}
@@ -134,20 +151,21 @@ func (im *DummyIdentityManager) ApprovedScopes(ctx context.Context, userid strin
 
 // Fetch implements the identity.Manager interface.
 func (im *DummyIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
-	if sub != im.Sub {
+	if sub != im.sub {
 		return nil, false, fmt.Errorf("DummyIdentityManager: no user")
 	}
 
-	authorizedScopes, claims := authorizeScopes(&dummyUser{im.Sub}, scopes)
-	return NewAuthRecord(sub, authorizedScopes, claims), true, nil
+	user := &dummyUser{im.sub}
+
+	authorizedScopes, _ := authorizeScopes(im, user, scopes)
+	claims := getUserClaimsForScopes(user, authorizedScopes)
+
+	return NewAuthRecord(im, sub, authorizedScopes, claims), true, nil
 }
 
 // ScopesSupported implements the identity.Manager interface.
 func (im *DummyIdentityManager) ScopesSupported() []string {
-	return []string{
-		oidc.ScopeProfile,
-		oidc.ScopeEmail,
-	}
+	return im.scopesSupported
 }
 
 // ClaimsSupported implements the identity.Manager interface.

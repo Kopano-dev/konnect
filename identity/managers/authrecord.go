@@ -26,6 +26,8 @@ import (
 )
 
 type authRecord struct {
+	manager identity.Manager
+
 	sub              string
 	authorizedScopes map[string]bool
 	claims           map[string]jwt.Claims
@@ -36,12 +38,14 @@ type authRecord struct {
 
 // NewAuthRecord returns a implementation of identity.AuthRecord holding
 // the provided data in memory.
-func NewAuthRecord(sub string, authorizedScopes map[string]bool, claims map[string]jwt.Claims) identity.AuthRecord {
+func NewAuthRecord(manager identity.Manager, sub string, authorizedScopes map[string]bool, claims map[string]jwt.Claims) identity.AuthRecord {
 	if authorizedScopes == nil {
 		authorizedScopes = make(map[string]bool)
 	}
 
 	return &authRecord{
+		manager: manager,
+
 		sub:              sub,
 		authorizedScopes: authorizedScopes,
 		claims:           claims,
@@ -60,12 +64,17 @@ func (r *authRecord) AuthorizedScopes() map[string]bool {
 
 // AuthorizeScopes implements the identity.AuthRecord  interface.
 func (r *authRecord) AuthorizeScopes(scopes map[string]bool) {
-	for scope, grant := range scopes {
+	authorizedScopes, unauthorizedScopes := authorizeScopes(r.manager, r.User(), scopes)
+
+	for scope, grant := range authorizedScopes {
 		if grant {
 			r.authorizedScopes[scope] = grant
 		} else {
 			delete(r.authorizedScopes, scope)
 		}
+	}
+	for scope := range unauthorizedScopes {
+		delete(r.authorizedScopes, scope)
 	}
 }
 

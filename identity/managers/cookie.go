@@ -47,6 +47,8 @@ type CookieIdentityManager struct {
 	backendURI     *url.URL
 	allowedCookies map[string]bool
 
+	scopesSupported []string
+
 	signInFormURI string
 	logger        logrus.FieldLogger
 
@@ -83,6 +85,12 @@ func NewCookieIdentityManager(c *identity.Config, em *EncryptionManager, backend
 		logger:        c.Logger,
 
 		client: client,
+
+		scopesSupported: setupSupportedScopes([]string{
+			oidc.ScopeProfile,
+			oidc.ScopeEmail,
+			konnect.ScopeID,
+		}, nil, c.ScopesSupported),
 	}
 
 	return im
@@ -252,7 +260,7 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 		return nil, identity.NewLoginRequiredError(err.Error(), u)
 	}
 
-	auth := NewAuthRecord(user.Subject(), nil, nil)
+	auth := NewAuthRecord(im, user.Subject(), nil, nil)
 	auth.SetUser(user)
 
 	return auth, nil
@@ -390,9 +398,10 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 		return nil, false, fmt.Errorf("CookieIdentityManager: wrong user")
 	}
 
-	authorizedScopes, claims := authorizeScopes(user, scopes)
+	authorizedScopes, _ := authorizeScopes(im, user, scopes)
+	claims := getUserClaimsForScopes(user, authorizedScopes)
 
-	auth = NewAuthRecord(sub, authorizedScopes, claims)
+	auth = NewAuthRecord(im, sub, authorizedScopes, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil
@@ -400,11 +409,7 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 
 // ScopesSupported implements the identity.Manager interface.
 func (im *CookieIdentityManager) ScopesSupported() []string {
-	return []string{
-		oidc.ScopeProfile,
-		oidc.ScopeEmail,
-		konnect.ScopeID,
-	}
+	return im.scopesSupported
 }
 
 // ClaimsSupported implements the identity.Manager interface.

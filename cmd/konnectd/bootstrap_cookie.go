@@ -61,6 +61,8 @@ func newCookieIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		SignInFormURI: bs.signInFormURI,
 
 		Logger: logger,
+
+		ScopesSupported: bs.cfg.AllowedScopes,
 	}
 
 	cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, bs.managers.encryption, backendURI, cookieNames, 30*time.Second, bs.cfg.HTTPTransport)

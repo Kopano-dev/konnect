@@ -25,8 +25,11 @@ import (
 	"sync"
 	"time"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/config"
+	kcDefinitions "stash.kopano.io/kc/konnect/identifier/backends/kc"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/oidc"
 
 	"github.com/sirupsen/logrus"
 	kcc "stash.kopano.io/kgol/kcc-go"
@@ -36,6 +39,13 @@ const (
 	kcSessionMaxRetries = 3
 	kcSessionRetryDelay = 50 * time.Millisecond
 )
+
+var kcSupportedScopes = []string{
+	oidc.ScopeProfile,
+	oidc.ScopeEmail,
+	konnect.ScopeID,
+	kcDefinitions.ScopeKopanoGC,
+}
 
 // KCServerDefaultUsername is the default username used by KCIdentifierBackend
 // for KCC when the provided username is empty.
@@ -261,6 +271,12 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string) (ident
 	}
 
 	return nil, fmt.Errorf("kc identifier backend get user failed: %v", response.Er)
+}
+
+// ScopesSupported implements the Backend interface, providing supported scopes
+// when running this backend.
+func (b *KCIdentifierBackend) ScopesSupported() []string {
+	return kcSupportedScopes
 }
 
 func (b *KCIdentifierBackend) resolveUsername(ctx context.Context, username string) (*kcc.ResolveUserResponse, error) {

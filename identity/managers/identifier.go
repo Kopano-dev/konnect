@@ -27,7 +27,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"stash.kopano.io/kgol/rndm"
 
-	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier"
 	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identity"
@@ -42,6 +41,9 @@ type IdentifierIdentityManager struct {
 	signInFormURI string
 	signedOutURI  string
 
+	scopesSupported []string
+	claimsSupported []string
+
 	identifier *identifier.Identifier
 	clients    *clients.Registry
 	logger     logrus.FieldLogger
@@ -53,6 +55,17 @@ func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier, 
 	im := &IdentifierIdentityManager{
 		signInFormURI: c.SignInFormURI.String(),
 		signedOutURI:  c.SignedOutURI.String(),
+
+		scopesSupported: setupSupportedScopes([]string{
+			oidc.ScopeOfflineAccess,
+		}, i.ScopesSupported(), c.ScopesSupported),
+		claimsSupported: []string{
+			oidc.NameClaim,
+			oidc.FamilyNameClaim,
+			oidc.GivenNameClaim,
+			oidc.EmailClaim,
+			oidc.EmailVerifiedClaim,
+		},
 
 		identifier: i,
 		clients:    clients,
@@ -105,7 +118,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 		return nil, &identity.IsHandledError{}
 	}
 
-	auth := NewAuthRecord(user.Subject(), nil, nil)
+	auth := NewAuthRecord(im, user.Subject(), nil, nil)
 	auth.SetUser(user)
 	if loggedOn, logonAt := identifiedUser.LoggedOn(); loggedOn {
 		auth.SetAuthTime(logonAt)
@@ -291,9 +304,10 @@ func (im *IdentifierIdentityManager) Fetch(ctx context.Context, sub string, scop
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: wrong user")
 	}
 
-	authorizedScopes, claims := authorizeScopes(user, scopes)
+	authorizedScopes, _ := authorizeScopes(im, user, scopes)
+	claims := getUserClaimsForScopes(user, authorizedScopes)
 
-	auth := NewAuthRecord(sub, authorizedScopes, claims)
+	auth := NewAuthRecord(im, sub, authorizedScopes, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil
@@ -301,24 +315,12 @@ func (im *IdentifierIdentityManager) Fetch(ctx context.Context, sub string, scop
 
 // ScopesSupported implements the identity.Manager interface.
 func (im *IdentifierIdentityManager) ScopesSupported() []string {
-	return []string{
-		oidc.ScopeProfile,
-		oidc.ScopeEmail,
-		oidc.ScopeOfflineAccess,
-		konnect.ScopeID,
-		konnect.ScopeUniqueUserID,
-	}
+	return im.scopesSupported
 }
 
 // ClaimsSupported implements the identity.Manager interface.
 func (im *IdentifierIdentityManager) ClaimsSupported() []string {
-	return []string{
-		oidc.NameClaim,
-		oidc.FamilyNameClaim,
-		oidc.GivenNameClaim,
-		oidc.EmailClaim,
-		oidc.EmailVerifiedClaim,
-	}
+	return im.claimsSupported
 }
 
 // AddRoutes implements the identity.Manager interface.

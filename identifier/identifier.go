@@ -332,3 +332,8 @@ func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.Re
 
 	return &consent, nil
 }
+
+// ScopesSupported return the scopes supported by the accociaged Identifier.
+func (i *Identifier) ScopesSupported() []string {
+	return i.backend.ScopesSupported()
+}

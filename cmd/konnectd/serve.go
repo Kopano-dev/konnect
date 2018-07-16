@@ -61,6 +61,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("identifier-registration-conf", "", "Path to a identifier-registration.yaml configuration file")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 	serveCmd.Flags().StringArray("trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
+	serveCmd.Flags().StringArray("allow-scope", nil, "Allow OAuth 2 scope (can be used multiple times, if not set default scopes are allowed)")
 
 	return serveCmd
 }
