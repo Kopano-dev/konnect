@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import Loadable from 'react-loadable';
 import { Provider } from 'react-redux';
 
-import { MuiThemeProvider } from 'material-ui/styles';
+import { MuiThemeProvider } from '@material-ui/core/styles';
 
 import { defaultTheme as theme } from 'kpop/es/theme';
 import IntlContainer from 'kpop/es/IntlContainer';

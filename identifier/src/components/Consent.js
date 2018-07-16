@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { withStyles } from 'material-ui/styles';
+import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
-import Button from 'material-ui/Button';
-import Tooltip from 'material-ui/Tooltip';
-import { CircularProgress } from 'material-ui/Progress';
-import green from 'material-ui/colors/green';
-import Typography from 'material-ui/Typography';
+import Button from '@material-ui/core/Button';
+import Tooltip from '@material-ui/core/Tooltip';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import green from '@material-ui/core/colors/green';
+import Typography from '@material-ui/core/Typography';
 import renderIf from 'render-if';
 
 import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actions/login-actions';
