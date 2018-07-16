@@ -41,9 +41,11 @@ const (
 // AccessTokenClaims define the claims found in access tokens issued
 // by Konnect.
 type AccessTokenClaims struct {
+	jwt.StandardClaims
+
 	IsAccessToken        bool     `json:"kc.isAccessToken"`
 	AuthorizedScopesList []string `json:"kc.authorizedScopes"`
-	jwt.StandardClaims
+
 	IdentityClaims jwt.MapClaims `json:"kc.identity"`
 }
 
@@ -76,10 +78,12 @@ func (c AccessTokenClaims) AuthorizedScopes() map[string]bool {
 
 // RefreshTokenClaims define the claims used by refresh tokens.
 type RefreshTokenClaims struct {
+	jwt.StandardClaims
+
 	IsRefreshToken     bool     `json:"kc.isRefreshToken"`
 	ApprovedScopesList []string `json:"kc.approvedScopes"`
 	Ref                string   `json:"kc.ref"`
-	jwt.StandardClaims
+
 	IdentityClaims jwt.MapClaims `json:"kc.identity"`
 }
 

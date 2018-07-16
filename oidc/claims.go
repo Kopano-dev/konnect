@@ -53,11 +53,13 @@ const (
 
 // IDTokenClaims define the claims found in OIDC ID Tokens.
 type IDTokenClaims struct {
+	jwt.StandardClaims
+
 	Nonce           string `json:"nonce,omitempty"`
 	AuthTime        int64  `json:"auth_time,omitempty"`
 	AccessTokenHash string `json:"at_hash,omitempty"`
 	CodeHash        string `json:"c_hash,omitempty"`
-	jwt.StandardClaims
+
 	*ProfileClaims
 	*EmailClaims
 }
