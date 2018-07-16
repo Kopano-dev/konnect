@@ -7,12 +7,19 @@ import Checkbox from 'material-ui/Checkbox';
 const scopesMap = {
   'openid': 'basic',
   'email': 'basic',
-  'profile': 'basic'
+  'profile': 'basic',
+
+  'konnect/id': 'basic',
+  'konnect/uuid': 'basic',
+
+  'kopano/gc': 'kopano/gc'
 };
 
 const descriptionMap = {
   'basic': 'Access your basic account information',
-  'offline_access': 'Keep the allowed access persistently and forever'
+  'offline_access': 'Keep the allowed access persistently and forever',
+
+  'kopano/gc': 'Read and write your Kopano Groupware data'
 };
 
 const styles = () => ({
