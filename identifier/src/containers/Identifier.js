@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 
@@ -23,7 +23,7 @@ const styles = () => ({
   }
 });
 
-class Identifier extends Component {
+class Identifier extends PureComponent {
   render() {
     const { classes, hello, updateAvailable } = this.props;
 
