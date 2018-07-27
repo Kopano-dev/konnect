@@ -23,6 +23,10 @@ import (
 	"fmt"
 )
 
+// KonnectIDTokenSubjectSaltV1 is the salt value used when hasing Subjects in
+// ID tokens created by Konnect.
+const KonnectIDTokenSubjectSaltV1 = "konnect-IDToken-v1"
+
 // LeftmostHashBytes defines []bytes with Base64URL encoder via String().
 type LeftmostHashBytes []byte
 

@@ -64,11 +64,16 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 }
 
 func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRequest, auth identity.AuthRecord, accessTokenString string, codeString string) (string, error) {
+	publicSubject, err := p.PublicSubjectFromAuth(auth)
+	if err != nil {
+		return "", err
+	}
+
 	idTokenClaims := &oidc.IDTokenClaims{
 		Nonce: ar.Nonce,
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    p.issuerIdentifier,
-			Subject:   auth.Subject(),
+			Subject:   publicSubject,
 			Audience:  ar.ClientID,
 			ExpiresAt: time.Now().Add(time.Hour).Unix(), // 1 Hour, must be consumed by then.
 			IssuedAt:  time.Now().Unix(),

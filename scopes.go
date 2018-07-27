@@ -22,4 +22,6 @@ const (
 	ScopeID = "konnect/id"
 	// ScopeUniqueUserID is the string value for the Konnect Unique User ID scope.
 	ScopeUniqueUserID = "konnect/uuid"
+	// ScopeHashedSubject is the string value for the Konnect Hashed Subject scope.
+	ScopeHashedSubject = "konnect/hashed_sub"
 )

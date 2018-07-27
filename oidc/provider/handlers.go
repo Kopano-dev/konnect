@@ -458,10 +458,17 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	publicSubject, err := p.PublicSubjectFromAuth(auth)
+	if err != nil {
+		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request failed to create subject")
+		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		return
+	}
+
 	response := &konnect.UserInfoResponse{
 		UserInfoResponse: &payload.UserInfoResponse{
 			UserInfoClaims: oidc.UserInfoClaims{
-				Subject: auth.Subject(),
+				Subject: publicSubject,
 			},
 			ProfileClaims: oidc.NewProfileClaims(auth.Claims(oidc.ScopeProfile)[0]),
 			EmailClaims:   oidc.NewEmailClaims(auth.Claims(oidc.ScopeEmail)[0]),
