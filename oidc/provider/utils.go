@@ -67,3 +67,14 @@ func addResponseHeaders(header http.Header) {
 	header.Set("X-Content-Type-Options", "nosniff")
 	header.Set("Referrer-Policy", "origin")
 }
+
+func makeArrayFromBoolMap(m map[string]bool) []string {
+	result := []string{}
+	for k, v := range m {
+		if v {
+			result = append(result, k)
+		}
+	}
+
+	return result
+}

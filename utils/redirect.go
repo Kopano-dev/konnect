@@ -50,7 +50,8 @@ func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interf
 			// of the target URL - instead append it in the most likely way.
 			seperator = "&"
 		}
-		uriString = fmt.Sprintf("%s%s%s", uriString, seperator, queryString.Encode())
+		queryStringEncoded := strings.Replace(queryString.Encode(), "+", "%20", -1) // NOTE(longsleep): Ensure we use %20 instead of +.
+		uriString = fmt.Sprintf("%s%s%s", uriString, seperator, queryStringEncoded)
 	}
 
 	rw.Header().Set("Location", uriString)

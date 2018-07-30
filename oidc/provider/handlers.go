@@ -20,6 +20,7 @@ package provider
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	jwk "github.com/mendsley/gojwk"
@@ -187,10 +188,13 @@ done:
 		return
 	}
 
+	authorizedScopesList := makeArrayFromBoolMap(authorizedScopes)
+
 	// Successful Authentication Response
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthResponse
 	response := &payload.AuthenticationSuccess{
 		State: ar.State,
+		Scope: strings.Join(authorizedScopesList, " "),
 	}
 	if codeString != "" {
 		response.Code = codeString

@@ -280,6 +280,8 @@ type AuthenticationSuccess struct {
 	IDToken     string `url:"id_token,omitempty"`
 	State       string `url:"state"`
 	ExpiresIn   int64  `url:"expires_in,omitempty"`
+
+	Scope string `url:"scope,omitempty"`
 }
 
 // AuthenticationError holds the outgoind data for a failed OpenID
