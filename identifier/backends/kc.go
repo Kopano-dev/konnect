@@ -274,6 +274,20 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string) (ident
 	return nil, fmt.Errorf("kc identifier backend get user failed: %v", response.Er)
 }
 
+// UserClaims implements the Backend interface, providing user specific claims
+// for the user specified by the userID.
+func (b *KCIdentifierBackend) UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{} {
+	var claims map[string]interface{}
+
+	if authorizedScope, _ := authorizedScopes[kcDefinitions.ScopeKopanoGC]; authorizedScope {
+		claims = make(map[string]interface{})
+		// Inject userID as ID claim.
+		claims[kcDefinitions.KopanoGCIDClaim] = userID
+	}
+
+	return claims
+}
+
 // ScopesSupported implements the Backend interface, providing supported scopes
 // when running this backend.
 func (b *KCIdentifierBackend) ScopesSupported() []string {

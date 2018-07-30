@@ -18,6 +18,8 @@
 package konnect
 
 import (
+	"encoding/json"
+
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
@@ -28,4 +30,22 @@ type UserInfoResponse struct {
 
 	*IDClaims
 	*UniqueUserIDClaims
+}
+
+// Map converts the accociated UserInfoResponse to a map which can be
+// extended to attach additional claims.
+func (uir *UserInfoResponse) Map() (map[string]interface{}, error) {
+	// NOTE(longsleep): This implementation sucks, marshal to JSON and unmarshal
+	// again - rly?
+	intermediate, err := json.Marshal(uir)
+	if err != nil {
+		return nil, err
+	}
+	claims := make(map[string]interface{})
+	err = json.Unmarshal(intermediate, &claims)
+	if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
 }

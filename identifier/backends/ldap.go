@@ -400,6 +400,12 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string) (ide
 	return newLdapUser(b.attributeMapping, entry), nil
 }
 
+// UserClaims implements the Backend interface, providing user specific claims
+// for the user specified by the userID.
+func (b *LDAPIdentifierBackend) UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{} {
+	return nil
+}
+
 // ScopesSupported implements the Backend interface, providing supported scopes
 // when running this backend.
 func (b *LDAPIdentifierBackend) ScopesSupported() []string {

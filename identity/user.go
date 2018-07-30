@@ -64,3 +64,9 @@ type UserWithClaims interface {
 	User
 	Claims() jwt.MapClaims
 }
+
+// UserWithScopedClaims is A user with jwt claims bound to provided scopes.
+type UserWithScopedClaims interface {
+	User
+	ScopedClaims(authorizedScopes map[string]bool) jwt.MapClaims
+}

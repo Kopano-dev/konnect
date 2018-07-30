@@ -490,39 +490,53 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	authorizedScopes := auth.AuthorizedScopes()
 	var user identity.User
 
-	// Include additional claims when corresponding scopes are authorized.
+	// Include additional Konnect specific claims when corresponding scopes are authorized.
 	if ok, _ := authorizedScopes[konnect.ScopeID]; ok {
 		user = withUser()
-		if user != nil {
-			if userWithID, ok := user.(identity.UserWithID); ok {
-				claims := &konnect.IDClaims{
-					KCID: userWithID.ID(),
-				}
-				if userWithUsername, ok := user.(identity.UserWithUsername); ok {
-					claims.KCIDUsername = userWithUsername.Username()
-				}
-				if claims.KCIDUsername == "" {
-					claims.KCIDUsername = user.Subject()
-				}
-
-				response.IDClaims = claims
+		if userWithID, ok := user.(identity.UserWithID); ok {
+			claims := &konnect.IDClaims{
+				KCID: userWithID.ID(),
 			}
+			if userWithUsername, ok := user.(identity.UserWithUsername); ok {
+				claims.KCIDUsername = userWithUsername.Username()
+			}
+			if claims.KCIDUsername == "" {
+				claims.KCIDUsername = user.Subject()
+			}
+
+			response.IDClaims = claims
 		}
 	}
 	if ok, _ := authorizedScopes[konnect.ScopeUniqueUserID]; ok {
 		user = withUser()
-		if user != nil {
-			if userWithUniqueID, ok := user.(identity.UserWithUniqueID); ok {
-				claims := &konnect.UniqueUserIDClaims{
-					KCUniqueUserID: userWithUniqueID.UniqueID(),
-				}
+		if userWithUniqueID, ok := user.(identity.UserWithUniqueID); ok {
+			claims := &konnect.UniqueUserIDClaims{
+				KCUniqueUserID: userWithUniqueID.UniqueID(),
+			}
 
-				response.UniqueUserIDClaims = claims
+			response.UniqueUserIDClaims = claims
+		}
+	}
+
+	// Create a map so additional user specific claims can be added.
+	responseAsMap, err := response.Map()
+	if err != nil {
+		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request failed to encode claims")
+		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+		return
+	}
+
+	// Inject extra claims.
+	extraClaims := auth.Claims("")[0]
+	if extraClaims != nil {
+		if extraClaimsMap, ok := extraClaims.(jwt.MapClaims); ok {
+			for claim, value := range extraClaimsMap {
+				responseAsMap[claim] = value
 			}
 		}
 	}
 
-	err = utils.WriteJSON(rw, http.StatusOK, response, "")
+	err = utils.WriteJSON(rw, http.StatusOK, responseAsMap, "")
 	if err != nil {
 		p.logger.WithError(err).Errorln("userinfo request failed writing response")
 	}

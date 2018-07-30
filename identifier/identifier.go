@@ -221,7 +221,13 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	}
 
 	user := &IdentifiedUser{
-		sub:     claims.Subject,
+		sub: claims.Subject,
+
+		// TODO(longsleep): It is not verified here that the user still exists at
+		// our current backend. We still assign the backend happily here - probably
+		// needs some sort of veritification / lookup.
+		backend: i.backend,
+
 		logonAt: claims.IssuedAt.Time(),
 	}
 
@@ -259,6 +265,8 @@ func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*Ident
 	// which can be imported by backends so they directly can return that shit.
 	identifiedUser := &IdentifiedUser{
 		sub: user.Subject(),
+
+		backend: i.backend,
 	}
 	if userWithEmail, ok := user.(identity.UserWithEmail); ok {
 		identifiedUser.email = userWithEmail.Email()

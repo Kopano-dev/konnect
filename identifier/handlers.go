@@ -225,6 +225,8 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 				user = &IdentifiedUser{
 					sub: *subject,
 
+					backend: i.backend,
+
 					username: params[0],
 				}
 			}

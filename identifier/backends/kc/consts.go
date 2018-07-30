@@ -21,3 +21,8 @@ package kc
 const (
 	ScopeKopanoGC = "kopano/gc"
 )
+
+// Define claims supported by KC.
+const (
+	KopanoGCIDClaim = "kopano/gc/id"
+)

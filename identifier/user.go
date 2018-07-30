@@ -24,12 +24,15 @@ import (
 	"github.com/dgrijalva/jwt-go"
 
 	"stash.kopano.io/kc/konnect"
+	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identity"
 )
 
 // A IdentifiedUser is a user with meta data.
 type IdentifiedUser struct {
 	sub string
+
+	backend backends.Backend
 
 	username      string
 	email         string
@@ -108,6 +111,16 @@ func (u *IdentifiedUser) Claims() jwt.MapClaims {
 	return claims
 }
 
+// ScopedClaims returns scope bound extra claims of the accociated user.
+func (u *IdentifiedUser) ScopedClaims(authorizedScopes map[string]bool) jwt.MapClaims {
+	if u.backend == nil {
+		return nil
+	}
+
+	claims := u.backend.UserClaims(u.Subject(), authorizedScopes)
+	return jwt.MapClaims(claims)
+}
+
 // LoggedOn returns true if the accociated user has a logonAt time set.
 func (u *IdentifiedUser) LoggedOn() (bool, time.Time) {
 	return !u.logonAt.IsZero(), u.logonAt
@@ -121,8 +134,11 @@ func (i *Identifier) resolveUser(ctx context.Context, username string) (*Identif
 
 	// Construct user from resolved result.
 	user := &IdentifiedUser{
-		sub:      u.Subject(),
+		sub: u.Subject(),
+
 		username: u.Username(),
+
+		backend: i.backend,
 	}
 
 	return user, nil
@@ -137,6 +153,8 @@ func (i *Identifier) updateUser(ctx context.Context, user *IdentifiedUser) error
 	if uwp, ok := u.(identity.UserWithProfile); ok {
 		user.displayName = uwp.Name()
 	}
+
+	user.backend = i.backend
 
 	return nil
 }

@@ -32,5 +32,6 @@ type Backend interface {
 	ResolveUser(ctx context.Context, username string) (user identity.UserWithUsername, err error)
 	GetUser(ctx context.Context, userID string) (user identity.User, err error)
 
+	UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{}
 	ScopesSupported() []string
 }

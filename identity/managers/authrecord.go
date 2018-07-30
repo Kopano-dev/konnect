@@ -30,7 +30,7 @@ type authRecord struct {
 
 	sub              string
 	authorizedScopes map[string]bool
-	claims           map[string]jwt.Claims
+	claimsByScope    map[string]jwt.Claims
 
 	user     identity.User
 	authTime time.Time
@@ -38,7 +38,7 @@ type authRecord struct {
 
 // NewAuthRecord returns a implementation of identity.AuthRecord holding
 // the provided data in memory.
-func NewAuthRecord(manager identity.Manager, sub string, authorizedScopes map[string]bool, claims map[string]jwt.Claims) identity.AuthRecord {
+func NewAuthRecord(manager identity.Manager, sub string, authorizedScopes map[string]bool, claimsByScope map[string]jwt.Claims) identity.AuthRecord {
 	if authorizedScopes == nil {
 		authorizedScopes = make(map[string]bool)
 	}
@@ -48,7 +48,7 @@ func NewAuthRecord(manager identity.Manager, sub string, authorizedScopes map[st
 
 		sub:              sub,
 		authorizedScopes: authorizedScopes,
-		claims:           claims,
+		claimsByScope:    claimsByScope,
 	}
 }
 
@@ -82,8 +82,8 @@ func (r *authRecord) AuthorizeScopes(scopes map[string]bool) {
 func (r *authRecord) Claims(scopes ...string) []jwt.Claims {
 	result := make([]jwt.Claims, len(scopes))
 	for idx, scope := range scopes {
-		if claims, ok := r.claims[scope]; ok {
-			result[idx] = claims
+		if claimsForScope, ok := r.claimsByScope[scope]; ok {
+			result[idx] = claimsForScope
 		}
 	}
 

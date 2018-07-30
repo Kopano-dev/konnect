@@ -90,28 +90,28 @@ func getUserClaimsForScopes(user identity.User, scopes map[string]bool) map[stri
 	}
 
 	claims := make(map[string]jwt.Claims)
-	for scope, authorizedScope := range scopes {
-		if !authorizedScope {
-			continue
-		}
 
-		switch scope {
-		case oidc.ScopeEmail:
-			if userWithEmail, ok := user.(identity.UserWithEmail); ok {
-				claims[oidc.ScopeEmail] = &oidc.EmailClaims{
-					Email:         userWithEmail.Email(),
-					EmailVerified: userWithEmail.EmailVerified(),
-				}
-			}
-		case oidc.ScopeProfile:
-			if userWithProfile, ok := user.(identity.UserWithProfile); ok {
-				claims[oidc.ScopeProfile] = &oidc.ProfileClaims{
-					Name:       userWithProfile.Name(),
-					FamilyName: userWithProfile.FamilyName(),
-					GivenName:  userWithProfile.GivenName(),
-				}
+	if authorizedScope, _ := scopes[oidc.ScopeEmail]; authorizedScope {
+		if userWithEmail, ok := user.(identity.UserWithEmail); ok {
+			claims[oidc.ScopeEmail] = &oidc.EmailClaims{
+				Email:         userWithEmail.Email(),
+				EmailVerified: userWithEmail.EmailVerified(),
 			}
 		}
+	}
+	if authorizedScope, _ := scopes[oidc.ScopeProfile]; authorizedScope {
+		if userWithProfile, ok := user.(identity.UserWithProfile); ok {
+			claims[oidc.ScopeProfile] = &oidc.ProfileClaims{
+				Name:       userWithProfile.Name(),
+				FamilyName: userWithProfile.FamilyName(),
+				GivenName:  userWithProfile.GivenName(),
+			}
+		}
+	}
+
+	if userWithScopedClaims, ok := user.(identity.UserWithScopedClaims); ok {
+		// Inject additional scope claims.
+		claims[""] = userWithScopedClaims.ScopedClaims(scopes)
 	}
 
 	return claims
