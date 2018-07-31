@@ -523,7 +523,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create a map so additional user specific claims can be added.
-	responseAsMap, err := response.Map()
+	responseAsMap, err := payload.ToMap(response)
 	if err != nil {
 		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request failed to encode claims")
 		p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())

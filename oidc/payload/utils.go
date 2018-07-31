@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2018 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -15,17 +15,26 @@
  *
  */
 
-package konnect
+package payload
 
 import (
-	"stash.kopano.io/kc/konnect/oidc/payload"
+	"encoding/json"
 )
 
-// UserInfoResponse defines the data returned from the Konnect UserInfo
-// endpoint. It is the standard ODIC response, extended with additional claims.
-type UserInfoResponse struct {
-	*payload.UserInfoResponse
+// ToMap is a helper function to convert the provided payload struct to
+// a map type which can be used to extend the payload data with additional fields.
+func ToMap(payload interface{}) (map[string]interface{}, error) {
+	// NOTE(longsleep): This implementation sucks, marshal to JSON and unmarshal
+	// again - rly?
+	intermediate, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	claims := make(map[string]interface{})
+	err = json.Unmarshal(intermediate, &claims)
+	if err != nil {
+		return nil, err
+	}
 
-	*IDClaims
-	*UniqueUserIDClaims
+	return claims, nil
 }

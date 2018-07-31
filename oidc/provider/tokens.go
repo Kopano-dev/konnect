@@ -73,30 +73,34 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			Audience:  ar.ClientID,
 			ExpiresAt: time.Now().Add(time.Hour).Unix(), // 1 Hour, must be consumed by then.
 			IssuedAt:  time.Now().Unix(),
-		}}
+		},
+	}
+
 	if accessTokenString == "" {
 		// Include requested scope data in ID token when no access token is
 		// generated.
-		user, found, err := p.identityManager.Fetch(ctx, auth.Subject(), auth.AuthorizedScopes())
+		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, auth.Subject(), auth.AuthorizedScopes())
 		if !found {
 			return "", fmt.Errorf("user not found")
 		}
-		if err != nil {
-			return "", err
+		if fetchErr != nil {
+			return "", fetchErr
 		}
 
 		if _, ok := ar.Scopes[oidc.ScopeProfile]; ok {
-			idTokenClaims.ProfileClaims = oidc.NewProfileClaims(user.Claims(oidc.ScopeProfile)[0])
+			idTokenClaims.ProfileClaims = oidc.NewProfileClaims(freshAuth.Claims(oidc.ScopeProfile)[0])
 		}
 		if _, ok := ar.Scopes[oidc.ScopeEmail]; ok {
-			idTokenClaims.EmailClaims = oidc.NewEmailClaims(user.Claims(oidc.ScopeEmail)[0])
+			idTokenClaims.EmailClaims = oidc.NewEmailClaims(freshAuth.Claims(oidc.ScopeEmail)[0])
 		}
+
+		auth = freshAuth
 	} else {
 		// Add left-most hash of access token.
 		// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitIDToken
-		hash, err := oidc.HashFromSigningMethod(p.signingMethod.Alg())
-		if err != nil {
-			return "", err
+		hash, hashErr := oidc.HashFromSigningMethod(p.signingMethod.Alg())
+		if hashErr != nil {
+			return "", hashErr
 		}
 
 		idTokenClaims.AccessTokenHash = oidc.LeftmostHash([]byte(accessTokenString), hash).String()
@@ -104,9 +108,9 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 	if codeString != "" {
 		// Add left-most hash of code.
 		// http://openid.net/specs/openid-connect-core-1_0.html#HybridIDToken
-		hash, err := oidc.HashFromSigningMethod(p.signingMethod.Alg())
-		if err != nil {
-			return "", err
+		hash, hashErr := oidc.HashFromSigningMethod(p.signingMethod.Alg())
+		if hashErr != nil {
+			return "", hashErr
 		}
 
 		idTokenClaims.CodeHash = oidc.LeftmostHash([]byte(codeString), hash).String()
@@ -121,7 +125,31 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 		}
 	}
 
-	idToken := jwt.NewWithClaims(p.signingMethod, idTokenClaims)
+	// Support extra non-standard claims in ID token.
+	var finalIDTokenClaims jwt.Claims = idTokenClaims
+	if accessTokenString == "" {
+		// Include requested scope data in ID token when no access token is
+		// generated - additional custom user specific claims.
+		idTokenClaimsMap, err := payload.ToMap(idTokenClaims)
+		if err != nil {
+			return "", err
+		}
+
+		// Inject extra claims.
+		extraClaims := auth.Claims("")[0]
+		if extraClaims != nil {
+			if extraClaimsMap, ok := extraClaims.(jwt.MapClaims); ok {
+				for claim, value := range extraClaimsMap {
+					idTokenClaimsMap[claim] = value
+				}
+			}
+		}
+
+		finalIDTokenClaims = jwt.MapClaims(idTokenClaimsMap)
+	}
+
+	// Create signed token.
+	idToken := jwt.NewWithClaims(p.signingMethod, finalIDTokenClaims)
 	idToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID
 
 	return idToken.SignedString(p.signingKey)
