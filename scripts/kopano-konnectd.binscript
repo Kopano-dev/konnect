@@ -1,0 +1,141 @@
+#!/bin/sh
+#
+# Kopano Konnect Daemon (konnectd) launcher
+#
+# License: AGPL-3.0-only
+# Copyright 2018 Kopano and its licensors
+#
+
+set -e
+
+# Base defines.
+
+EXE=/usr/libexec/kopano/konnectd
+
+# Handle parameters for configuration.
+
+case "${1}" in
+	serve)
+		# Inject values from environment into command line. This is mainly used
+		# when this script is run from systemd or docker.
+
+		# konnectd basics
+
+		if [ -z "$identity_manager" ]; then
+			identity_manager=kc
+		fi
+
+		if [ -z "$web_resources_path" ]; then
+			web_resources_path=/usr/share/kopano-konnect
+		fi
+
+		if [ -z "$identifier_registration_conf" ]; then
+			if [ -f /etc/kopano/konnectd-identifier-registration.yaml ]; then
+				identifier_registration_conf=/etc/kopano/konnectd-identifier-registration.yaml
+			fi
+		fi
+
+		if [ -n "$oidc_issuer_identifier" ]; then
+			if [ -n "$OIDC_ISSUER_IDENTIFIER" ]; then
+				>&2	echo "Warning: duplicate setting of issuer identifier - using value from environment"
+				oidc_issuer_identifier="$OIDC_ISSUER_IDENTIFIER"
+			fi
+		fi
+		if [ -z "$oidc_issuer_identifier" ]; then
+			# NOTE(longsleep): Not sure if this is the best idea/default but at least
+			# having a default will let the service start.
+			oidc_issuer_identifier=${OIDC_ISSUER_IDENTIFIER:-https://localhost}
+		fi
+
+		if [ "$insecure" = "yes" ]; then
+			set -- "$@" "--insecure"
+		fi
+
+		if [ -n "$listen" ]; then
+			set -- "$@" --listen="$listen"
+		fi
+
+		if [ -n "$allowed_scopes" ]; then
+			for scope in $allowed_scopes; do
+				set -- "$@" --allow-scope="$scope"
+			done
+		fi
+
+		if [ -z "$signing_private_key" -a -f "/etc/kopano/konnectd-signing-private-key.pem" ]; then
+			signing-private-key="/etc/kopano/konnectd-signing-private-key.pem"
+		fi
+		if [ -n "$signing_private_key" ]; then
+			set -- "$@" --signing-private-key="$signing_private_key"
+		fi
+
+		if [ -n "$signing_method" ]; then
+			set -- "$@" --signing-method="$signing_method"
+		fi
+
+		if [ -z "$encryption_secret_key" -a -f "/etc/kopano/konnectd-encryption.key" ]; then
+			encryption_secret_key="/etc/kopano/konnectd-encryption.key"
+		fi
+		if [ -n "$encryption_secret_key" ]; then
+			set -- "$@" --encryption-secret="$encryption_secret_key"
+		fi
+
+		if [ -n "$trused_proxies" ]; then
+			for proxy in $trusted_proxies; do
+				set -- "$@" --trusted-proxy="$proxy"
+			done
+		fi
+
+		# kc identity manager
+
+		if [ "$identity_manager" = "kc" ]; then
+			if [ -z "$kc_server_uri" ]; then
+				kc_server_uri=${KOPANO_SERVER_DEFAULT_URI:-file:///run/kopano/server.sock}
+			fi
+			export KOPANO_SERVER_DEFAULT_URI="$kc_server_uri"
+		fi
+
+		# ldap identity manager
+		if [ "$identity_manager" = "ldap" ]; then
+			if [ -n "$ldap_uri" ]; then
+				export LDAP_URI="$ldap_uri"
+			fi
+			if [ -n "$ldap_binddn" ]; then
+				export LDAP_BINDDN="$ldap_binddn"
+			fi
+			if [ -n "$ldap_bindpw" ]; then
+				export LDAP_BINDPW="$ldap_bindpw"
+			fi
+			if [ -n "$ldap_basedn" ]; then
+				export LDAP_BASEDN="$ldap_basedn"
+			fi
+			if [ -n "$ldap_scope" ]; then
+				export LDAP_SCOPE="$ldap_scope"
+			fi
+			if [ -n "$ldap_login_attribute" ]; then
+				export LDAP_LOGIN_ATTRIBUTE="$ldap_login_attribute"
+			fi
+			if [ -n "$ldap_uuid_attribute" ]; then
+				export LDAP_UUID_ATTRIBUTE="$ldap_uuid_attribute"
+			fi
+			if [ -n "$ldap_filter" ]; then
+				export LDAP_FILTER="$ldap_filter"
+			fi
+		fi
+
+		# set identity manager at the end
+
+		set -- --identifier-client-path="$web_resources_path/identifier-webapp" --identifier-registration-conf="$identifier_registration_conf" --iss="$oidc_issuer_identifier" "$@" "$identity_manager" $identity_manager_args
+
+		;;
+
+	*)
+		;;
+esac
+
+# Set executable.
+
+set -- ${EXE} "$@"
+
+# Run.
+
+exec "$@"
