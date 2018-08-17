@@ -62,6 +62,8 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 	serveCmd.Flags().StringArray("trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
 	serveCmd.Flags().StringArray("allow-scope", nil, "Allow OAuth 2 scope (can be used multiple times, if not set default scopes are allowed)")
+	serveCmd.Flags().Bool("log-timestamp", true, "Prefix each log line with timestamp")
+	serveCmd.Flags().String("log-level", "info", "Log level (one of panic, fatal, error, warn, info or debug)")
 
 	return serveCmd
 }
@@ -69,7 +71,10 @@ func commandServe() *cobra.Command {
 func serve(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	logger, err := newLogger()
+	logTimestamp, _ := cmd.Flags().GetBool("log-timestamp")
+	logLevel, _ := cmd.Flags().GetString("log-level")
+
+	logger, err := newLogger(!logTimestamp, logLevel)
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %v", err)
 	}
