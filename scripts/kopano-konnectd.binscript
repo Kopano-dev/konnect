@@ -11,27 +11,56 @@ set -e
 # Base defines.
 
 EXE=/usr/libexec/kopano/konnectd
+OPENSSL=openssl
+DEFAULT_IDENTIY_MANAGER=kc
+DEFAULT_WEB_RESOURCES_PATH=/usr/share/kopano-konnect
+DEFAULT_IDENTIFIER_REGISTRATION_FILE=/etc/kopano/konnectd-identifier-registration.yaml
+DEFAULT_OIDC_ISSUER_IDENTIFIER=https://localhost
+DEFAULT_SIGNING_PRIVATE_KEY_FILE=/etc/kopano/konnectd-signing-private-key.pem
+DEFAULT_ENCRYPTION_SECRET_KEY_FILE=/etc/kopano/konnectd-encryption-secret.key
+DEFAULT_KOPANO_SERVER_URI=file:///run/kopano/server.sock
 
 # Handle parameters for configuration.
 
 case "${1}" in
+	setup)
+
+	if [ -z "$signing_private_key" -a ! -f "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" -a -n "$USER" ]; then
+		if [ -z "$signing_method" -o "$signing_method" = "RS256" ]; then
+			>&2	echo "setup: creating new RSA private key at ${DEFAULT_SIGNING_PRIVATE_KEY_FILE} ..."
+			RANDFILE=/tmp/.rnd $OPENSSL genpkey -algorithm RSA -out "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" -pkeyopt rsa_keygen_bits:4096 && chown "$USER" "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" || true
+		fi
+	fi
+
+	if [ -z "$encryption_secret_key" -a ! -f "${DEFAULT_ENCRYPTION_SECRET_KEY_FILE}" -a -n "$USER" ]; then
+		>&2	echo "setup: creating new secret key at ${DEFAULT_ENCRYPTION_SECRET_KEY_FILE} ..."
+		RANDFILE=/tmp/.rnd $OPENSSL rand -out "${DEFAULT_ENCRYPTION_SECRET_KEY_FILE}" 32 && chown "$USER" "${DEFAULT_ENCRYPTION_SECRET_KEY_FILE}" || true
+	fi
+
+	# Setup subcommand does nothing.
+	exit 0
+
+	;;
+
 	serve)
 		# Inject values from environment into command line. This is mainly used
 		# when this script is run from systemd or docker.
 
+		shift
+
 		# konnectd basics
 
 		if [ -z "$identity_manager" ]; then
-			identity_manager=kc
+			identity_manager="${DEFAULT_IDENTIY_MANAGER}"
 		fi
 
 		if [ -z "$web_resources_path" ]; then
-			web_resources_path=/usr/share/kopano-konnect
+			web_resources_path="${DEFAULT_WEB_RESOURCES_PATH}"
 		fi
 
 		if [ -z "$identifier_registration_conf" ]; then
-			if [ -f /etc/kopano/konnectd-identifier-registration.yaml ]; then
-				identifier_registration_conf=/etc/kopano/konnectd-identifier-registration.yaml
+			if [ -f "${DEFAULT_IDENTIFIER_REGISTRATION_FILE}" ]; then
+				identifier_registration_conf="${DEFAULT_IDENTIFIER_REGISTRATION_FILE}"
 			fi
 		fi
 
@@ -44,7 +73,7 @@ case "${1}" in
 		if [ -z "$oidc_issuer_identifier" ]; then
 			# NOTE(longsleep): Not sure if this is the best idea/default but at least
 			# having a default will let the service start.
-			oidc_issuer_identifier=${OIDC_ISSUER_IDENTIFIER:-https://localhost}
+			oidc_issuer_identifier=${OIDC_ISSUER_IDENTIFIER:-${DEFAULT_OIDC_ISSUER_IDENTIFIER}}
 		fi
 
 		if [ "$insecure" = "yes" ]; then
@@ -65,8 +94,8 @@ case "${1}" in
 			done
 		fi
 
-		if [ -z "$signing_private_key" -a -f "/etc/kopano/konnectd-signing-private-key.pem" ]; then
-			signing-private-key="/etc/kopano/konnectd-signing-private-key.pem"
+		if [ -z "$signing_private_key" -a -f "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" ]; then
+			signing_private_key="${DEFAULT_SIGNING_PRIVATE_KEY_FILE}"
 		fi
 		if [ -n "$signing_private_key" ]; then
 			set -- "$@" --signing-private-key="$signing_private_key"
@@ -76,8 +105,8 @@ case "${1}" in
 			set -- "$@" --signing-method="$signing_method"
 		fi
 
-		if [ -z "$encryption_secret_key" -a -f "/etc/kopano/konnectd-encryption.key" ]; then
-			encryption_secret_key="/etc/kopano/konnectd-encryption.key"
+		if [ -z "$encryption_secret_key" -a -f "${DEFAULT_ENCRYPTION_SECRET_KEY_FILE}" ]; then
+			encryption_secret_key="${DEFAULT_ENCRYPTION_SECRET_KEY_FILE}"
 		fi
 		if [ -n "$encryption_secret_key" ]; then
 			set -- "$@" --encryption-secret="$encryption_secret_key"
@@ -93,7 +122,7 @@ case "${1}" in
 
 		if [ "$identity_manager" = "kc" ]; then
 			if [ -z "$kc_server_uri" ]; then
-				kc_server_uri=${KOPANO_SERVER_DEFAULT_URI:-file:///run/kopano/server.sock}
+				kc_server_uri=${KOPANO_SERVER_DEFAULT_URI:-${DEFAULT_KOPANO_SERVER_URI}}
 			fi
 			export KOPANO_SERVER_DEFAULT_URI="$kc_server_uri"
 		fi
@@ -128,7 +157,7 @@ case "${1}" in
 
 		# set identity manager at the end
 
-		set -- --identifier-client-path="$web_resources_path/identifier-webapp" --identifier-registration-conf="$identifier_registration_conf" --iss="$oidc_issuer_identifier" "$@" "$identity_manager" $identity_manager_args
+		set -- serve --identifier-client-path="$web_resources_path/identifier-webapp" --identifier-registration-conf="$identifier_registration_conf" --iss="$oidc_issuer_identifier" "$@" "$identity_manager" $identity_manager_args
 
 		;;
 
