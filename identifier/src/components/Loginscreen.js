@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
@@ -17,7 +17,8 @@ import { executeHello } from '../actions/common-actions';
 
 const styles = theme => ({
   root: {
-    height: '100vh'
+    display: 'flex',
+    flex: 1
   },
   logo: {
     height: 18,
@@ -35,7 +36,7 @@ const styles = theme => ({
   })
 });
 
-class Loginscreen extends Component {
+class Loginscreen extends React.PureComponent {
   componentDidMount() {
     this.props.dispatch(executeHello());
   }

@@ -19,7 +19,9 @@ enhanceBodyBackground();
 
 const styles = () => ({
   root: {
-    height: '100vh'
+    position: 'relative',
+    display: 'flex',
+    flex: 1
   }
 });
 
