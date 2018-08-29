@@ -76,6 +76,12 @@ func (u *dummyUser) Name() string {
 
 // Authenticate implements the identity.Manager interface.
 func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+	// Check request.
+	err := ar.Verify(im.sub)
+	if err != nil {
+		return nil, err
+	}
+
 	return NewAuthRecord(im, im.sub, nil, nil), nil
 }
 

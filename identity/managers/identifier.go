@@ -110,6 +110,18 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 		// Let all other prompt values pass.
 	}
 
+	// More checks.
+	if err == nil {
+		var sub string
+		if user != nil {
+			sub = user.Subject()
+		}
+		err = ar.Verify(sub)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if err != nil {
 		u, _ := url.Parse(im.signInFormURI)
 		u.RawQuery = fmt.Sprintf("flow=%s&%s", identifier.FlowOIDC, req.URL.RawQuery)
@@ -229,7 +241,8 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 
 // EndSession implements the identity.Manager interface.
 func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
-	// NOTE(longsleep): For now we always require the id_token_hint.
+	// FIXME(longsleep): For now we always require the id_token_hint. Instead
+	// of fail we should treat is as unstrusted client.
 	if esr.IDTokenHint == nil {
 		im.logger.Debugln("endsession request without id_token_hint")
 		return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "id_token_hint required")
@@ -239,6 +252,10 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 	claims := esr.IDTokenHint.Claims.(*oidc.IDTokenClaims)
 	clientDetails, err := im.clients.Lookup(ctx, claims.Audience, "", esr.PostLogoutRedirectURI, origin, true)
 	if err != nil {
+		// FIXME(longsleep): This error should no be fatal since according to
+		// the spec in https://openid.net/specs/openid-connect-session-1_0.html#RPLogout the
+		// id_token_hint is not enforced to match the audience. Instead of fail
+		// we should treat it as untrusted client.
 		im.logger.WithError(err).Errorln("IdentifierIdentityManager: id_token_hint does not match request")
 		return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "id_token_hint does not match request")
 	}

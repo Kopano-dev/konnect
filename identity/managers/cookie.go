@@ -255,6 +255,18 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 		// Let all other prompt values pass.
 	}
 
+	// More checks.
+	if err == nil {
+		var sub string
+		if user != nil {
+			sub = user.Subject()
+		}
+		err = ar.Verify(sub)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if err != nil {
 		u, _ := url.Parse(im.signInFormURI)
 		return nil, identity.NewLoginRequiredError(err.Error(), u)
