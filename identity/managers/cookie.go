@@ -436,3 +436,13 @@ func (im *CookieIdentityManager) ClaimsSupported() []string {
 // AddRoutes implements the identity.Manager interface.
 func (im *CookieIdentityManager) AddRoutes(ctx context.Context, router *mux.Router) {
 }
+
+// OnSetLogon implements the identity.Manager interface.
+func (im *CookieIdentityManager) OnSetLogon(func(ctx context.Context, rw http.ResponseWriter, user identity.User) error) error {
+	return nil
+}
+
+// OnUnsetLogon implements the identity.Manager interface.
+func (im *CookieIdentityManager) OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error) error {
+	return nil
+}

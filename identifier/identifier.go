@@ -53,6 +53,9 @@ type Identifier struct {
 	backend   backends.Backend
 	clients   *clients.Registry
 
+	onSetLogonCallbacks   []func(ctx context.Context, rw http.ResponseWriter, user identity.User) error
+	onUnsetLogonCallbacks []func(ctx context.Context, rw http.ResponseWriter) error
+
 	logger logrus.FieldLogger
 }
 
@@ -74,7 +77,11 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 
 		backend: c.Backend,
 		clients: c.Clients,
-		logger:  c.Config.Logger,
+
+		onSetLogonCallbacks:   make([]func(ctx context.Context, rw http.ResponseWriter, user identity.User) error, 0),
+		onUnsetLogonCallbacks: make([]func(ctx context.Context, rw http.ResponseWriter) error, 0),
+
+		logger: c.Config.Logger,
 	}
 
 	return i, nil
@@ -181,13 +188,39 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 		return err
 	}
 
-	return i.setLogonCookie(rw, serialized)
+	// Set cookie.
+	err = i.setLogonCookie(rw, serialized)
+	if err != nil {
+		return err
+	}
+	// Trigger callbacks.
+	for _, f := range i.onSetLogonCallbacks {
+		err = f(ctx, rw, user)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // UnsetLogonCookie adds cookie remove headers to the provided http.ResponseWriter
 // effectively implementing logout.
 func (i *Identifier) UnsetLogonCookie(ctx context.Context, rw http.ResponseWriter) error {
-	return i.removeLogonCookie(rw)
+	// Remove cookie.
+	err := i.removeLogonCookie(rw)
+	if err != nil {
+		return err
+	}
+	// Trigger callbacks.
+	for _, f := range i.onUnsetLogonCallbacks {
+		err = f(ctx, rw)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GetUserFromLogonCookie looks up the associated cookie name from the provided
@@ -344,4 +377,18 @@ func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.Re
 // ScopesSupported return the scopes supported by the accociaged Identifier.
 func (i *Identifier) ScopesSupported() []string {
 	return i.backend.ScopesSupported()
+}
+
+// OnSetLogon implements a way to register hooks whenever logon information is
+// set by the accociated Identifier.
+func (i *Identifier) OnSetLogon(cb func(ctx context.Context, rw http.ResponseWriter, user identity.User) error) error {
+	i.onSetLogonCallbacks = append(i.onSetLogonCallbacks, cb)
+	return nil
+}
+
+// OnUnsetLogon implements a way to register hooks whenever logon information is
+// set by the accociated Identifier.
+func (i *Identifier) OnUnsetLogon(cb func(ctx context.Context, rw http.ResponseWriter) error) error {
+	i.onUnsetLogonCallbacks = append(i.onUnsetLogonCallbacks, cb)
+	return nil
 }

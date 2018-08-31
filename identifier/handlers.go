@@ -299,7 +299,7 @@ func (i *Identifier) handleLogoff(rw http.ResponseWriter, req *http.Request) {
 
 	addNoCacheResponseHeaders(rw.Header())
 
-	err = i.removeLogonCookie(rw)
+	err = i.UnsetLogonCookie(req.Context(), rw)
 	if err != nil {
 		i.logger.WithError(err).Errorln("identifier failed to set logoff ticket")
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to set logoff ticket")

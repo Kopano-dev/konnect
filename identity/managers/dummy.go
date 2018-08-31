@@ -186,3 +186,13 @@ func (im *DummyIdentityManager) ClaimsSupported() []string {
 // AddRoutes implements the identity.Manager interface.
 func (im *DummyIdentityManager) AddRoutes(ctx context.Context, router *mux.Router) {
 }
+
+// OnSetLogon implements the identity.Manager interface.
+func (im *DummyIdentityManager) OnSetLogon(func(ctx context.Context, rw http.ResponseWriter, user identity.User) error) error {
+	return nil
+}
+
+// OnUnsetLogon implements the identity.Manager interface.
+func (im *DummyIdentityManager) OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error) error {
+	return nil
+}

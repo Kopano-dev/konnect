@@ -19,11 +19,13 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	jwk "github.com/mendsley/gojwk"
+	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
@@ -165,6 +167,15 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 	}
 
 done:
+	// Always set browser state.
+	browserState, browserStateErr := p.makeBrowserState(ar, auth, err)
+	if browserStateErr != nil {
+		p.logger.WithError(err).Errorln("failed to make browser state")
+	}
+	if browserStateErr = p.setBrowserStateCookie(rw, browserState); browserStateErr != nil {
+		p.logger.WithError(err).Errorln("failed to set browser state cookie")
+	}
+
 	if err != nil {
 		switch err.(type) {
 		case *payload.AuthenticationError:
@@ -188,6 +199,11 @@ done:
 		return
 	}
 
+	sessionState, sessionStateErr := p.makeSessionState(req, ar, browserState)
+	if sessionStateErr != nil {
+		p.logger.WithError(err).Errorln("failed to make session state")
+	}
+
 	authorizedScopesList := makeArrayFromBoolMap(authorizedScopes)
 
 	// Successful Authentication Response
@@ -195,6 +211,8 @@ done:
 	response := &payload.AuthenticationSuccess{
 		State: ar.State,
 		Scope: strings.Join(authorizedScopesList, " "),
+
+		SessionState: sessionState,
 	}
 	if codeString != "" {
 		response.Code = codeString
@@ -619,4 +637,26 @@ done:
 	} else {
 		p.Found(rw, esr.PostLogoutRedirectURI, response, false)
 	}
+}
+
+// CheckSessionIframeHandler implements the HTTP endpoint for OP iframe with
+// OpenID Connect Session Management 1.0 as specified at
+// https://openid.net/specs/openid-connect-session-1_0.html#OPiframe
+func (p *Provider) CheckSessionIframeHandler(rw http.ResponseWriter, req *http.Request) {
+	addResponseHeaders(rw.Header())
+
+	nonce := rndm.GenerateRandomString(64)
+
+	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+	rw.Header().Set("X-XSS-Protection", "1; mode=block")
+	rw.Header().Set("Content-Security-Policy", fmt.Sprintf("default-src 'none'; script-src 'nonce-%s'", nonce))
+
+	data := struct {
+		CookieName string
+		Nonce      string
+	}{
+		CookieName: p.browserStateCookieName,
+		Nonce:      nonce,
+	}
+	checkSessionIframeTemplate.Execute(rw, data)
 }

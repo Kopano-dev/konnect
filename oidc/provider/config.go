@@ -27,13 +27,17 @@ import (
 type Config struct {
 	Config *config.Config
 
-	IssuerIdentifier  string
-	WellKnownPath     string
-	JwksPath          string
-	AuthorizationPath string
-	TokenPath         string
-	UserInfoPath      string
-	EndSessionPath    string
+	IssuerIdentifier       string
+	WellKnownPath          string
+	JwksPath               string
+	AuthorizationPath      string
+	TokenPath              string
+	UserInfoPath           string
+	EndSessionPath         string
+	CheckSessionIframePath string
+
+	BrowserStateCookiePath string
+	BrowserStateCookieName string
 
 	IdentityManager identity.Manager
 	CodeManager     code.Manager

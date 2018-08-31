@@ -344,3 +344,13 @@ func (im *IdentifierIdentityManager) ClaimsSupported() []string {
 func (im *IdentifierIdentityManager) AddRoutes(ctx context.Context, router *mux.Router) {
 	im.identifier.AddRoutes(ctx, router)
 }
+
+// OnSetLogon implements the identity.Manager interface.
+func (im *IdentifierIdentityManager) OnSetLogon(cb func(ctx context.Context, rw http.ResponseWriter, user identity.User) error) error {
+	return im.identifier.OnSetLogon(cb)
+}
+
+// OnUnsetLogon implements the identity.Manager interface.
+func (im *IdentifierIdentityManager) OnUnsetLogon(cb func(ctx context.Context, rw http.ResponseWriter) error) error {
+	return im.identifier.OnUnsetLogon(cb)
+}

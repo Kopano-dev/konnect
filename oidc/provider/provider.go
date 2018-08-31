@@ -18,6 +18,7 @@
 package provider
 
 import (
+	"context"
 	"crypto"
 	"fmt"
 	"net/http"
@@ -44,12 +45,13 @@ type Provider struct {
 	issuerIdentifier string
 	metadata         *payload.WellKnown
 
-	wellKnownPath     string
-	jwksPath          string
-	authorizationPath string
-	tokenPath         string
-	userInfoPath      string
-	endSessionPath    string
+	wellKnownPath          string
+	jwksPath               string
+	authorizationPath      string
+	tokenPath              string
+	userInfoPath           string
+	endSessionPath         string
+	checkSessionIframePath string
 
 	identityManager identity.Manager
 	codeManager     code.Manager
@@ -58,6 +60,9 @@ type Provider struct {
 	signingKey     crypto.PrivateKey
 	signingKeyID   string
 	validationKeys map[string]crypto.PublicKey
+
+	browserStateCookiePath string
+	browserStateCookieName string
 
 	accessTokenDuration time.Duration
 
@@ -69,23 +74,41 @@ func NewProvider(c *Config) (*Provider, error) {
 	p := &Provider{
 		Config: c,
 
-		issuerIdentifier:  c.IssuerIdentifier,
-		wellKnownPath:     c.WellKnownPath,
-		jwksPath:          c.JwksPath,
-		authorizationPath: c.AuthorizationPath,
-		tokenPath:         c.TokenPath,
-		userInfoPath:      c.UserInfoPath,
-		endSessionPath:    c.EndSessionPath,
+		issuerIdentifier:       c.IssuerIdentifier,
+		wellKnownPath:          c.WellKnownPath,
+		jwksPath:               c.JwksPath,
+		authorizationPath:      c.AuthorizationPath,
+		tokenPath:              c.TokenPath,
+		userInfoPath:           c.UserInfoPath,
+		endSessionPath:         c.EndSessionPath,
+		checkSessionIframePath: c.CheckSessionIframePath,
 
 		identityManager: c.IdentityManager,
 		codeManager:     c.CodeManager,
 
 		validationKeys: make(map[string]crypto.PublicKey),
 
+		browserStateCookiePath: c.BrowserStateCookiePath,
+		browserStateCookieName: c.BrowserStateCookieName,
+
 		accessTokenDuration: time.Minute * 10, //TODO(longsleep): Move to configuration.
 
 		logger: c.Config.Logger,
 	}
+
+	// Register callback to cleanup our cookie whenever the identity is unset or
+	// set.
+	p.identityManager.OnSetLogon(func(ctx context.Context, rw http.ResponseWriter, user identity.User) error {
+		// NOTE(longsleep): This leaves room for optionmization. In theory it
+		// should be possible to set the new browser state here directly since
+		// the relevant information should be available in the identity manager
+		// and thus avoiding a potentially unset refresh and client side
+		// redirects whenever the same user signs in again.
+		return p.removeBrowserStateCookie(rw)
+	})
+	p.identityManager.OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error {
+		return p.removeBrowserStateCookie(rw)
+	})
 
 	return p, nil
 }
@@ -142,6 +165,7 @@ func (p *Provider) InitializeMetadata() error {
 		TokenEndpoint:         p.makeIssURL(p.tokenPath),
 		UserInfoEndpoint:      p.makeIssURL(p.userInfoPath),
 		EndSessionEndpoint:    p.makeIssURL(p.endSessionPath),
+		CheckSessionIframe:    p.makeIssURL(p.checkSessionIframePath),
 		JwksURI:               p.makeIssURL(p.jwksPath),
 		ScopesSupported: uniqueStrings(append([]string{
 			oidc.ScopeOpenID,
@@ -188,6 +212,8 @@ func (p *Provider) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		cors.AllowAll().ServeHTTP(rw, req, p.UserInfoHandler)
 	case path == p.endSessionPath:
 		p.EndSessionHandler(rw, req)
+	case path == p.checkSessionIframePath:
+		p.CheckSessionIframeHandler(rw, req)
 	default:
 		http.NotFound(rw, req)
 	}

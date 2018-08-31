@@ -41,4 +41,7 @@ type Manager interface {
 	ClaimsSupported() []string
 
 	AddRoutes(ctx context.Context, router *mux.Router)
+
+	OnSetLogon(func(ctx context.Context, rw http.ResponseWriter, user User) error) error
+	OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error) error
 }

@@ -313,13 +313,17 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 	activeProvider, err := provider.NewProvider(&provider.Config{
 		Config: bs.cfg,
 
-		IssuerIdentifier:  bs.issuerIdentifierURI.String(),
-		WellKnownPath:     "/.well-known/openid-configuration",
-		JwksPath:          "/konnect/v1/jwks.json",
-		AuthorizationPath: bs.authorizationEndpointURI.EscapedPath(),
-		TokenPath:         "/konnect/v1/token",
-		UserInfoPath:      "/konnect/v1/userinfo",
-		EndSessionPath:    bs.endSessionEndpointURI.EscapedPath(),
+		IssuerIdentifier:       bs.issuerIdentifierURI.String(),
+		WellKnownPath:          "/.well-known/openid-configuration",
+		JwksPath:               "/konnect/v1/jwks.json",
+		AuthorizationPath:      bs.authorizationEndpointURI.EscapedPath(),
+		TokenPath:              "/konnect/v1/token",
+		UserInfoPath:           "/konnect/v1/userinfo",
+		EndSessionPath:         bs.endSessionEndpointURI.EscapedPath(),
+		CheckSessionIframePath: "/konnect/v1/session/check-session.html",
+
+		BrowserStateCookiePath: "/konnect/v1/session/",
+		BrowserStateCookieName: "__Secure-KKBS", // Kopano-Konnect-Browser-State
 
 		IdentityManager: bs.managers.identity,
 		CodeManager:     bs.managers.code,

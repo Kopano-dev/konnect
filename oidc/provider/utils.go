@@ -21,6 +21,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
+)
+
+var (
+	farPastExpiryTime = time.Unix(0, 0)
 )
 
 func uniqueStrings(s []string) []string {

@@ -273,6 +273,7 @@ func (ar *AuthenticationRequest) NewBadRequest(id string, description string) *A
 // Connect 1.0 authorize request as specified at
 // http://openid.net/specs/openid-connect-core-1_0.html#AuthResponse and
 // http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthResponse.
+// https://openid.net/specs/openid-connect-session-1_0.html#CreatingUpdatingSessions
 type AuthenticationSuccess struct {
 	Code        string `url:"code,omitempty"`
 	AccessToken string `url:"access_token,omitempty"`
@@ -282,6 +283,8 @@ type AuthenticationSuccess struct {
 	ExpiresIn   int64  `url:"expires_in,omitempty"`
 
 	Scope string `url:"scope,omitempty"`
+
+	SessionState string `url:"session_state,omitempty"`
 }
 
 // AuthenticationError holds the outgoind data for a failed OpenID
