@@ -24,9 +24,7 @@ import (
 	"github.com/orcaman/concurrent-map"
 	"stash.kopano.io/kgol/rndm"
 
-	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc/code"
-	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
 const (
@@ -42,8 +40,9 @@ type memoryMapManager struct {
 }
 
 type codeRequestRecord struct {
-	ar   *payload.AuthenticationRequest
-	auth identity.AuthRecord
+	record *code.Record
+	//ar   *payload.AuthenticationRequest
+	//auth identity.AuthRecord
 	when time.Time
 }
 
@@ -88,15 +87,14 @@ func (cm *memoryMapManager) purgeExpired() {
 
 // Create creates a new random code string, stores it together with the provided
 // values in the accociated CodeManager's table and returns the code.
-func (cm *memoryMapManager) Create(ar *payload.AuthenticationRequest, auth identity.AuthRecord) (string, error) {
+func (cm *memoryMapManager) Create(record *code.Record) (string, error) {
 	code := rndm.GenerateRandomString(24)
 
-	record := &codeRequestRecord{
-		ar:   ar,
-		auth: auth,
-		when: time.Now(),
+	rr := &codeRequestRecord{
+		record: record,
+		when:   time.Now(),
 	}
-	cm.table.Set(code, record)
+	cm.table.Set(code, rr)
 
 	return code, nil
 }
@@ -104,12 +102,12 @@ func (cm *memoryMapManager) Create(ar *payload.AuthenticationRequest, auth ident
 // Pop looks up the provided code in the accociated CodeManagers's table. If
 // found it returns the authentication request and backend record plus true.
 // When not found, both values return as nil plus false.
-func (cm *memoryMapManager) Pop(code string) (*payload.AuthenticationRequest, identity.AuthRecord, bool) {
+func (cm *memoryMapManager) Pop(code string) (*code.Record, bool) {
 	stored, found := cm.table.Pop(code)
 	if !found {
-		return nil, nil, false
+		return nil, false
 	}
-	record := stored.(*codeRequestRecord)
+	rr := stored.(*codeRequestRecord)
 
-	return record.ar, record.auth, true
+	return rr.record, true
 }

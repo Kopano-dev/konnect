@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2018 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -15,22 +15,14 @@
  *
  */
 
-package code
+package payload
 
-import (
-	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/oidc/payload"
-)
-
-// Record bundles the data storedi in a code manager.
-type Record struct {
-	AuthenticationRequest *payload.AuthenticationRequest
-	Auth                  identity.AuthRecord
-	Session               *payload.Session
-}
-
-// Manager is a interface defining a code manager.
-type Manager interface {
-	Create(record *Record) (string, error)
-	Pop(code string) (*Record, bool)
+// Session defines a Provider's session with a String identifier for a Session.
+// This represents a Session of a User Agent or device for a logged-in End-User
+// at an RP. Different ID values are used to identify distinct sessions. This
+// is implemented as defined in the OIDC Front Channel logout extension
+// https://openid.net/specs/openid-connect-frontchannel-1_0.html#OPLogout
+type Session struct {
+	ID  string
+	Sub string
 }

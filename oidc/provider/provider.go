@@ -32,6 +32,7 @@ import (
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
+	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
@@ -53,8 +54,9 @@ type Provider struct {
 	endSessionPath         string
 	checkSessionIframePath string
 
-	identityManager identity.Manager
-	codeManager     code.Manager
+	identityManager   identity.Manager
+	codeManager       code.Manager
+	encryptionManager *identityManagers.EncryptionManager
 
 	signingMethod  jwt.SigningMethod
 	signingKey     crypto.PrivateKey
@@ -63,6 +65,9 @@ type Provider struct {
 
 	browserStateCookiePath string
 	browserStateCookieName string
+
+	sessionCookiePath string
+	sessionCookieName string
 
 	accessTokenDuration time.Duration
 
@@ -83,13 +88,17 @@ func NewProvider(c *Config) (*Provider, error) {
 		endSessionPath:         c.EndSessionPath,
 		checkSessionIframePath: c.CheckSessionIframePath,
 
-		identityManager: c.IdentityManager,
-		codeManager:     c.CodeManager,
+		identityManager:   c.IdentityManager,
+		codeManager:       c.CodeManager,
+		encryptionManager: c.EncryptionManager,
 
 		validationKeys: make(map[string]crypto.PublicKey),
 
 		browserStateCookiePath: c.BrowserStateCookiePath,
 		browserStateCookieName: c.BrowserStateCookieName,
+
+		sessionCookiePath: c.SessionCookiePath,
+		sessionCookieName: c.SessionCookieName,
 
 		accessTokenDuration: time.Minute * 10, //TODO(longsleep): Move to configuration.
 
@@ -107,7 +116,18 @@ func NewProvider(c *Config) (*Provider, error) {
 		return p.removeBrowserStateCookie(rw)
 	})
 	p.identityManager.OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error {
-		return p.removeBrowserStateCookie(rw)
+		var err error
+
+		// Remove browser state cookie.
+		if errBsc := p.removeBrowserStateCookie(rw); errBsc != nil {
+			err = errBsc
+		}
+		// Remove OIDC client session cookie.
+		if errSc := p.removeSessionCookie(rw); errSc != nil {
+			err = errSc
+		}
+
+		return err
 	})
 
 	return p, nil

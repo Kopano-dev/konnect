@@ -59,7 +59,7 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 	return accessToken.SignedString(p.signingKey)
 }
 
-func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRequest, auth identity.AuthRecord, accessTokenString string, codeString string) (string, error) {
+func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRequest, auth identity.AuthRecord, session *payload.Session, accessTokenString string, codeString string) (string, error) {
 	publicSubject, err := p.PublicSubjectFromAuth(auth)
 	if err != nil {
 		return "", err
@@ -74,6 +74,13 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			ExpiresAt: time.Now().Add(time.Hour).Unix(), // 1 Hour, must be consumed by then.
 			IssuedAt:  time.Now().Unix(),
 		},
+	}
+
+	if session != nil {
+		// Include session data in ID token.
+		idTokenClaims.SessionClaims = &oidc.SessionClaims{
+			SessionID: session.ID,
+		}
 	}
 
 	if accessTokenString == "" {

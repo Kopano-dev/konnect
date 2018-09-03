@@ -30,6 +30,7 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
+	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -130,6 +131,7 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 	var accessTokenString string
 	var idTokenString string
 	var authorizedScopes map[string]bool
+	var session *payload.Session
 	var ctx context.Context
 
 	if err != nil {
@@ -138,11 +140,21 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 
 	ctx = identity.NewContext(req.Context(), auth)
 
+	// Create session.
+	session, err = p.getOrCreateSession(rw, req, ar, auth)
+	if err != nil {
+		goto done
+	}
+
 	authorizedScopes = auth.AuthorizedScopes()
 
 	// Create code when requested.
 	if _, ok := ar.ResponseTypes[oidc.ResponseTypeCode]; ok {
-		codeString, err = p.codeManager.Create(ar, auth)
+		codeString, err = p.codeManager.Create(&code.Record{
+			AuthenticationRequest: ar,
+			Auth:    auth,
+			Session: session,
+		})
 		if err != nil {
 			goto done
 		}
@@ -159,7 +171,7 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 	// Create ID token when requested and granted.
 	if authorizedScopes[oidc.ScopeOpenID] {
 		if _, ok := ar.ResponseTypes[oidc.ResponseTypeIDToken]; ok {
-			idTokenString, err = p.makeIDToken(ctx, ar, auth, accessTokenString, codeString)
+			idTokenString, err = p.makeIDToken(ctx, ar, auth, session, accessTokenString, codeString)
 			if err != nil {
 				goto done
 			}
@@ -237,6 +249,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	var found bool
 	var ar *payload.AuthenticationRequest
 	var auth identity.AuthRecord
+	var session *payload.Session
 	var accessTokenString string
 	var idTokenString string
 	var refreshTokenString string
@@ -278,11 +291,15 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 
 	switch tr.GrantType {
 	case oidc.GrantTypeAuthorizationCode:
-		ar, auth, found = p.codeManager.Pop(tr.Code)
-		if !found {
+		codeRecord, codeRecordFound := p.codeManager.Pop(tr.Code)
+		if !codeRecordFound {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "code not found")
 			goto done
 		}
+
+		ar = codeRecord.AuthenticationRequest
+		auth = codeRecord.Auth
+		session = codeRecord.Session
 
 		authorizedScopes = auth.AuthorizedScopes()
 
@@ -384,7 +401,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	case oidc.GrantTypeAuthorizationCode:
 		// Create ID token when not previously requested.
 		if !ar.ResponseTypes[oidc.ResponseTypeIDToken] {
-			idTokenString, err = p.makeIDToken(req.Context(), ar, auth, accessTokenString, "")
+			idTokenString, err = p.makeIDToken(req.Context(), ar, auth, session, accessTokenString, "")
 			if err != nil {
 				goto done
 			}

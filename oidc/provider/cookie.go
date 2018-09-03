@@ -49,3 +49,41 @@ func (p *Provider) removeBrowserStateCookie(rw http.ResponseWriter) error {
 
 	return nil
 }
+
+func (p *Provider) setSessionCookie(rw http.ResponseWriter, value string) error {
+	cookie := http.Cookie{
+		Name:  p.sessionCookieName,
+		Value: value,
+
+		Path:     p.sessionCookiePath,
+		Secure:   true,
+		HttpOnly: true,
+	}
+	http.SetCookie(rw, &cookie)
+
+	return nil
+}
+
+func (p *Provider) getSessionCookie(req *http.Request) (string, error) {
+	cookie, err := req.Cookie(p.sessionCookieName)
+	if err != nil {
+		return "", err
+	}
+
+	return cookie.Value, nil
+}
+
+func (p *Provider) removeSessionCookie(rw http.ResponseWriter) error {
+	cookie := http.Cookie{
+		Name: p.sessionCookieName,
+
+		Path:     p.sessionCookiePath,
+		Secure:   true,
+		HttpOnly: true,
+
+		Expires: farPastExpiryTime,
+	}
+	http.SetCookie(rw, &cookie)
+
+	return nil
+}

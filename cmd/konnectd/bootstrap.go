@@ -325,8 +325,12 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 		BrowserStateCookiePath: "/konnect/v1/session/",
 		BrowserStateCookieName: "__Secure-KKBS", // Kopano-Konnect-Browser-State
 
-		IdentityManager: bs.managers.identity,
-		CodeManager:     bs.managers.code,
+		SessionCookiePath: bs.authorizationEndpointURI.EscapedPath(),
+		SessionCookieName: "__Secure-KKCS", // Kopano-Konnect-Client-Session
+
+		IdentityManager:   bs.managers.identity,
+		CodeManager:       bs.managers.code,
+		EncryptionManager: bs.managers.encryption,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create provider: %v", err)

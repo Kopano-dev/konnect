@@ -20,6 +20,7 @@ package provider
 import (
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/identity"
+	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	"stash.kopano.io/kc/konnect/oidc/code"
 )
 
@@ -39,6 +40,10 @@ type Config struct {
 	BrowserStateCookiePath string
 	BrowserStateCookieName string
 
-	IdentityManager identity.Manager
-	CodeManager     code.Manager
+	SessionCookiePath string
+	SessionCookieName string
+
+	IdentityManager   identity.Manager
+	CodeManager       code.Manager
+	EncryptionManager *identityManagers.EncryptionManager
 }

@@ -51,6 +51,11 @@ const (
 	EmailVerifiedClaim = "email_verified"
 )
 
+// Additional claims as defined by OIDC extensions.
+const (
+	SessionIDClaim = "sid"
+)
+
 // IDTokenClaims define the claims found in OIDC ID Tokens.
 type IDTokenClaims struct {
 	jwt.StandardClaims
@@ -62,6 +67,8 @@ type IDTokenClaims struct {
 
 	*ProfileClaims
 	*EmailClaims
+
+	*SessionClaims
 }
 
 // Valid implements the jwt.Claims interface.
@@ -123,4 +130,10 @@ type UserInfoClaims struct {
 // Valid implements the jwt.Claims interface.
 func (c UserInfoClaims) Valid() error {
 	return nil
+}
+
+// SessionClaims define claims related to front end sessions, for example as
+// specified by https://openid.net/specs/openid-connect-frontchannel-1_0.html
+type SessionClaims struct {
+	SessionID string `json:"sid,omitempty"`
 }
