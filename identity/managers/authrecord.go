@@ -32,7 +32,7 @@ type authRecord struct {
 	authorizedScopes map[string]bool
 	claimsByScope    map[string]jwt.Claims
 
-	user     identity.User
+	user     identity.PublicUser
 	authTime time.Time
 }
 
@@ -91,12 +91,12 @@ func (r *authRecord) Claims(scopes ...string) []jwt.Claims {
 }
 
 // User implements the identity.AuthRecord interface.
-func (r *authRecord) User() identity.User {
+func (r *authRecord) User() identity.PublicUser {
 	return r.user
 }
 
 // SetUser implements the identity.AuthRecord interface.
-func (r *authRecord) SetUser(u identity.User) {
+func (r *authRecord) SetUser(u identity.PublicUser) {
 	r.user = u
 }
 

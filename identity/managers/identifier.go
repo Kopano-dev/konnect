@@ -49,6 +49,23 @@ type IdentifierIdentityManager struct {
 	logger     logrus.FieldLogger
 }
 
+type identifierUser struct {
+	*identifier.IdentifiedUser
+}
+
+func (u *identifierUser) Raw() string {
+	return u.IdentifiedUser.Subject()
+}
+
+func (u *identifierUser) Subject() string {
+	sub, _ := getPublicSubject([]byte(u.Raw()), []byte("identifier"))
+	return sub
+}
+
+func asIdentifierUser(user *identifier.IdentifiedUser) *identifierUser {
+	return &identifierUser{user}
+}
+
 // NewIdentifierIdentityManager creates a new IdentifierIdentityManager from the provided
 // parameters.
 func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier, clients *clients.Registry) *IdentifierIdentityManager {
@@ -77,13 +94,13 @@ func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier, 
 
 // Authenticate implements the identity.Manager interface.
 func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
-	var user *identifier.IdentifiedUser
+	var user *identifierUser
 	var err error
 
 	identifiedUser, _ := im.identifier.GetUserFromLogonCookie(ctx, req, ar.MaxAge)
 	if identifiedUser != nil {
 		// TODO(longsleep): Add other user meta data.
-		user = identifiedUser
+		user = asIdentifierUser(identifiedUser)
 	} else {
 		// Not signed in.
 		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
@@ -289,7 +306,7 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 }
 
 // ApproveScopes implements the Backend interface.
-func (im *IdentifierIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
+func (im *IdentifierIdentityManager) ApproveScopes(ctx context.Context, sub string, audience string, approvedScopes map[string]bool) (string, error) {
 	ref := rndm.GenerateRandomString(32)
 
 	// TODO(longsleep): Store generated ref with provided data.
@@ -297,7 +314,7 @@ func (im *IdentifierIdentityManager) ApproveScopes(ctx context.Context, userid s
 }
 
 // ApprovedScopes implements the Backend interface.
-func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error) {
+func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, sub string, audience string, ref string) (map[string]bool, error) {
 	if ref == "" {
 		return nil, fmt.Errorf("IdentifierIdentityManager: invalid ref")
 	}
@@ -306,25 +323,27 @@ func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, userid 
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *IdentifierIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
-	user, err := im.identifier.GetUserFromSubject(ctx, sub)
+func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+	identifiedUser, err := im.identifier.GetUserFromSubject(ctx, userID)
 	if err != nil {
 		im.logger.WithError(err).Errorln("IdentifierIdentityManager: identifier error")
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: identifier error")
 	}
 
-	if user == nil {
+	if identifiedUser == nil {
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: no user")
 	}
 
-	if user.Subject() != sub {
+	user := asIdentifierUser(identifiedUser)
+
+	if user.Raw() != userID {
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: wrong user")
 	}
 
 	authorizedScopes, _ := authorizeScopes(im, user, scopes)
 	claims := getUserClaimsForScopes(user, authorizedScopes)
 
-	auth := NewAuthRecord(im, sub, authorizedScopes, claims)
+	auth := NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil

@@ -97,7 +97,7 @@ func NewCookieIdentityManager(c *identity.Config, em *EncryptionManager, backend
 }
 
 type cookieUser struct {
-	sub   string
+	raw   string
 	name  string
 	email string
 
@@ -105,8 +105,13 @@ type cookieUser struct {
 	claims jwt.MapClaims
 }
 
+func (u *cookieUser) Raw() string {
+	return u.raw
+}
+
 func (u *cookieUser) Subject() string {
-	return u.sub
+	sub, _ := getPublicSubject([]byte(u.raw), []byte("cookie"))
+	return sub
 }
 
 func (u *cookieUser) Name() string {
@@ -197,9 +202,10 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 	claims["cookie.v"] = encryptedCookies
 	claims["cookie.al"] = headers.Get("Accept-Language")
 	claims["cookie.ua"] = headers.Get("User-Agent")
+	claims[konnect.IdentifiedUserIDClaim] = payload.Subject
 
 	user := &cookieUser{
-		sub:   payload.Subject,
+		raw:   payload.Subject,
 		email: payload.Email,
 		name:  payload.Name,
 
@@ -336,7 +342,7 @@ func (im *CookieIdentityManager) EndSession(ctx context.Context, rw http.Respons
 }
 
 // ApproveScopes implements the Backend interface.
-func (im *CookieIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
+func (im *CookieIdentityManager) ApproveScopes(ctx context.Context, sub string, audience string, approvedScopes map[string]bool) (string, error) {
 	ref := rndm.GenerateRandomString(32)
 
 	// TODO(longsleep): Store generated ref with provided data.
@@ -344,7 +350,7 @@ func (im *CookieIdentityManager) ApproveScopes(ctx context.Context, userid strin
 }
 
 // ApprovedScopes implements the Backend interface.
-func (im *CookieIdentityManager) ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error) {
+func (im *CookieIdentityManager) ApprovedScopes(ctx context.Context, sub string, audience string, ref string) (map[string]bool, error) {
 	if ref == "" {
 		return nil, fmt.Errorf("SimplePasswdBackend: invalid ref")
 	}
@@ -353,13 +359,13 @@ func (im *CookieIdentityManager) ApprovedScopes(ctx context.Context, userid stri
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
-	var user identity.User
+func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+	var user identity.PublicUser
 
 	// Try identty from context.
 	auth, _ := identity.FromContext(ctx)
 	if auth != nil {
-		if auth.Subject() != sub {
+		if auth.User().Raw() != userID {
 			return nil, false, fmt.Errorf("CookieIdentityManager: wrong user - this should not happen")
 		}
 
@@ -406,14 +412,14 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, sub string, scopes m
 		return nil, false, fmt.Errorf("CookieIdentityManager: no user")
 	}
 
-	if user.Subject() != sub {
+	if user.Raw() != userID {
 		return nil, false, fmt.Errorf("CookieIdentityManager: wrong user")
 	}
 
 	authorizedScopes, _ := authorizeScopes(im, user, scopes)
 	claims := getUserClaimsForScopes(user, authorizedScopes)
 
-	auth = NewAuthRecord(im, sub, authorizedScopes, claims)
+	auth = NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil

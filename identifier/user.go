@@ -105,6 +105,7 @@ func (u *IdentifiedUser) Username() string {
 // Claims returns extra claims of the accociated user.
 func (u *IdentifiedUser) Claims() jwt.MapClaims {
 	claims := make(jwt.MapClaims)
+	claims[konnect.IdentifiedUserIDClaim] = u.Subject()
 	claims[konnect.IdentifiedUsernameClaim] = u.Username()
 	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
 

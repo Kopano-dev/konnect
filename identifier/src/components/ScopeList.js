@@ -14,6 +14,7 @@ const scopesMap = {
   'konnect/id': 'basic',
   'konnect/uuid': 'basic',
   'konnect/hashed_sub': 'basic',
+  'konnect/raw_sub': 'basic',
 
   'kopano/gc': 'kopano/gc'
 };

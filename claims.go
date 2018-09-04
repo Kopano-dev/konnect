@@ -34,6 +34,7 @@ const (
 
 // Identifier claims used by Konnect.
 const (
+	IdentifiedUserIDClaim      = "kc.i.id"
 	IdentifiedUsernameClaim    = "kc.i.un"
 	IdentifiedDisplayNameClaim = "kc.i.dn"
 )

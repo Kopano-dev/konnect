@@ -43,7 +43,7 @@ var ldapSupportedScopes = []string{
 	oidc.ScopeProfile,
 	oidc.ScopeEmail,
 	konnect.ScopeUniqueUserID,
-	konnect.ScopeHashedSubject,
+	konnect.ScopeRawSubject,
 }
 
 // LDAPIdentifierBackend is a backend for the Identifier which connects LDAP.

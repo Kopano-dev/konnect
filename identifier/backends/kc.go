@@ -44,7 +44,7 @@ var kcSupportedScopes = []string{
 	oidc.ScopeProfile,
 	oidc.ScopeEmail,
 	konnect.ScopeID,
-	konnect.ScopeHashedSubject,
+	konnect.ScopeRawSubject,
 	kcDefinitions.ScopeKopanoGC,
 }
 

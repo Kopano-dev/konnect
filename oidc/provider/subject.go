@@ -1,13 +1,27 @@
+/*
+ * Copyright 2018 Kopano and its licensors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License, version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 package provider
 
 import (
-	"encoding/base64"
-
-	blake2b "github.com/minio/blake2b-simd"
+	"errors"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/oidc"
 )
 
 // PublicSubjectFromAuth creates the provideds auth Subject value with the
@@ -15,17 +29,15 @@ import (
 // identify the provided auth user with remote systems.
 func (p *Provider) PublicSubjectFromAuth(auth identity.AuthRecord) (string, error) {
 	authorizedScopes := auth.AuthorizedScopes()
-	if ok, _ := authorizedScopes[konnect.ScopeHashedSubject]; !ok {
-		// Return raw subject as is when not with ScopeHashedSubject.
-		return auth.Subject(), nil
+	if ok, _ := authorizedScopes[konnect.ScopeRawSubject]; ok {
+		// Return raw subject as is when with ScopeRawSubject.
+		user := auth.User()
+		if user == nil {
+			return "", errors.New("no user")
+		}
+
+		return user.Raw(), nil
 	}
 
-	// Hash the raw subject with a konnect specific salt.
-	hasher := blake2b.NewMAC(64, []byte(oidc.KonnectIDTokenSubjectSaltV1))
-	hasher.Write([]byte(auth.Subject()))
-
-	// NOTE(longsleep): URL safe encoding for subject is important since many
-	// third party applications validate this with rather strict patterns.
-	sub := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
-	return sub + "@konnect", nil
+	return auth.Subject(), nil
 }

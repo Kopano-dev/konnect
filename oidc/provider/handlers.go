@@ -339,6 +339,15 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 
 		ctx := konnect.NewClaimsContext(req.Context(), claims)
 
+		var userID string
+		if identityClaims := claims.IdentityClaims; identityClaims != nil {
+			userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
+		}
+		if userID == "" {
+			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, "missing data in kc.identity claim")
+			goto done
+		}
+
 		// Lookup Ref values from backend.
 		approvedScopes, err = p.identityManager.ApprovedScopes(ctx, claims.Subject, tr.ClientID, claims.Ref)
 		if err != nil {
@@ -370,7 +379,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Load user record from identitymanager, without any scopes.
-		auth, found, err = p.identityManager.Fetch(ctx, claims.StandardClaims.Subject, nil)
+		auth, found, err = p.identityManager.Fetch(ctx, userID, nil)
 		if !found {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "user not found")
 			goto done
@@ -485,12 +494,24 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 
 	var auth identity.AuthRecord
 	var found bool
-	auth, found, err = p.identityManager.Fetch(ctx, claims.StandardClaims.Subject, claims.AuthorizedScopes())
+
+	var userID string
+	if identityClaims := claims.IdentityClaims; identityClaims != nil {
+		userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
+	}
+	if userID == "" {
+		err = fmt.Errorf("missing data in kc.identity claim")
+		goto done
+	}
+
+	auth, found, err = p.identityManager.Fetch(ctx, userID, claims.AuthorizedScopes())
 	if !found {
 		p.logger.WithField("sub", claims.StandardClaims.Subject).Debugln("userinfo request user not found")
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")
 		return
 	}
+
+done:
 	if err != nil {
 		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request invalid token")
 		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error()))

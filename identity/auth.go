@@ -30,8 +30,8 @@ type AuthRecord interface {
 	AuthorizeScopes(map[string]bool)
 	Claims(...string) []jwt.Claims
 
-	User() User
-	SetUser(User)
+	User() PublicUser
+	SetUser(PublicUser)
 
 	LoggedOn() (bool, time.Time)
 	SetAuthTime(time.Time)

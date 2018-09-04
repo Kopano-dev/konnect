@@ -84,9 +84,14 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 	}
 
 	if accessTokenString == "" {
+		user := auth.User()
+		if user == nil {
+			return "", fmt.Errorf("no user")
+		}
+
 		// Include requested scope data in ID token when no access token is
 		// generated.
-		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, auth.Subject(), auth.AuthorizedScopes())
+		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, user.Raw(), auth.AuthorizedScopes())
 		if !found {
 			return "", fmt.Errorf("user not found")
 		}

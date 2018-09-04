@@ -70,3 +70,9 @@ type UserWithScopedClaims interface {
 	User
 	ScopedClaims(authorizedScopes map[string]bool) jwt.MapClaims
 }
+
+// PublicUser is a user with a public Subject and a raw id.
+type PublicUser interface {
+	Subject() string
+	Raw() string
+}

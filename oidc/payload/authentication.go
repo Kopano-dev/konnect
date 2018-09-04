@@ -241,6 +241,7 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 func (ar *AuthenticationRequest) Verify(userID string) error {
 	if ar.IDTokenHint != nil {
 		// Compare userID with IDTokenHint.
+		fmt.Println("xxx verify fail", userID, ar.IDTokenHint.Claims.(*oidc.IDTokenClaims).Subject)
 		if userID != ar.IDTokenHint.Claims.(*oidc.IDTokenClaims).Subject {
 			return ar.NewError(oidc.ErrorOIDCLoginRequired, "userid mismatch")
 		}

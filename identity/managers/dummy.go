@@ -23,9 +23,11 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"stash.kopano.io/kgol/rndm"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
@@ -55,15 +57,20 @@ func NewDummyIdentityManager(c *identity.Config, sub string) *DummyIdentityManag
 }
 
 type dummyUser struct {
-	sub string
+	raw string
+}
+
+func (u *dummyUser) Raw() string {
+	return u.raw
 }
 
 func (u *dummyUser) Subject() string {
-	return u.sub
+	sub, _ := getPublicSubject([]byte(u.raw), []byte("dummy"))
+	return sub
 }
 
 func (u *dummyUser) Email() string {
-	return fmt.Sprintf("%s@%s.local", u.sub, u.sub)
+	return fmt.Sprintf("%s@%s.local", u.raw, u.raw)
 }
 
 func (u *dummyUser) EmailVerified() bool {
@@ -71,18 +78,30 @@ func (u *dummyUser) EmailVerified() bool {
 }
 
 func (u *dummyUser) Name() string {
-	return fmt.Sprintf("Foo %s", strings.Title(u.sub))
+	return fmt.Sprintf("Foo %s", strings.Title(u.raw))
+}
+
+func (u *dummyUser) Claims() jwt.MapClaims {
+	claims := make(jwt.MapClaims)
+	claims[konnect.IdentifiedUserIDClaim] = u.raw
+
+	return claims
 }
 
 // Authenticate implements the identity.Manager interface.
 func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+	user := &dummyUser{im.sub}
+
 	// Check request.
-	err := ar.Verify(im.sub)
+	err := ar.Verify(user.Subject())
 	if err != nil {
 		return nil, err
 	}
 
-	return NewAuthRecord(im, im.sub, nil, nil), nil
+	auth := NewAuthRecord(im, user.Subject(), nil, nil)
+	auth.SetUser(user)
+
+	return auth, nil
 }
 
 // Authorize implements the identity.Manager interface.
@@ -130,7 +149,9 @@ func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 // EndSession implements the identity.Manager interface.
 func (im *DummyIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
-	err := esr.Verify(im.sub)
+	user := &dummyUser{im.sub}
+
+	err := esr.Verify(user.Subject())
 	if err != nil {
 		return err
 	}
@@ -139,7 +160,7 @@ func (im *DummyIdentityManager) EndSession(ctx context.Context, rw http.Response
 }
 
 // ApproveScopes implements the Backend interface.
-func (im *DummyIdentityManager) ApproveScopes(ctx context.Context, userid string, audience string, approvedScopes map[string]bool) (string, error) {
+func (im *DummyIdentityManager) ApproveScopes(ctx context.Context, sub string, audience string, approvedScopes map[string]bool) (string, error) {
 	ref := rndm.GenerateRandomString(32)
 
 	// TODO(longsleep): Store generated ref with provided data.
@@ -147,7 +168,7 @@ func (im *DummyIdentityManager) ApproveScopes(ctx context.Context, userid string
 }
 
 // ApprovedScopes implements the Backend interface.
-func (im *DummyIdentityManager) ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error) {
+func (im *DummyIdentityManager) ApprovedScopes(ctx context.Context, sub string, audience string, ref string) (map[string]bool, error) {
 	if ref == "" {
 		return nil, fmt.Errorf("SimplePasswdBackend: invalid ref")
 	}
@@ -156,8 +177,8 @@ func (im *DummyIdentityManager) ApprovedScopes(ctx context.Context, userid strin
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *DummyIdentityManager) Fetch(ctx context.Context, sub string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
-	if sub != im.sub {
+func (im *DummyIdentityManager) Fetch(ctx context.Context, userID string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+	if userID != im.sub {
 		return nil, false, fmt.Errorf("DummyIdentityManager: no user")
 	}
 
@@ -166,7 +187,7 @@ func (im *DummyIdentityManager) Fetch(ctx context.Context, sub string, scopes ma
 	authorizedScopes, _ := authorizeScopes(im, user, scopes)
 	claims := getUserClaimsForScopes(user, authorizedScopes)
 
-	return NewAuthRecord(im, sub, authorizedScopes, claims), true, nil
+	return NewAuthRecord(im, user.Subject(), authorizedScopes, claims), true, nil
 }
 
 // ScopesSupported implements the identity.Manager interface.

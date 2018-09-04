@@ -18,6 +18,10 @@
 package managers
 
 import (
+	"encoding/base64"
+
+	blake2b "github.com/minio/blake2b-simd"
+
 	"github.com/dgrijalva/jwt-go"
 
 	"stash.kopano.io/kc/konnect/identity"
@@ -115,4 +119,17 @@ func getUserClaimsForScopes(user identity.User, scopes map[string]bool) map[stri
 	}
 
 	return claims
+}
+
+func getPublicSubject(sub []byte, extra []byte) (string, error) {
+	// Hash the raw subject with a konnect specific salt.
+	hasher := blake2b.NewMAC(64, []byte(oidc.KonnectIDTokenSubjectSaltV1))
+	hasher.Write(sub)
+	hasher.Write([]byte(" "))
+	hasher.Write(extra)
+
+	// NOTE(longsleep): URL safe encoding for subject is important since many
+	// third party applications validate this with rather strict patterns.
+	s := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
+	return s + "@konnect", nil
 }

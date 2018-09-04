@@ -32,8 +32,8 @@ type Manager interface {
 	Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth AuthRecord) (AuthRecord, error)
 	EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error
 
-	ApproveScopes(ctx context.Context, userid string, audience string, approvedScopesList map[string]bool) (string, error)
-	ApprovedScopes(ctx context.Context, userid string, audience string, ref string) (map[string]bool, error)
+	ApproveScopes(ctx context.Context, sub string, audience string, approvedScopesList map[string]bool) (string, error)
+	ApprovedScopes(ctx context.Context, sub string, audience string, ref string) (map[string]bool, error)
 
 	Fetch(ctx context.Context, userID string, scopes map[string]bool) (AuthRecord, bool, error)
 
