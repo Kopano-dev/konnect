@@ -97,10 +97,10 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 	var user *identifierUser
 	var err error
 
-	identifiedUser, _ := im.identifier.GetUserFromLogonCookie(ctx, req, ar.MaxAge)
-	if identifiedUser != nil {
+	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, ar.MaxAge)
+	if u != nil {
 		// TODO(longsleep): Add other user meta data.
-		user = asIdentifierUser(identifiedUser)
+		user = asIdentifierUser(u)
 	} else {
 		// Not signed in.
 		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
@@ -149,7 +149,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 
 	auth := NewAuthRecord(im, user.Subject(), nil, nil)
 	auth.SetUser(user)
-	if loggedOn, logonAt := identifiedUser.LoggedOn(); loggedOn {
+	if loggedOn, logonAt := u.LoggedOn(); loggedOn {
 		auth.SetAuthTime(logonAt)
 	}
 
@@ -277,9 +277,21 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 		return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "id_token_hint does not match request")
 	}
 
-	identifiedUser, _ := im.identifier.GetUserFromLogonCookie(ctx, req, 0)
-	if identifiedUser != nil {
-		err = esr.Verify(identifiedUser.Subject())
+	var user *identifierUser
+	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, 0)
+	if u != nil {
+		user = asIdentifierUser(u)
+	} else {
+		// Ignore when not signed in, for end session.
+	}
+
+	// More checks.
+	if err == nil {
+		var sub string
+		if user != nil {
+			sub = user.Subject()
+		}
+		err = esr.Verify(sub)
 		if err != nil {
 			return err
 		}
