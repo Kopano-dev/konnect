@@ -17,6 +17,7 @@
 	proxy /konnect/v1/token 127.0.0.1:8777
 	proxy /konnect/v1/userinfo 127.0.0.1:8777
 	proxy /konnect/v1/static 127.0.0.1:8777
+	proxy /konnect/v1/session 127.0.0.1:8777
 
 	# konnect identifier development via webpack-dev-server
 	proxy /signin/v1/ 127.0.0.1:3001 {
