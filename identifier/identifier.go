@@ -18,8 +18,10 @@
 package identifier
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -29,6 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 	jose "gopkg.in/square/go-jose.v2"
 	jwt "gopkg.in/square/go-jose.v2/jwt"
+	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
@@ -45,6 +48,7 @@ type Identifier struct {
 	pathPrefix      string
 	staticFolder    string
 	logonCookieName string
+	webappIndexHTML []byte
 
 	authorizationEndpointURI *url.URL
 
@@ -62,8 +66,13 @@ type Identifier struct {
 // NewIdentifier returns a new Identifier.
 func NewIdentifier(c *Config) (*Identifier, error) {
 	staticFolder := c.StaticFolder
-	if _, err := os.Stat(staticFolder + "/index.html"); os.IsNotExist(err) {
+	webappIndexHTMLFilename := staticFolder + "/index.html"
+	if _, err := os.Stat(webappIndexHTMLFilename); os.IsNotExist(err) {
 		return nil, fmt.Errorf("identifier static client files: %v", err)
+	}
+	webappIndexHTML, err := ioutil.ReadFile(webappIndexHTMLFilename)
+	if err != nil {
+		return nil, fmt.Errorf("identifier failed to read client index.html: %v", err)
 	}
 
 	i := &Identifier{
@@ -72,6 +81,7 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		pathPrefix:      c.PathPrefix,
 		staticFolder:    staticFolder,
 		logonCookieName: c.LogonCookieName,
+		webappIndexHTML: webappIndexHTML,
 
 		authorizationEndpointURI: c.AuthorizationEndpointURI,
 
@@ -113,11 +123,18 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 // ServeHTTP implements the http.Handler interface.
 func (i *Identifier) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	addCommonResponseHeaders(rw.Header())
-	rw.Header().Set("Cache-Control", "no-cache, max-age=0, public")
-	rw.Header().Set("Content-Security-Policy", "object-src 'none'; script-src 'self'; base-uri 'none'; frame-ancestors 'none';")
 
-	req.URL.Path = "/" //NOTE(longsleep): Hack to make http.ServeFile not redirect for requests ending with /index.html.
-	http.ServeFile(rw, req, i.staticFolder+"/index.html")
+	nonce := rndm.GenerateRandomString(32)
+
+	rw.Header().Set("Cache-Control", "no-cache, max-age=0, public")
+	// FIXME(longsleep): Set a secure CSP. Right now we need `data:` for images
+	// since it is used. Since `data:` URLs possibly could allow xss, a better
+	// way should be found for our early loading inline SVG stuff.
+	rw.Header().Set("Content-Security-Policy", fmt.Sprintf("default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'nonce-%s'; base-uri 'none'; frame-ancestors 'none';", nonce))
+
+	// Inject random nonce.
+	index := bytes.Replace(i.webappIndexHTML, []byte("__CSP_NONCE__"), []byte(nonce), 1)
+	rw.Write(index)
 }
 
 // SetKey sets the provided key for the accociated identifier.

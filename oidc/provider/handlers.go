@@ -683,7 +683,7 @@ done:
 func (p *Provider) CheckSessionIframeHandler(rw http.ResponseWriter, req *http.Request) {
 	addResponseHeaders(rw.Header())
 
-	nonce := rndm.GenerateRandomString(64)
+	nonce := rndm.GenerateRandomString(32)
 
 	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 	rw.Header().Set("X-XSS-Protection", "1; mode=block")
