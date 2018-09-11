@@ -59,16 +59,22 @@ type UserWithUsername interface {
 	Username() string
 }
 
-// UserWithClaims is A User with jwt claims.
+// UserWithClaims is a User with jwt claims.
 type UserWithClaims interface {
 	User
 	Claims() jwt.MapClaims
 }
 
-// UserWithScopedClaims is A user with jwt claims bound to provided scopes.
+// UserWithScopedClaims is a user with jwt claims bound to provided scopes.
 type UserWithScopedClaims interface {
 	User
 	ScopedClaims(authorizedScopes map[string]bool) jwt.MapClaims
+}
+
+// UserWithSessionRef is a user which supports an underlaying session reference.
+type UserWithSessionRef interface {
+	User
+	SessionRef() *string
 }
 
 // PublicUser is a user with a public Subject and a raw id.

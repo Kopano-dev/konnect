@@ -223,11 +223,18 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 
 // UnsetLogonCookie adds cookie remove headers to the provided http.ResponseWriter
 // effectively implementing logout.
-func (i *Identifier) UnsetLogonCookie(ctx context.Context, rw http.ResponseWriter) error {
+func (i *Identifier) UnsetLogonCookie(ctx context.Context, user *IdentifiedUser, rw http.ResponseWriter) error {
 	// Remove cookie.
 	err := i.removeLogonCookie(rw)
 	if err != nil {
 		return err
+	}
+	// Destroy session.
+	if user != nil {
+		err = i.backend.DestroySession(ctx, user.sessionRef)
+		if err != nil {
+			i.logger.WithError(err).Warnln("failed to destroy session on unset logon cookie")
+		}
 	}
 	// Trigger callbacks.
 	for _, f := range i.onUnsetLogonCallbacks {
@@ -243,7 +250,7 @@ func (i *Identifier) UnsetLogonCookie(ctx context.Context, rw http.ResponseWrite
 // GetUserFromLogonCookie looks up the associated cookie name from the provided
 // request, parses it and returns the user containing the information found in
 // the coookie payload data.
-func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Request, maxAge time.Duration) (*IdentifiedUser, error) {
+func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Request, maxAge time.Duration, refreshSession bool) (*IdentifiedUser, error) {
 	cookie, err := i.getLogonCookie(req)
 	if err != nil {
 		if err == http.ErrNoCookie {
@@ -293,6 +300,19 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		}
 	}
 
+	if v, _ := userClaims[konnect.IdentifiedSessionRefClaim]; v != nil {
+		sessionRef := v.(string)
+		user.sessionRef = &sessionRef
+
+		// Ensure the session is still valid, by refreshing it.
+		if refreshSession {
+			err = i.backend.RefreshSession(ctx, user.sessionRef)
+			if err != nil {
+				// Ignore logons which fail session refresh.
+				return nil, nil
+			}
+		}
+	}
 	if v, _ := userClaims[konnect.IdentifiedUsernameClaim]; v != nil {
 		user.username = v.(string)
 	}
@@ -303,10 +323,10 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	return user, nil
 }
 
-// GetUserFromSubject looks up the user identified by the provided subject by
+// GetUserFromID looks up the user identified by the provided subject by
 // requesting the associated backend.
-func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*IdentifiedUser, error) {
-	user, err := i.backend.GetUser(ctx, sub)
+func (i *Identifier) GetUserFromID(ctx context.Context, sub string, sessionRef *string) (*IdentifiedUser, error) {
+	user, err := i.backend.GetUser(ctx, sub, sessionRef)
 	if err != nil {
 		return nil, err
 	}
@@ -317,6 +337,8 @@ func (i *Identifier) GetUserFromSubject(ctx context.Context, sub string) (*Ident
 		sub: user.Subject(),
 
 		backend: i.backend,
+
+		sessionRef: sessionRef,
 	}
 	if userWithEmail, ok := user.(identity.UserWithEmail); ok {
 		identifiedUser.email = userWithEmail.Email()

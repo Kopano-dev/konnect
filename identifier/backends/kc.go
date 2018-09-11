@@ -21,18 +21,20 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/orcaman/concurrent-map"
+	"github.com/sirupsen/logrus"
+	kcc "stash.kopano.io/kgol/kcc-go"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/config"
 	kcDefinitions "stash.kopano.io/kc/konnect/identifier/backends/kc"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
-
-	"github.com/sirupsen/logrus"
-	kcc "stash.kopano.io/kgol/kcc-go"
 )
 
 const (
@@ -61,12 +63,16 @@ var (
 // KCIdentifierBackend is a backend for the Identifier which connects to
 // Kopano Core via kcc-go.
 type KCIdentifierBackend struct {
+	ctx context.Context
+
 	c        *kcc.KCC
 	username string
 	password string
 
-	session      *kcc.Session
-	sessionMutex sync.RWMutex
+	globalSession      *kcc.Session
+	globalSessionMutex sync.RWMutex
+	useGlobalSession   bool
+	sessions           cmap.ConcurrentMap
 
 	logger logrus.FieldLogger
 }
@@ -131,16 +137,19 @@ func (u *kcUser) splitFullName() [2]string {
 // NewKCIdentifierBackend creates a new KCIdentifierBackend with the provided
 // parameters.
 func NewKCIdentifierBackend(c *config.Config, client *kcc.KCC, username string, password string) (*KCIdentifierBackend, error) {
-	if username == "" {
-		username = KCServerDefaultUsername
-	}
-
 	b := &KCIdentifierBackend{
-		c:        client,
-		username: username,
-		password: password,
+		c: client,
 
 		logger: c.Logger,
+
+		sessions: cmap.New(),
+	}
+
+	// Store credentials if given.
+	if username != "" {
+		b.username = username
+		b.password = password
+		b.useGlobalSession = true
 	}
 
 	b.logger.WithField("client", b.c.String()).Infoln("kc server identifier backend connection set up")
@@ -152,7 +161,10 @@ func NewKCIdentifierBackend(c *config.Config, client *kcc.KCC, username string, 
 // a session to the accociated Kopano Core client. This session is auto renewed
 // and auto rerestablished and is bound to the provided Context.
 func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
-	if b.username != "" {
+	b.ctx = ctx
+
+	// Helper to keep dedicated session running.
+	if b.useGlobalSession {
 		b.logger.WithField("username", b.username).Infoln("kc server identifier session enabled")
 
 		go func() {
@@ -160,14 +172,14 @@ func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
 			retry.Stop()
 			refreshCh := make(chan bool, 1)
 			for {
-				b.setSession(nil)
+				b.setGlobalSession(nil)
 				session, sessionErr := kcc.NewSession(ctx, b.c, b.username, b.password)
 				if sessionErr != nil {
 					b.logger.WithError(sessionErr).Errorln("failed to create kc server session")
 					retry.Reset(5 * time.Second)
 				} else {
 					b.logger.Debugf("kc server identifier session established: %v", session)
-					b.setSession(session)
+					b.setGlobalSession(session)
 					go func() {
 						<-session.Context().Done()
 						b.logger.Debugf("kc server identifier session has ended: %v", session)
@@ -181,49 +193,107 @@ func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
 				case <-retry.C:
 					// will retry instantly.
 				case <-ctx.Done():
-					// give up.
+					// exit.
 					return
 				}
 			}
 		}()
 	}
 
+	// Helper to clean out old session data from memory.
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				expired := make([]string, 0)
+				for entry := range b.sessions.IterBuffered() {
+					session := entry.Val.(*kcc.Session)
+					if !session.IsActive() {
+						expired = append(expired, entry.Key)
+					}
+				}
+				for _, ref := range expired {
+					b.sessions.Remove(ref)
+				}
+			case <-ctx.Done():
+				// exit.
+				return
+			}
+		}
+	}()
+
 	return nil
 }
 
 // Logon implements the Backend interface, enabling Logon with user name and
 // password as provided. Requests are bound to the provided context.
-func (b *KCIdentifierBackend) Logon(ctx context.Context, username, password string) (bool, *string, error) {
+func (b *KCIdentifierBackend) Logon(ctx context.Context, username, password string) (bool, *string, *string, error) {
 	var logonFlags kcc.KCFlag
-	logonFlags |= kcc.KOPANO_LOGON_NO_REGISTER_SESSION | kcc.KOPANO_LOGON_NO_UID_AUTH
+	logonFlags |= kcc.KOPANO_LOGON_NO_UID_AUTH
 
 	response, err := b.c.Logon(ctx, username, password, logonFlags)
 	if err != nil {
-		return false, nil, fmt.Errorf("kc identifier backend logon error: %v", err)
+		return false, nil, nil, fmt.Errorf("kc identifier backend logon error: %v", err)
 	}
 
 	switch response.Er {
 	case kcc.KCSuccess:
+		// Session
+		var session *kcc.Session
+		var sessionRef string
+		if response.SessionID != kcc.KCNoSessionID {
+			sessionRef = response.SessionID.String() + "@" + response.ServerGUID
+			if s, ok := b.sessions.Get(sessionRef); ok {
+				session = s.(*kcc.Session)
+				err = session.Refresh()
+				if err != nil {
+					return false, nil, nil, fmt.Errorf("kc identifier backend logon session error: %v", err)
+				}
+			} else {
+				session, err = kcc.CreateSession(b.ctx, b.c, response.SessionID, response.ServerGUID, true)
+				if err != nil {
+					return false, nil, nil, fmt.Errorf("kc identifier backend logon session error: %v", err)
+				}
+			}
+		} else {
+			return false, nil, nil, fmt.Errorf("kc identifier backend logon missing session")
+		}
+
 		// Resolve user details.
 		// TODO(longsleep): Avoid extra resolve when logon response already
 		// includes the required data (TODO in core).
-		resolve, err := b.resolveUsername(ctx, username)
+		resolve, err := b.resolveUsername(ctx, username, session)
 		if err != nil {
-			return false, nil, fmt.Errorf("kc identifier backend logon resolve error: %v", err)
+			return false, nil, nil, fmt.Errorf("kc identifier backend logon resolve error: %v", err)
 		}
-		return true, &resolve.UserEntryID, nil
+
+		b.sessions.SetIfAbsent(sessionRef, session)
+		b.logger.WithFields(logrus.Fields{
+			"session":  session,
+			"username": username,
+			"id":       resolve.UserEntryID,
+		}).Debugln("kc identifier backend logon")
+
+		return true, &resolve.UserEntryID, &sessionRef, nil
 
 	case kcc.KCERR_LOGON_FAILED:
-		return false, nil, nil
+		return false, nil, nil, nil
 	}
 
-	return false, nil, fmt.Errorf("kc identifier backend logon failed: %v", response.Er)
+	return false, nil, nil, fmt.Errorf("kc identifier backend logon failed: %v", response.Er)
 }
 
 // ResolveUser implements the Beckend interface, providing lookup for user by
 // providing the username. Requests are bound to the provided context.
-func (b *KCIdentifierBackend) ResolveUser(ctx context.Context, username string) (identity.UserWithUsername, error) {
-	response, err := b.resolveUsername(ctx, username)
+func (b *KCIdentifierBackend) ResolveUser(ctx context.Context, username string, sessionRef *string) (identity.UserWithUsername, error) {
+	session, err := b.getSessionFromRef(ctx, sessionRef, true, true, false)
+	if err != nil {
+		return nil, fmt.Errorf("kc identifier backend resolve session error: %v", err)
+	}
+
+	response, err := b.resolveUsername(ctx, username, session)
 	if err != nil {
 		return nil, fmt.Errorf("kc identifier backend resolve user error: %v", err)
 	}
@@ -250,8 +320,13 @@ func (b *KCIdentifierBackend) ResolveUser(ctx context.Context, username string) 
 // GetUser implements the Backend interface, providing user meta data retrieval
 // for the user specified by the userID. Requests are bound to the provided
 // context.
-func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string) (identity.User, error) {
-	response, err := b.getUser(ctx, userID)
+func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string, sessionRef *string) (identity.User, error) {
+	session, err := b.getSessionFromRef(ctx, sessionRef, true, true, false)
+	if err != nil {
+		return nil, fmt.Errorf("kc identifier backend resolve session error: %v", err)
+	}
+
+	response, err := b.getUser(ctx, userID, session)
 	if err != nil {
 		return nil, fmt.Errorf("kc identifier backend get user error: %v", err)
 	}
@@ -274,6 +349,22 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string) (ident
 	return nil, fmt.Errorf("kc identifier backend get user failed: %v", response.Er)
 }
 
+// RefreshSession implements the Backend interface providing refresh to KC session.
+func (b *KCIdentifierBackend) RefreshSession(ctx context.Context, sessionRef *string) error {
+	_, err := b.getSessionFromRef(ctx, sessionRef, true, true, false)
+	return err
+}
+
+// DestroySession implements the Backend interface providing destroy to KC session.
+func (b *KCIdentifierBackend) DestroySession(ctx context.Context, sessionRef *string) error {
+	session, err := b.getSessionFromRef(ctx, sessionRef, false, false, true)
+	if err != nil {
+		return err
+	}
+
+	return session.Destroy(ctx, true)
+}
+
 // UserClaims implements the Backend interface, providing user specific claims
 // for the user specified by the userID.
 func (b *KCIdentifierBackend) UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{} {
@@ -294,8 +385,8 @@ func (b *KCIdentifierBackend) ScopesSupported() []string {
 	return kcSupportedScopes
 }
 
-func (b *KCIdentifierBackend) resolveUsername(ctx context.Context, username string) (*kcc.ResolveUserResponse, error) {
-	result, err := b.withSessionAndRetry(ctx, func(ctx context.Context, session *kcc.Session) (interface{}, error, bool) {
+func (b *KCIdentifierBackend) resolveUsername(ctx context.Context, username string, session *kcc.Session) (*kcc.ResolveUserResponse, error) {
+	result, err := b.withSessionAndRetry(ctx, session, func(ctx context.Context, session *kcc.Session) (interface{}, error, bool) {
 		user, err := b.c.ResolveUsername(ctx, username, session.ID())
 		if err != nil {
 			return nil, err, true
@@ -315,8 +406,8 @@ func (b *KCIdentifierBackend) resolveUsername(ctx context.Context, username stri
 	return user, err
 }
 
-func (b *KCIdentifierBackend) getUser(ctx context.Context, userEntryID string) (*kcc.GetUserResponse, error) {
-	result, err := b.withSessionAndRetry(ctx, func(ctx context.Context, session *kcc.Session) (interface{}, error, bool) {
+func (b *KCIdentifierBackend) getUser(ctx context.Context, userEntryID string, session *kcc.Session) (*kcc.GetUserResponse, error) {
+	result, err := b.withSessionAndRetry(ctx, session, func(ctx context.Context, session *kcc.Session) (interface{}, error, bool) {
 		user, err := b.c.GetUser(ctx, userEntryID, session.ID())
 		if err != nil {
 			return nil, err, true
@@ -336,11 +427,72 @@ func (b *KCIdentifierBackend) getUser(ctx context.Context, userEntryID string) (
 	return user, err
 }
 
-func (b *KCIdentifierBackend) withSessionAndRetry(ctx context.Context, worker func(context.Context, *kcc.Session) (interface{}, error, bool)) (interface{}, error) {
+func (b *KCIdentifierBackend) getSessionFromRef(ctx context.Context, sessionRef *string, register bool, refresh bool, removeIfRegistered bool) (*kcc.Session, error) {
+	if b.useGlobalSession {
+		return nil, nil
+	}
+	if sessionRef == nil {
+		return nil, nil
+	}
+
+	var session *kcc.Session
+	if s, ok := b.sessions.Get(*sessionRef); ok {
+		// Existing session.
+		session = s.(*kcc.Session)
+		if refresh {
+			// Refresh when requested to ensure it is still valid.
+			err := session.Refresh()
+			if err != nil {
+				return nil, err
+			}
+		}
+		if removeIfRegistered {
+			b.sessions.Remove(*sessionRef)
+		}
+		return session, nil
+	}
+
+	// Recreate session from ref.
+	sessionRefParts := strings.SplitN(*sessionRef, "@", 2)
+	if len(sessionRefParts) != 2 || sessionRefParts[0] == "" || sessionRefParts[1] == "" {
+		return nil, fmt.Errorf("invalid session ref")
+	}
+	sessionID, err := strconv.ParseUint(sessionRefParts[0], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid session ref: %v", err)
+	}
+	session, err = kcc.CreateSession(b.ctx, b.c, kcc.KCSessionID(sessionID), sessionRefParts[1], true)
+	if err != nil {
+		return nil, err
+	}
+	if register {
+		if ok := b.sessions.SetIfAbsent(*sessionRef, session); ok {
+			b.logger.WithFields(logrus.Fields{
+				"session": session,
+			}).Debugln("kc identifier session register from ref")
+		}
+	}
+
+	if refresh {
+		// Refresh directly when requested.
+		err = session.Refresh()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return session, nil
+}
+
+func (b *KCIdentifierBackend) withSessionAndRetry(ctx context.Context, session *kcc.Session, worker func(context.Context, *kcc.Session) (interface{}, error, bool)) (interface{}, error) {
 	retries := 0
 	for {
-		session := b.getSession()
+		if session == nil {
+			// Maybe we have a global session to use?
+			session = b.getGlobalSession()
+		}
 		if session == nil || !session.IsActive() {
+			// So no session eh?
 			return nil, fmt.Errorf("no server session")
 		}
 
@@ -397,15 +549,15 @@ func (b *KCIdentifierBackend) withSessionAndRetry(ctx context.Context, worker fu
 	}
 }
 
-func (b *KCIdentifierBackend) setSession(session *kcc.Session) {
-	b.sessionMutex.Lock()
-	b.session = session
-	b.sessionMutex.Unlock()
+func (b *KCIdentifierBackend) setGlobalSession(session *kcc.Session) {
+	b.globalSessionMutex.Lock()
+	b.globalSession = session
+	b.globalSessionMutex.Unlock()
 }
 
-func (b *KCIdentifierBackend) getSession() *kcc.Session {
-	b.sessionMutex.RLock()
-	session := b.session
-	b.sessionMutex.RUnlock()
+func (b *KCIdentifierBackend) getGlobalSession() *kcc.Session {
+	b.globalSessionMutex.RLock()
+	session := b.globalSession
+	b.globalSessionMutex.RUnlock()
 	return session
 }

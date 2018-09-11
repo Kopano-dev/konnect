@@ -97,7 +97,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 	var user *identifierUser
 	var err error
 
-	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, ar.MaxAge)
+	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, ar.MaxAge, true)
 	if u != nil {
 		// TODO(longsleep): Add other user meta data.
 		user = asIdentifierUser(u)
@@ -278,7 +278,7 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 	}
 
 	var user *identifierUser
-	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, 0)
+	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, 0, false)
 	if u != nil {
 		user = asIdentifierUser(u)
 	} else {
@@ -299,7 +299,7 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 
 	if clientDetails.Trusted {
 		// Directly clear identifier session when a trusted client requests it.
-		err = im.identifier.UnsetLogonCookie(ctx, rw)
+		err = im.identifier.UnsetLogonCookie(ctx, u, rw)
 		if err != nil {
 			im.logger.WithError(err).Errorln("IdentifierIdentityManager: failed to unset logon cookie")
 			return err
@@ -335,8 +335,8 @@ func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, sub str
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
-	identifiedUser, err := im.identifier.GetUserFromSubject(ctx, userID)
+func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+	identifiedUser, err := im.identifier.GetUserFromID(ctx, userID, sessionRef)
 	if err != nil {
 		im.logger.WithError(err).Errorln("IdentifierIdentityManager: identifier error")
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: identifier error")

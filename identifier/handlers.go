@@ -162,7 +162,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		if paramSize >= 3 && params[1] == "" && params[2] == ModeLogonUsernameEmptyPasswordCookie {
 			// Special mode to allow when same user is logged in via cookie. This
 			// is used in the select account page logon flow with empty password.
-			identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req, 0)
+			identifiedUser, cookieErr := i.GetUserFromLogonCookie(req.Context(), req, 0, true)
 			if cookieErr != nil {
 				i.logger.WithError(cookieErr).Debugln("identifier failed to decode logon cookie in logon request")
 			}
@@ -187,7 +187,8 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 				forwardedUser := req.Header.Get("X-Forwarded-User")
 				if forwardedUser != "" {
 					if forwardedUser == params[0] {
-						resolvedUser, resolveErr := i.resolveUser(req.Context(), params[0])
+						// NOTE(longsleep): No support for sessionRef in forward mode.
+						resolvedUser, resolveErr := i.resolveUser(req.Context(), params[0], nil)
 						if resolveErr != nil {
 							i.logger.WithError(resolveErr).Errorln("identifier failed to resolve user with backend")
 							i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
@@ -214,7 +215,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		switch params[2] {
 		case ModeLogonUsernamePassword:
 			// Username and password validation mode.
-			success, subject, logonErr := i.backend.Logon(req.Context(), params[0], params[1])
+			success, subject, sessionRef, logonErr := i.backend.Logon(req.Context(), params[0], params[1])
 			if logonErr != nil {
 				i.logger.WithError(logonErr).Errorln("identifier failed to logon with backend")
 				i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to logon")
@@ -228,6 +229,8 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 					backend: i.backend,
 
 					username: params[0],
+
+					sessionRef: sessionRef,
 				}
 			}
 
@@ -299,7 +302,12 @@ func (i *Identifier) handleLogoff(rw http.ResponseWriter, req *http.Request) {
 
 	addNoCacheResponseHeaders(rw.Header())
 
-	err = i.UnsetLogonCookie(req.Context(), rw)
+	ctx := req.Context()
+	u, err := i.GetUserFromLogonCookie(ctx, req, 0, false)
+	if err != nil {
+		i.logger.WithError(err).Warnln("identifier logoff failed to get logon from ticket")
+	}
+	err = i.UnsetLogonCookie(ctx, u, rw)
 	if err != nil {
 		i.logger.WithError(err).Errorln("identifier failed to set logoff ticket")
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to set logoff ticket")
@@ -425,7 +433,7 @@ handleHelloLoop:
 
 		if identifiedUser == nil {
 			// Check if logged in via cookie.
-			identifiedUser, err = i.GetUserFromLogonCookie(req.Context(), req, r.MaxAge)
+			identifiedUser, err = i.GetUserFromLogonCookie(req.Context(), req, r.MaxAge, true)
 			if err != nil {
 				i.logger.WithError(err).Debugln("identifier failed to decode logon cookie in hello")
 			}

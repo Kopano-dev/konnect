@@ -28,9 +28,12 @@ import (
 type Backend interface {
 	RunWithContext(context.Context) error
 
-	Logon(ctx context.Context, username string, password string) (success bool, userID *string, err error)
-	ResolveUser(ctx context.Context, username string) (user identity.UserWithUsername, err error)
-	GetUser(ctx context.Context, userID string) (user identity.User, err error)
+	Logon(ctx context.Context, username string, password string) (success bool, userID *string, sessionRef *string, err error)
+	ResolveUser(ctx context.Context, username string, sessionRef *string) (user identity.UserWithUsername, err error)
+	GetUser(ctx context.Context, userID string, sessionRef *string) (user identity.User, err error)
+
+	RefreshSession(ctx context.Context, sessionRef *string) error
+	DestroySession(ctx context.Context, sessionRef *string) error
 
 	UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{}
 	ScopesSupported() []string

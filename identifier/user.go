@@ -44,6 +44,8 @@ type IdentifiedUser struct {
 	id  int64
 	uid string
 
+	sessionRef *string
+
 	logonAt time.Time
 }
 
@@ -108,6 +110,9 @@ func (u *IdentifiedUser) Claims() jwt.MapClaims {
 	claims[konnect.IdentifiedUserIDClaim] = u.Subject()
 	claims[konnect.IdentifiedUsernameClaim] = u.Username()
 	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
+	if u.sessionRef != nil {
+		claims[konnect.IdentifiedSessionRefClaim] = *u.sessionRef
+	}
 
 	return claims
 }
@@ -127,8 +132,13 @@ func (u *IdentifiedUser) LoggedOn() (bool, time.Time) {
 	return !u.logonAt.IsZero(), u.logonAt
 }
 
-func (i *Identifier) resolveUser(ctx context.Context, username string) (*IdentifiedUser, error) {
-	u, err := i.backend.ResolveUser(ctx, username)
+// SessionRef returns the accociated users underlaying session reference.
+func (u *IdentifiedUser) SessionRef() *string {
+	return u.sessionRef
+}
+
+func (i *Identifier) resolveUser(ctx context.Context, username string, sessionRef *string) (*IdentifiedUser, error) {
+	u, err := i.backend.ResolveUser(ctx, username, sessionRef)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +156,7 @@ func (i *Identifier) resolveUser(ctx context.Context, username string) (*Identif
 }
 
 func (i *Identifier) updateUser(ctx context.Context, user *IdentifiedUser) error {
-	u, err := i.backend.GetUser(ctx, user.Subject())
+	u, err := i.backend.GetUser(ctx, user.Subject(), user.sessionRef)
 	if err != nil {
 		return err
 	}

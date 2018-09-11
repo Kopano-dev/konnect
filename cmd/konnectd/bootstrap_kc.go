@@ -27,6 +27,7 @@ import (
 	identifierBackends "stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	"stash.kopano.io/kc/konnect/version"
 )
 
 func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
@@ -50,9 +51,11 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		bs.signedOutURI.Path = "/signin/v1/goodbye"
 	}
 
+	kopanoStorageServerClient := kcc.NewKCC(nil)
+	kopanoStorageServerClient.SetClientApp("konnect", version.Version)
 	identifierBackend, identifierErr := identifierBackends.NewKCIdentifierBackend(
 		bs.cfg,
-		kcc.NewKCC(nil),
+		kopanoStorageServerClient,
 		os.Getenv("KOPANO_SERVER_USERNAME"),
 		os.Getenv("KOPANO_SERVER_PASSWORD"),
 	)

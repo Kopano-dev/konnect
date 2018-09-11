@@ -1,5 +1,5 @@
-hash: 61567f6c86248301c0f1b0d79e1a8084bdcbd5942040236ddc69c7771a5bb6d1
-updated: 2018-05-25T13:43:32.195796808+02:00
+hash: 9e4de3f1da341dab5ce1808d183ab953a37a96be2c75fc95a690de779abec0a5
+updated: 2018-09-11T23:05:39.242515791+02:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: 06ea1031745cb8b3dab3f6a236daf2b0aa468b7e
@@ -35,7 +35,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 202f25545ea4cf9b191ff7f846df5d87c9382c2b
 - name: github.com/spf13/cobra
-  version: 99b5d838ca16c25cc4944e323684f8415e8b10ba
+  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: golang.org/x/crypto
@@ -71,7 +71,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
 - name: stash.kopano.io/kgol/kcc-go
-  version: 369761c853f272177453d59e528750daf4f6c46d
+  version: 1d769321b4f2f4eef014c90d336a29b3bc9d3430
 - name: stash.kopano.io/kgol/rndm
   version: 69ff9c69d5ce12d2fb19a552eab58ad657a5e8b2
 testImports: []

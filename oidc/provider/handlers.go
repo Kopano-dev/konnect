@@ -340,8 +340,12 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		ctx := konnect.NewClaimsContext(req.Context(), claims)
 
 		var userID string
+		var sessionRef *string
 		if identityClaims := claims.IdentityClaims; identityClaims != nil {
 			userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
+			if s, _ := identityClaims[konnect.IdentifiedSessionRefClaim].(string); s != "" {
+				sessionRef = &s
+			}
 		}
 		if userID == "" {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, "missing data in kc.identity claim")
@@ -379,7 +383,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Load user record from identitymanager, without any scopes.
-		auth, found, err = p.identityManager.Fetch(ctx, userID, nil)
+		auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, nil)
 		if !found {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "user not found")
 			goto done
@@ -496,15 +500,19 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	var found bool
 
 	var userID string
+	var sessionRef *string
 	if identityClaims := claims.IdentityClaims; identityClaims != nil {
 		userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
+		if s, _ := identityClaims[konnect.IdentifiedSessionRefClaim].(string); s != "" {
+			sessionRef = &s
+		}
 	}
 	if userID == "" {
 		err = fmt.Errorf("missing data in kc.identity claim")
 		goto done
 	}
 
-	auth, found, err = p.identityManager.Fetch(ctx, userID, claims.AuthorizedScopes())
+	auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, claims.AuthorizedScopes())
 	if !found {
 		p.logger.WithField("sub", claims.StandardClaims.Subject).Debugln("userinfo request user not found")
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")
