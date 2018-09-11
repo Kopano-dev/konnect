@@ -71,7 +71,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			Issuer:    p.issuerIdentifier,
 			Subject:   publicSubject,
 			Audience:  ar.ClientID,
-			ExpiresAt: time.Now().Add(time.Hour).Unix(), // 1 Hour, must be consumed by then.
+			ExpiresAt: time.Now().Add(p.idTokenDuration).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
@@ -195,7 +195,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 			Issuer:    p.issuerIdentifier,
 			Subject:   auth.Subject(),
 			Audience:  audience,
-			ExpiresAt: time.Now().Add(time.Hour * 24 * 365 * 3).Unix(), // 3 Years.
+			ExpiresAt: time.Now().Add(p.refreshTokenDuration).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 	}

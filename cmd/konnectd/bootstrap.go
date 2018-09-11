@@ -73,6 +73,8 @@ type bootstrap struct {
 	signers          map[string]crypto.Signer
 	validators       map[string]crypto.PublicKey
 
+	accessTokenDurationSeconds uint64
+
 	cfg      *config.Config
 	managers *managers
 }
@@ -244,6 +246,8 @@ func (bs *bootstrap) initialize() error {
 		TLSClientConfig:       bs.tlsClientConfig,
 	}
 
+	bs.accessTokenDurationSeconds = 10 * 60 // 10 Minutes.
+
 	return nil
 }
 
@@ -327,6 +331,10 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 
 		SessionCookiePath: bs.authorizationEndpointURI.EscapedPath(),
 		SessionCookieName: "__Secure-KKCS", // Kopano-Konnect-Client-Session
+
+		AccessTokenDuration:  time.Duration(bs.accessTokenDurationSeconds) * time.Second,
+		IDTokenDuration:      1 * time.Hour,            // 1 Hour, must be consumed by then.
+		RefreshTokenDuration: 24 * 365 * 3 * time.Hour, // 3 Years.
 
 		IdentityManager:   bs.managers.identity,
 		CodeManager:       bs.managers.code,

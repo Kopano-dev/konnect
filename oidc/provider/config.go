@@ -18,6 +18,8 @@
 package provider
 
 import (
+	"time"
+
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
@@ -42,6 +44,10 @@ type Config struct {
 
 	SessionCookiePath string
 	SessionCookieName string
+
+	AccessTokenDuration  time.Duration
+	IDTokenDuration      time.Duration
+	RefreshTokenDuration time.Duration
 
 	IdentityManager   identity.Manager
 	CodeManager       code.Manager

@@ -20,6 +20,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	kcc "stash.kopano.io/kgol/kcc-go"
 
@@ -51,13 +53,38 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		bs.signedOutURI.Path = "/signin/v1/goodbye"
 	}
 
+	useGlobalSession := false
+	globalSessionUsername := os.Getenv("KOPANO_SERVER_USERNAME")
+	globalSessionPassword := os.Getenv("KOPANO_SERVER_PASSWORD")
+	if globalSessionUsername != "" {
+		useGlobalSession = true
+	}
+
+	var sessionTimeoutSeconds uint64 = 300 // 5 Minutes is the default.
+	if sessionTimeoutSecondsString := os.Getenv("KOPANO_SERVER_SESSION_TIMEOUT"); sessionTimeoutSecondsString != "" {
+		var sessionTimeoutSecondsErr error
+		sessionTimeoutSeconds, sessionTimeoutSecondsErr = strconv.ParseUint(sessionTimeoutSecondsString, 10, 64)
+		if sessionTimeoutSecondsErr != nil {
+			return nil, fmt.Errorf("invalid KOPANO_SERVER_SESSION_TIMEOUT value: %v", sessionTimeoutSecondsErr)
+		}
+	}
+	if !useGlobalSession && bs.accessTokenDurationSeconds+60 > sessionTimeoutSeconds {
+		bs.accessTokenDurationSeconds = sessionTimeoutSeconds - 60
+		bs.cfg.Logger.Warnf("limiting access token duration to %d seconds because of lower KOPANO_SERVER_SESSION_TIMEOUT", bs.accessTokenDurationSeconds)
+	}
+	// Update kcc defaults to our values.
+	kcc.SessionAutorefreshInterval = time.Duration(sessionTimeoutSeconds-60) * time.Second
+	kcc.SessionExpirationGrace = 2 * time.Minute // 2 Minutes grace until cleanup.
+
 	kopanoStorageServerClient := kcc.NewKCC(nil)
 	kopanoStorageServerClient.SetClientApp("konnect", version.Version)
+
 	identifierBackend, identifierErr := identifierBackends.NewKCIdentifierBackend(
 		bs.cfg,
 		kopanoStorageServerClient,
-		os.Getenv("KOPANO_SERVER_USERNAME"),
-		os.Getenv("KOPANO_SERVER_PASSWORD"),
+		useGlobalSession,
+		globalSessionUsername,
+		globalSessionPassword,
 	)
 	if identifierErr != nil {
 		return nil, fmt.Errorf("failed to create identifier backend: %v", identifierErr)

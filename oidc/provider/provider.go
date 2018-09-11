@@ -69,7 +69,9 @@ type Provider struct {
 	sessionCookiePath string
 	sessionCookieName string
 
-	accessTokenDuration time.Duration
+	accessTokenDuration  time.Duration
+	idTokenDuration      time.Duration
+	refreshTokenDuration time.Duration
 
 	logger logrus.FieldLogger
 }
@@ -100,7 +102,9 @@ func NewProvider(c *Config) (*Provider, error) {
 		sessionCookiePath: c.SessionCookiePath,
 		sessionCookieName: c.SessionCookieName,
 
-		accessTokenDuration: time.Minute * 10, //TODO(longsleep): Move to configuration.
+		accessTokenDuration:  c.AccessTokenDuration,
+		idTokenDuration:      c.IDTokenDuration,
+		refreshTokenDuration: c.RefreshTokenDuration,
 
 		logger: c.Config.Logger,
 	}

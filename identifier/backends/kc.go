@@ -136,7 +136,7 @@ func (u *kcUser) splitFullName() [2]string {
 
 // NewKCIdentifierBackend creates a new KCIdentifierBackend with the provided
 // parameters.
-func NewKCIdentifierBackend(c *config.Config, client *kcc.KCC, username string, password string) (*KCIdentifierBackend, error) {
+func NewKCIdentifierBackend(c *config.Config, client *kcc.KCC, useGlobalSession bool, username string, password string) (*KCIdentifierBackend, error) {
 	b := &KCIdentifierBackend{
 		c: client,
 
@@ -145,11 +145,11 @@ func NewKCIdentifierBackend(c *config.Config, client *kcc.KCC, username string, 
 		sessions: cmap.New(),
 	}
 
-	// Store credentials if given.
-	if username != "" {
+	// Store credentials if required.
+	if useGlobalSession {
 		b.username = username
 		b.password = password
-		b.useGlobalSession = true
+		b.useGlobalSession = useGlobalSession
 	}
 
 	b.logger.WithField("client", b.c.String()).Infoln("kc server identifier backend connection set up")
@@ -165,7 +165,7 @@ func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
 
 	// Helper to keep dedicated session running.
 	if b.useGlobalSession {
-		b.logger.WithField("username", b.username).Infoln("kc server identifier session enabled")
+		b.logger.WithField("username", b.username).Infoln("kc server identifier global session enabled")
 
 		go func() {
 			retry := time.NewTimer(5 * time.Second)
@@ -175,14 +175,14 @@ func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
 				b.setGlobalSession(nil)
 				session, sessionErr := kcc.NewSession(ctx, b.c, b.username, b.password)
 				if sessionErr != nil {
-					b.logger.WithError(sessionErr).Errorln("failed to create kc server session")
+					b.logger.WithError(sessionErr).Errorln("failed to create kc server global session")
 					retry.Reset(5 * time.Second)
 				} else {
-					b.logger.Debugf("kc server identifier session established: %v", session)
+					b.logger.Debugf("kc server identifier global session established: %v", session)
 					b.setGlobalSession(session)
 					go func() {
 						<-session.Context().Done()
-						b.logger.Debugf("kc server identifier session has ended: %v", session)
+						b.logger.Debugf("kc server identifier global session has ended: %v", session)
 						refreshCh <- true
 					}()
 				}
