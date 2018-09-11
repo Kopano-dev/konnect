@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg"
-     xmlns:xlink="http://www.w3.org/1999/xlink"
      width="${WIDTH}" height="${HEIGHT}"
      viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <filter id="blur" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
@@ -9,7 +8,7 @@
     </feComponentTransfer>
   </filter>
   <image filter="url(#blur)"
-         xlink:href="data:image/jpeg;base64,${IMAGE_DATA}"
+         href="data:image/jpeg;base64,${IMAGE_DATA}"
          x="0" y="0"
          height="100%" width="100%"/>
 </svg>
