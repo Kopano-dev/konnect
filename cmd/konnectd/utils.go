@@ -143,6 +143,10 @@ func addSignerWithIDFromFile(fn string, id string, bs *bootstrap) error {
 		if _, ok := signer.(*rsa.PrivateKey); !ok {
 			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
 		}
+	case *jwt.SigningMethodRSAPSS:
+		if _, ok := signer.(*rsa.PrivateKey); !ok {
+			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
+		}
 	case *jwt.SigningMethodECDSA:
 		if _, ok := signer.(*ecdsa.PrivateKey); !ok {
 			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())

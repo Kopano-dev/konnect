@@ -222,7 +222,11 @@ func (p *Provider) validateJWT(token *jwt.Token) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("Invalid alg value")
 	}
-	if alg != p.signingMethod.Alg() {
+	switch jwt.GetSigningMethod(alg).(type) {
+	case *jwt.SigningMethodRSA:
+	case *jwt.SigningMethodECDSA:
+	case *jwt.SigningMethodRSAPSS:
+	default:
 		return nil, fmt.Errorf("Unexpected alg value")
 	}
 	rawKid, ok := token.Header[oidc.JWTHeaderKeyID]
