@@ -125,6 +125,10 @@ case "${1}" in
 				kc_server_uri=${KOPANO_SERVER_DEFAULT_URI:-${DEFAULT_KOPANO_SERVER_URI}}
 			fi
 			export KOPANO_SERVER_DEFAULT_URI="$kc_server_uri"
+
+			if [ -z "$kc_session_timeout" ]; then
+				export KOPANO_SERVER_SESSION_TIMEOUT="$kc_session_timeout"
+			fi
 		fi
 
 		# ldap identity manager

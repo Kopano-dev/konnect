@@ -48,9 +48,9 @@ are expected to be found in your $PATH.
 
 ## Running Konnect
 
-Konnect can provide user login with Kopano Groupware Core as backend, use a
-cookie aware web login area which supports the ?continue parameter, or also can
-directly connect to a LDAP server.
+Konnect can provide user login with Kopano Groupware Storage server as backend,
+use a cookie aware web login area which supports the ?continue parameter, or
+also can directly connect to a LDAP server.
 
 All backends require certain general parameters to be present. Create a RSA
 key-pair file with `openssl genpkey -algorithm RSA -out private-key.pem -pkeyopt rsa_keygen_bits:4096`
@@ -105,18 +105,44 @@ bin/konnectd serve --listen=127.0.0.1:8777 \
   cookie https://mykopano.local/webapp/?load=custom&name=oidcuser "KOPANO_WEBAPP encryption-store-key"
 ```
 
-### Kopano Groupware Core backend
+### Kopano Groupware Storage server backend
 
 This assumes that Konnect can connect directly to a Kopano server via SOAP
 either using a unix socket or a TCP connection.
 
-Kopano Groupware Core might require a certain unix user to access the unix
-socket. Make sure to run konnectd with an appropriate user.
+Kopano Groupware Storage server backend connections can either use a dedicated
+service connection which might require a certain unix user to access the
+unix socket (not recommended) or bind the Konnect session and tokens to the
+underlaying Groupware Storage server's session (default).
+
+```
+export KOPANO_SERVER_DEFAULT_URI=http://mykopano.local:236
+
+bin/konnectd serve --listen=127.0.0.1:8777 \
+  --iss=https://mykonnect.local \
+  kc
+```
+Give dedicated session credentials via environment variables as shown in the
+example below.
 
 ```
 export KOPANO_SERVER_DEFAULT_URI=http://mykopano.local:236
 export KOPANO_SERVER_USERNAME=my-kopano-user
 export KOPANO_SERVER_PASSWORD=my-kopano-password
+
+bin/konnectd serve --listen=127.0.0.1:8777 \
+  --iss=https://mykonnect.local \
+  kc
+```
+
+Or run konnect as local_admin_unix user. Only run konnectd like this when you
+actually use that authentication scheme. Otherwise ensure that Konnect is not
+running as local admin user for best security.
+
+```
+su - kopano
+export KOPANO_SERVER_DEFAULT_URI=file:///run/kopano/server.sock
+export KOPANO_SERVER_USERNAME=SYSTEM
 
 bin/konnectd serve --listen=127.0.0.1:8777 \
   --iss=https://mykonnect.local \
