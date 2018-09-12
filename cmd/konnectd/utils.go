@@ -19,12 +19,18 @@ package main
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 func loadSignerFromFile(fn string) (crypto.Signer, error) {
@@ -55,34 +61,153 @@ func loadSignerFromFile(fn string) (crypto.Signer, error) {
 			break
 		}
 
-		return nil, fmt.Errorf("failed to parse key - valid PKCS#1 or PKCS#8? %v, %v", errParse1, errParse2)
+		ecKey, errParse3 := x509.ParseECPrivateKey(block.Bytes)
+		if errParse3 == nil {
+			signer = ecKey
+			break
+		}
+
+		return nil, fmt.Errorf("failed to parse signer key - valid PKCS#1, PKCS#8 ...? %v, %v, %v", errParse1, errParse2, errParse3)
 	}
 
 	return signer, nil
 }
 
-func loadKeys(fn string, defaultLabel string) (map[string]crypto.Signer, map[string]crypto.PublicKey, error) {
-	fi, err := os.Stat(fn)
+func loadValidatorFromFile(fn string) (crypto.PublicKey, error) {
+	pemBytes, errRead := ioutil.ReadFile(fn)
+	if errRead != nil {
+		return nil, fmt.Errorf("failed to parse key file: %v", errRead)
+	}
+	block, _ := pem.Decode(pemBytes)
+	if block == nil {
+		return nil, fmt.Errorf("no PEM block found")
+	}
+
+	var validator crypto.PublicKey
+	for {
+		pkcs1PubKey, errParse1 := x509.ParsePKCS1PublicKey(block.Bytes)
+		if errParse1 == nil {
+			validator = pkcs1PubKey
+			break
+		}
+
+		pkcs1PrivKey, errParse2 := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if errParse2 == nil {
+			validator = pkcs1PrivKey.Public()
+			break
+		}
+
+		pkcs8Key, errParse3 := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if errParse3 == nil {
+			signerSigner, ok := pkcs8Key.(crypto.Signer)
+			if !ok {
+				return nil, fmt.Errorf("failed to use key as crypto signer")
+			}
+			validator = signerSigner.Public()
+			break
+		}
+
+		ecKey, errParse4 := x509.ParseECPrivateKey(block.Bytes)
+		if errParse4 == nil {
+			validator = ecKey.Public()
+			break
+		}
+
+		return nil, fmt.Errorf("failed to parse validator key - valid PKCS#1, PKCS#8 ...? %v, %v, %v, %v", errParse1, errParse2, errParse3, errParse4)
+	}
+
+	return validator, nil
+}
+
+func addSignerWithIDFromFile(fn string, id string, bs *bootstrap) error {
+	fi, err := os.Lstat(fn)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed load load keys: %v", err)
+		return fmt.Errorf("failed load load signer key: %v", err)
+	}
+
+	mode := fi.Mode()
+	switch {
+	case mode.IsDir():
+		return fmt.Errorf("signer key must be a file")
+	}
+
+	// Load file.
+	signer, err := loadSignerFromFile(fn)
+	if err != nil {
+		return err
+	}
+
+	// Validate signing method
+	switch bs.signingMethod.(type) {
+	case *jwt.SigningMethodRSA:
+		if _, ok := signer.(*rsa.PrivateKey); !ok {
+			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
+		}
+	case *jwt.SigningMethodECDSA:
+		if _, ok := signer.(*ecdsa.PrivateKey); !ok {
+			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
+		}
+	default:
+		return fmt.Errorf("unsupported signing method: %s", bs.signingMethod.Alg())
+	}
+
+	if id == "" {
+		// Get ID from file, following symbolic link.
+		var real string
+		if mode&os.ModeSymlink != 0 {
+			real, err = os.Readlink(fn)
+			if err != nil {
+				return err
+			}
+			_, real = filepath.Split(real)
+		} else {
+			real = fi.Name()
+		}
+
+		id = getKeyIDFromFilename(real)
+	}
+
+	bs.signers[id] = signer
+	if bs.signingKeyID == "" {
+		// Set as default if none is set.
+		bs.signingKeyID = id
+	}
+
+	return nil
+}
+
+func addValidatorsFromPath(pn string, bs *bootstrap) error {
+	fi, err := os.Lstat(pn)
+	if err != nil {
+		return fmt.Errorf("failed load load validator keys: %v", err)
 	}
 
 	switch mode := fi.Mode(); {
 	case mode.IsDir():
-		// load all from directory.
-		return nil, nil, fmt.Errorf("key directory not implemented")
+		// OK.
 	default:
-		// file
-		signer, err := loadSignerFromFile(fn)
+		return fmt.Errorf("validator path must be a directory")
+	}
+
+	// Load all files.
+	files, err := filepath.Glob(filepath.Join(pn, "*.pem"))
+	if err != nil {
+		return fmt.Errorf("validator path err: %v", err)
+	}
+
+	for _, file := range files {
+		validator, err := loadValidatorFromFile(file)
 		if err != nil {
-			return nil, nil, err
+			bs.cfg.Logger.WithError(err).WithField("path", file).Warnln("failed to load validator key")
+			continue
 		}
 
-		signers := make(map[string]crypto.Signer)
-		signers[defaultLabel] = signer
-
-		return signers, nil, nil
+		// Get ID from file, without following symbolic links.
+		_, fn := filepath.Split(file)
+		bs.validators[getKeyIDFromFilename(fn)] = validator
 	}
+
+	return nil
 }
 
 func withSchemeAndHost(u, base *url.URL) *url.URL {
@@ -95,4 +220,9 @@ func withSchemeAndHost(u, base *url.URL) *url.URL {
 	r.Host = base.Host
 
 	return r
+}
+
+func getKeyIDFromFilename(fn string) string {
+	ext := filepath.Ext(fn)
+	return strings.TrimSuffix(fn, ext)
 }

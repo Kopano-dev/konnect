@@ -50,10 +50,11 @@ func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
 // JwksHandler implements the HTTP provider JWKS endpoint for OpenID provider
 // metadata used with OpenID Connect Discovery 1.0 as specified at https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 func (p *Provider) JwksHandler(rw http.ResponseWriter, req *http.Request) {
-	// TODO(longsleep): Add caching headers.
 	// TODO(longsleep): Use better library, or self implemented jwks struct.
+	addResponseHeaders(rw.Header())
+
 	jwks := &jwk.Key{
-		Keys: make([]*jwk.Key, len(p.validationKeys)-1),
+		Keys: make([]*jwk.Key, 0, len(p.validationKeys)-1),
 	}
 	for kid, key := range p.validationKeys {
 		keyJwk, err := jwk.PublicKey(key)

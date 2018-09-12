@@ -202,9 +202,13 @@ func (bs *bootstrap) initialize() error {
 		}
 	}
 
+	bs.signingKeyID, _ = cmd.Flags().GetString("signing-kid")
 	if bs.signingKeyID == "" {
-		bs.signingKeyID = defaultSigningKeyID
+		bs.signingKeyID = os.Getenv("KONNECTD_SIGNING_KID")
 	}
+
+	bs.signers = make(map[string]crypto.Signer)
+	bs.validators = make(map[string]crypto.PublicKey)
 
 	signingKeyFn, _ := cmd.Flags().GetString("signing-private-key")
 	if signingKeyFn == "" {
@@ -217,8 +221,8 @@ func (bs *bootstrap) initialize() error {
 			return fmt.Errorf("unknown signing method: %s", signingMethodString)
 		}
 
-		logger.WithField("path", signingKeyFn).Infoln("loading signing keys")
-		bs.signers, bs.validators, err = loadKeys(signingKeyFn, bs.signingKeyID)
+		logger.WithField("path", signingKeyFn).Infoln("loading signing key")
+		err = addSignerWithIDFromFile(signingKeyFn, bs.signingKeyID, bs)
 		if err != nil {
 			return err
 		}
@@ -227,9 +231,19 @@ func (bs *bootstrap) initialize() error {
 		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnf("missing --signing-private-key parameter, using random %d bit signing key with signing method RS256", defaultSigningKeyBits)
 		signer, _ := rsa.GenerateKey(rand.Reader, defaultSigningKeyBits)
 		bs.signingMethod = jwt.SigningMethodRS256
-		bs.signers = make(map[string]crypto.Signer)
-		bs.validators = make(map[string]crypto.PublicKey)
 		bs.signers[bs.signingKeyID] = signer
+	}
+
+	validationKeysPath, _ := cmd.Flags().GetString("validation-keys-path")
+	if validationKeysPath == "" {
+		validationKeysPath = os.Getenv("KONNECTD_VALIDATION_KEYS_PATH")
+	}
+	if validationKeysPath != "" {
+		logger.WithField("path", validationKeysPath).Infoln("loading validation keys")
+		err = addValidatorsFromPath(validationKeysPath, bs)
+		if err != nil {
+			return err
+		}
 	}
 
 	bs.cfg.HTTPTransport = &http.Transport{
@@ -347,6 +361,10 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 	for id, signer := range bs.signers {
 		if id == bs.signingKeyID {
 			err = activeProvider.SetSigningKey(id, signer, bs.signingMethod)
+			// Always set default key.
+			if id != defaultSigningKeyID {
+				activeProvider.SetValidationKey(defaultSigningKeyID, signer.Public(), bs.signingMethod)
+			}
 		} else {
 			err = activeProvider.SetValidationKey(id, signer.Public(), bs.signingMethod)
 		}

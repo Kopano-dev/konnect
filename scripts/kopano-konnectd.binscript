@@ -17,6 +17,7 @@ DEFAULT_WEB_RESOURCES_PATH=/usr/share/kopano-konnect
 DEFAULT_IDENTIFIER_REGISTRATION_FILE=/etc/kopano/konnectd-identifier-registration.yaml
 DEFAULT_OIDC_ISSUER_IDENTIFIER=https://localhost
 DEFAULT_SIGNING_PRIVATE_KEY_FILE=/etc/kopano/konnectd-signing-private-key.pem
+DEFAULT_VALIDATION_KEYS_PATH=/etc/kopano/konnectkeys
 DEFAULT_ENCRYPTION_SECRET_KEY_FILE=/etc/kopano/konnectd-encryption-secret.key
 DEFAULT_KOPANO_SERVER_URI=file:///run/kopano/server.sock
 
@@ -25,10 +26,16 @@ DEFAULT_KOPANO_SERVER_URI=file:///run/kopano/server.sock
 case "${1}" in
 	setup)
 
-	if [ -z "$signing_private_key" -a ! -f "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" -a -n "$USER" ]; then
+	if [ -z "$signing_private_key" -a ! -e "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" -a -n "$USER" ]; then
 		if [ -z "$signing_method" -o "$signing_method" = "RS256" ]; then
-			>&2	echo "setup: creating new RSA private key at ${DEFAULT_SIGNING_PRIVATE_KEY_FILE} ..."
-			RANDFILE=/tmp/.rnd $OPENSSL genpkey -algorithm RSA -out "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" -pkeyopt rsa_keygen_bits:4096 && chown "$USER" "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" || true
+			mkdir -p "${DEFAULT_VALIDATION_KEYS_PATH}"
+			rnd=$(RANDFILE=/tmp/.rnd $OPENSSL rand -hex 2)
+			key="${DEFAULT_VALIDATION_KEYS_PATH}/konnect-$(date +%Y%m%d)-${rnd}.pem"
+			>&2	echo "setup: creating new RSA private key at ${key} ..."
+			RANDFILE=/tmp/.rnd $OPENSSL genpkey -algorithm RSA -out "${key}" -pkeyopt rsa_keygen_bits:4096 && chown "$USER" "${key}" || true
+			if [ -f "${key}" ]; then
+				ln -sn "${key}" "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" || true
+			fi
 		fi
 	fi
 
@@ -101,8 +108,19 @@ case "${1}" in
 			set -- "$@" --signing-private-key="$signing_private_key"
 		fi
 
+		if [ -z "$signing_kid" ]; then
+			set -- "$@" --signing-kid="$signing_kid"
+		fi
+
 		if [ -n "$signing_method" ]; then
 			set -- "$@" --signing-method="$signing_method"
+		fi
+
+		if [ -z "$validation_keys_path" -a -d "${DEFAULT_VALIDATION_KEYS_PATH}" ]; then
+			validation_keys_path="${DEFAULT_VALIDATION_KEYS_PATH}"
+		fi
+		if [ -n "$validation_keys_path" ]; then
+			set -- "$@" --validation-keys-path="$validation_keys_path"
 		fi
 
 		if [ -z "$encryption_secret_key" -a -f "${DEFAULT_ENCRYPTION_SECRET_KEY_FILE}" ]; then
