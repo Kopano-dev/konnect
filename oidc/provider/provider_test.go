@@ -31,6 +31,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"stash.kopano.io/kc/konnect/config"
+	"stash.kopano.io/kc/konnect/managers"
+
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
@@ -60,6 +62,15 @@ func init() {
 }
 
 func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Provider, http.Handler, *Config) {
+	mgrs := managers.New()
+	mgrs.Set("identity", identityManagers.NewDummyIdentityManager(
+		&identity.Config{},
+		"unittestuser",
+	))
+	mgrs.Set("code", codeManagers.NewMemoryMapManager(ctx))
+	encryptionManager, _ := identityManagers.NewEncryptionManager(nil)
+	mgrs.Set("encryption", encryptionManager)
+
 	cfg := &Config{
 		Config: &config.Config{
 			Logger: logger,
@@ -71,29 +82,27 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 		AuthorizationPath: "/konnect/v1/authorize",
 		TokenPath:         "/konnect/v1/token",
 		UserInfoPath:      "/konnect/v1/userinfo",
-
-		IdentityManager: identityManagers.NewDummyIdentityManager(
-			&identity.Config{},
-			"unittestuser",
-		),
-		CodeManager: codeManagers.NewMemoryMapManager(ctx),
 	}
 
-	provider, err := NewProvider(cfg)
+	p, err := NewProvider(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	provider.SetSigningKey("default", rsaPrivateKey, jwt.SigningMethodRS256)
-	err = provider.InitializeMetadata()
+	p.SetSigningKey("default", rsaPrivateKey, jwt.SigningMethodRS256)
+	err = p.RegisterManagers(mgrs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = p.InitializeMetadata()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		provider.ServeHTTP(rw, req)
+		p.ServeHTTP(rw, req)
 	}))
 
-	return s, provider, provider, cfg
+	return s, p, p, cfg
 }
 
 func TestNewTestProvider(t *testing.T) {

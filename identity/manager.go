@@ -37,6 +37,7 @@ type Manager interface {
 
 	Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool) (AuthRecord, bool, error)
 
+	Name() string
 	ScopesSupported() []string
 	ClaimsSupported() []string
 

@@ -30,6 +30,7 @@ import (
 	"stash.kopano.io/kc/konnect/identifier"
 	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
@@ -58,7 +59,7 @@ func (u *identifierUser) Raw() string {
 }
 
 func (u *identifierUser) Subject() string {
-	sub, _ := getPublicSubject([]byte(u.Raw()), []byte("identifier"))
+	sub, _ := getPublicSubject([]byte(u.Raw()), []byte(u.IdentifiedUser.BackendName()))
 	return sub
 }
 
@@ -68,7 +69,7 @@ func asIdentifierUser(user *identifier.IdentifiedUser) *identifierUser {
 
 // NewIdentifierIdentityManager creates a new IdentifierIdentityManager from the provided
 // parameters.
-func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier, clients *clients.Registry) *IdentifierIdentityManager {
+func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier) *IdentifierIdentityManager {
 	im := &IdentifierIdentityManager{
 		signInFormURI: c.SignInFormURI.String(),
 		signedOutURI:  c.SignedOutURI.String(),
@@ -85,11 +86,17 @@ func NewIdentifierIdentityManager(c *identity.Config, i *identifier.Identifier, 
 		},
 
 		identifier: i,
-		clients:    clients,
 		logger:     c.Logger,
 	}
 
 	return im
+}
+
+// RegisterManagers registers the provided managers,
+func (im *IdentifierIdentityManager) RegisterManagers(mgrs *managers.Managers) error {
+	im.clients = mgrs.Must("clients").(*clients.Registry)
+
+	return im.identifier.RegisterManagers(mgrs)
 }
 
 // Authenticate implements the identity.Manager interface.
@@ -147,7 +154,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 		return nil, &identity.IsHandledError{}
 	}
 
-	auth := NewAuthRecord(im, user.Subject(), nil, nil)
+	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil)
 	auth.SetUser(user)
 	if loggedOn, logonAt := u.LoggedOn(); loggedOn {
 		auth.SetAuthTime(logonAt)
@@ -352,13 +359,18 @@ func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, s
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: wrong user")
 	}
 
-	authorizedScopes, _ := authorizeScopes(im, user, scopes)
-	claims := getUserClaimsForScopes(user, authorizedScopes)
+	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
+	claims := identity.GetUserClaimsForScopes(user, authorizedScopes)
 
-	auth := NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
+	auth := identity.NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil
+}
+
+// Name implements the identity.Manager interface.
+func (im *IdentifierIdentityManager) Name() string {
+	return im.identifier.Name()
 }
 
 // ScopesSupported implements the identity.Manager interface.

@@ -102,7 +102,6 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		AuthorizationEndpointURI: fullAuthorizationEndpointURL,
 
 		Backend: identifierBackend,
-		Clients: bs.managers.clients,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create identifier: %v", err)
@@ -121,7 +120,7 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		ScopesSupported: bs.cfg.AllowedScopes,
 	}
 
-	identifierIdentityManager := identityManagers.NewIdentifierIdentityManager(identityManagerConfig, activeIdentifier, bs.managers.clients)
+	identifierIdentityManager := identityManagers.NewIdentifierIdentityManager(identityManagerConfig, activeIdentifier)
 	logger.Infoln("using identifier backed identity manager")
 
 	return identifierIdentityManager, nil

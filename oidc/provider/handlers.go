@@ -338,20 +338,13 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		// TODO(longsleep): Authenticate the client if client authentication is included.
 		// TODO(longsleep): Compare standard claims issuer.
 
-		ctx := konnect.NewClaimsContext(req.Context(), claims)
-
-		var userID string
-		var sessionRef *string
-		if identityClaims := claims.IdentityClaims; identityClaims != nil {
-			userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
-			if s, _ := identityClaims[konnect.IdentifiedSessionRefClaim].(string); s != "" {
-				sessionRef = &s
-			}
-		}
+		userID, sessionRef := p.getUserIDAndSessionRefFromClaims(&claims.StandardClaims, claims.IdentityClaims)
 		if userID == "" {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, "missing data in kc.identity claim")
 			goto done
 		}
+
+		ctx := konnect.NewClaimsContext(req.Context(), claims)
 
 		// Lookup Ref values from backend.
 		approvedScopes, err = p.identityManager.ApprovedScopes(ctx, claims.Subject, tr.ClientID, claims.Ref)
@@ -495,19 +488,13 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	userID, sessionRef := p.getUserIDAndSessionRefFromClaims(&claims.StandardClaims, claims.IdentityClaims)
+
 	ctx := konnect.NewClaimsContext(req.Context(), claims)
 
 	var auth identity.AuthRecord
 	var found bool
 
-	var userID string
-	var sessionRef *string
-	if identityClaims := claims.IdentityClaims; identityClaims != nil {
-		userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
-		if s, _ := identityClaims[konnect.IdentifiedSessionRefClaim].(string); s != "" {
-			sessionRef = &s
-		}
-	}
 	if userID == "" {
 		err = fmt.Errorf("missing data in kc.identity claim")
 		goto done

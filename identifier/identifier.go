@@ -37,6 +37,7 @@ import (
 	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -86,7 +87,6 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		authorizationEndpointURI: c.AuthorizationEndpointURI,
 
 		backend: c.Backend,
-		clients: c.Clients,
 
 		onSetLogonCallbacks:   make([]func(ctx context.Context, rw http.ResponseWriter, user identity.User) error, 0),
 		onUnsetLogonCallbacks: make([]func(ctx context.Context, rw http.ResponseWriter) error, 0),
@@ -95,6 +95,20 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 	}
 
 	return i, nil
+}
+
+// RegisterManagers registers the provided managers,
+func (i *Identifier) RegisterManagers(mgrs *managers.Managers) error {
+	i.clients = mgrs.Must("clients").(*clients.Registry)
+
+	if service, ok := i.backend.(managers.ServiceUsesManagers); ok {
+		err := service.RegisterManagers(mgrs)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // AddRoutes adds the endpoint routes of the accociated Identifier to the
@@ -200,6 +214,10 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 	}
 
 	userClaims := map[string]interface{}(user.Claims())
+	sessionRef := user.SessionRef()
+	if sessionRef != nil {
+		userClaims[SessionIDClaim] = user.SessionRef()
+	}
 	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(userClaims).CompactSerialize()
 	if err != nil {
 		return err
@@ -229,9 +247,10 @@ func (i *Identifier) UnsetLogonCookie(ctx context.Context, user *IdentifiedUser,
 	if err != nil {
 		return err
 	}
-	// Destroy session.
-	if user != nil {
-		err = i.backend.DestroySession(ctx, user.sessionRef)
+	// Destroy backend user session if any.
+	sessionRef := user.SessionRef()
+	if user != nil && sessionRef != nil {
+		err = i.backend.DestroySession(ctx, sessionRef)
 		if err != nil {
 			i.logger.WithError(err).Warnln("failed to destroy session on unset logon cookie")
 		}
@@ -300,19 +319,22 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		}
 	}
 
-	if v, _ := userClaims[konnect.IdentifiedSessionRefClaim]; v != nil {
+	if v, _ := userClaims[SessionIDClaim]; v != nil {
 		sessionRef := v.(string)
-		user.sessionRef = &sessionRef
-
-		// Ensure the session is still valid, by refreshing it.
-		if refreshSession {
-			err = i.backend.RefreshSession(ctx, user.sessionRef)
-			if err != nil {
-				// Ignore logons which fail session refresh.
-				return nil, nil
+		if sessionRef != "" {
+			// Remember session ref in user.
+			user.sessionRef = &sessionRef
+			// Ensure the session is still valid, by refreshing it.
+			if refreshSession {
+				err = i.backend.RefreshSession(ctx, user.Subject(), &sessionRef)
+				if err != nil {
+					// Ignore logons which fail session refresh.
+					return nil, nil
+				}
 			}
 		}
 	}
+
 	if v, _ := userClaims[konnect.IdentifiedUsernameClaim]; v != nil {
 		user.username = v.(string)
 	}
@@ -411,6 +433,11 @@ func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.Re
 	}
 
 	return &consent, nil
+}
+
+// Name returns the active identifiers backend's name.
+func (i *Identifier) Name() string {
+	return i.backend.Name()
 }
 
 // ScopesSupported return the scopes supported by the accociaged Identifier.

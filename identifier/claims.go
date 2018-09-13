@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2018 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -17,22 +17,7 @@
 
 package identifier
 
-import (
-	"net/url"
-
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier/backends"
+// Additional claims as used by the identifier in its own tokens.
+const (
+	SessionIDClaim = "sid"
 )
-
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
-
-	PathPrefix      string
-	StaticFolder    string
-	LogonCookieName string
-
-	AuthorizationEndpointURI *url.URL
-
-	Backend backends.Backend
-}

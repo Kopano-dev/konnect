@@ -39,7 +39,8 @@ import (
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/oidc/provider"
+	"stash.kopano.io/kc/konnect/managers"
+	oidcProvider "stash.kopano.io/kc/konnect/oidc/provider"
 )
 
 // Identity managers.
@@ -76,7 +77,7 @@ type bootstrap struct {
 	accessTokenDurationSeconds uint64
 
 	cfg      *config.Config
-	managers *managers
+	managers *managers.Managers
 }
 
 // initialize, parsed parameters from commandline with validation and adds them
@@ -268,33 +269,48 @@ func (bs *bootstrap) initialize() error {
 // setup takes care of setting up the managers based on the accociated
 // bootstrap's data.
 func (bs *bootstrap) setup(ctx context.Context) error {
-	var err error
-
-	err = bs.setupIdentity(ctx)
-	if err != nil {
-		return err
-	}
-	err = bs.setupOIDCProvider(ctx)
+	managers, err := newManagers(ctx, bs)
 	if err != nil {
 		return err
 	}
 
+	identityManager, err := bs.setupIdentity(ctx)
+	if err != nil {
+		return err
+	}
+	managers.Set("identity", identityManager)
+
+	oidcProvider, err := bs.setupOIDCProvider(ctx)
+	if err != nil {
+		return err
+	}
+	managers.Set("oidc", oidcProvider)
+	managers.Set("handler", oidcProvider) // Use OIDC provider as default HTTP handler.
+
+	err = managers.Apply()
+	if err != nil {
+		return fmt.Errorf("failed to apply managers: %v", err)
+	}
+
+	// Final steps
+	err = oidcProvider.InitializeMetadata()
+	if err != nil {
+		return fmt.Errorf("failed to initialize provider metadata: %v", err)
+	}
+
+	bs.managers = managers
 	return nil
 }
 
-func (bs *bootstrap) setupIdentity(ctx context.Context) error {
+func (bs *bootstrap) setupIdentity(ctx context.Context) (identity.Manager, error) {
 	var err error
 	logger := bs.cfg.Logger
 
 	if len(bs.args) == 0 {
-		return fmt.Errorf("identity-manager argument missing")
+		return nil, fmt.Errorf("identity-manager argument missing")
 	}
 
 	identityManagerName := bs.args[0]
-	bs.managers, err = newManagers(ctx, identityManagerName, bs)
-	if err != nil {
-		return err
-	}
 
 	// Identity manager.
 	var identityManager identity.Manager
@@ -315,20 +331,18 @@ func (bs *bootstrap) setupIdentity(ctx context.Context) error {
 		err = fmt.Errorf("unknown identity manager %v", identityManagerName)
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	logger.WithField("name", identityManagerName).Infoln("identity manager set up")
 
-	bs.managers.identity = identityManager
-
-	return nil
+	return identityManager, nil
 }
 
-func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
+func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provider, error) {
 	var err error
 	logger := bs.cfg.Logger
 
-	activeProvider, err := provider.NewProvider(&provider.Config{
+	provider, err := oidcProvider.NewProvider(&oidcProvider.Config{
 		Config: bs.cfg,
 
 		IssuerIdentifier:       bs.issuerIdentifierURI.String(),
@@ -349,45 +363,32 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) error {
 		AccessTokenDuration:  time.Duration(bs.accessTokenDurationSeconds) * time.Second,
 		IDTokenDuration:      1 * time.Hour,            // 1 Hour, must be consumed by then.
 		RefreshTokenDuration: 24 * 365 * 3 * time.Hour, // 3 Years.
-
-		IdentityManager:   bs.managers.identity,
-		CodeManager:       bs.managers.code,
-		EncryptionManager: bs.managers.encryption,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create provider: %v", err)
+		return nil, fmt.Errorf("failed to create provider: %v", err)
 	}
 
 	for id, signer := range bs.signers {
 		if id == bs.signingKeyID {
-			err = activeProvider.SetSigningKey(id, signer, bs.signingMethod)
+			err = provider.SetSigningKey(id, signer, bs.signingMethod)
 			// Always set default key.
 			if id != defaultSigningKeyID {
-				activeProvider.SetValidationKey(defaultSigningKeyID, signer.Public(), bs.signingMethod)
+				provider.SetValidationKey(defaultSigningKeyID, signer.Public(), bs.signingMethod)
 			}
 		} else {
-			err = activeProvider.SetValidationKey(id, signer.Public(), bs.signingMethod)
+			err = provider.SetValidationKey(id, signer.Public(), bs.signingMethod)
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for id, publicKey := range bs.validators {
-		err = activeProvider.SetValidationKey(id, publicKey, bs.signingMethod)
+		err = provider.SetValidationKey(id, publicKey, bs.signingMethod)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	logger.WithField("alg", bs.signingMethod.Alg()).Infoln("oidc token signing set up")
 
-	err = activeProvider.InitializeMetadata()
-	if err != nil {
-		return fmt.Errorf("failed to initialize provider metadata: %v", err)
-	}
-
-	bs.managers.handler = activeProvider
-
-	logger.WithField("iss", activeProvider.Config.IssuerIdentifier).Infoln("oidc provider set up")
-
-	return nil
+	return provider, nil
 }

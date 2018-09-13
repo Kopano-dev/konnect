@@ -175,8 +175,10 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		promptLogin := false
+		audience := ""
 		if r.Hello != nil {
 			promptLogin, _ = r.Hello.Prompts[oidc.PromptLogin]
+			audience = r.Hello.ClientID
 		}
 
 		if !promptLogin {
@@ -187,8 +189,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 				forwardedUser := req.Header.Get("X-Forwarded-User")
 				if forwardedUser != "" {
 					if forwardedUser == params[0] {
-						// NOTE(longsleep): No support for sessionRef in forward mode.
-						resolvedUser, resolveErr := i.resolveUser(req.Context(), params[0], nil)
+						resolvedUser, resolveErr := i.resolveUser(req.Context(), params[0])
 						if resolveErr != nil {
 							i.logger.WithError(resolveErr).Errorln("identifier failed to resolve user with backend")
 							i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to resolve user")
@@ -215,7 +216,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		switch params[2] {
 		case ModeLogonUsernamePassword:
 			// Username and password validation mode.
-			success, subject, sessionRef, logonErr := i.backend.Logon(req.Context(), params[0], params[1])
+			success, subject, sessionRef, logonErr := i.backend.Logon(req.Context(), audience, params[0], params[1])
 			if logonErr != nil {
 				i.logger.WithError(logonErr).Errorln("identifier failed to logon with backend")
 				i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to logon")

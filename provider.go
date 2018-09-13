@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2018 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -15,24 +15,16 @@
  *
  */
 
-package identifier
+package konnect
 
 import (
-	"net/url"
+	"context"
 
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier/backends"
+	"stash.kopano.io/kc/konnect/identity"
 )
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
-
-	PathPrefix      string
-	StaticFolder    string
-	LogonCookieName string
-
-	AuthorizationEndpointURI *url.URL
-
-	Backend backends.Backend
+// AccessTokenProvider is an interface for something which can create
+// access tokens.
+type AccessTokenProvider interface {
+	MakeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error)
 }

@@ -33,6 +33,7 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
@@ -90,10 +91,6 @@ func NewProvider(c *Config) (*Provider, error) {
 		endSessionPath:         c.EndSessionPath,
 		checkSessionIframePath: c.CheckSessionIframePath,
 
-		identityManager:   c.IdentityManager,
-		codeManager:       c.CodeManager,
-		encryptionManager: c.EncryptionManager,
-
 		validationKeys: make(map[string]crypto.PublicKey),
 
 		browserStateCookiePath: c.BrowserStateCookiePath,
@@ -108,6 +105,15 @@ func NewProvider(c *Config) (*Provider, error) {
 
 		logger: c.Config.Logger,
 	}
+
+	return p, nil
+}
+
+// RegisterManagers registers the provided managers from the
+func (p *Provider) RegisterManagers(mgrs *managers.Managers) error {
+	p.identityManager = mgrs.Must("identity").(identity.Manager)
+	p.codeManager = mgrs.Must("code").(code.Manager)
+	p.encryptionManager = mgrs.Must("encryption").(*identityManagers.EncryptionManager)
 
 	// Register callback to cleanup our cookie whenever the identity is unset or
 	// set.
@@ -134,7 +140,7 @@ func NewProvider(c *Config) (*Provider, error) {
 		return err
 	})
 
-	return p, nil
+	return nil
 }
 
 func (p *Provider) makeIssURL(path string) string {

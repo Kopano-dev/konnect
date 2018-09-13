@@ -30,6 +30,7 @@ import (
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	"stash.kopano.io/kc/konnect/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 	"stash.kopano.io/kc/konnect/oidc/provider"
 )
@@ -41,6 +42,15 @@ var logger = &logrus.Logger{
 }
 
 func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server, http.Handler, *config.Config) {
+	mgrs := managers.New()
+	mgrs.Set("identity", identityManagers.NewDummyIdentityManager(
+		&identity.Config{},
+		"unittestuser",
+	))
+	mgrs.Set("code", codeManagers.NewMemoryMapManager(ctx))
+	encryptionManager, _ := identityManagers.NewEncryptionManager(nil)
+	mgrs.Set("encryption", encryptionManager)
+
 	cfg := &config.Config{
 		Logger: logger,
 	}
@@ -54,13 +64,11 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 		AuthorizationPath: "/konnect/v1/authorize",
 		TokenPath:         "/konnect/v1/token",
 		UserInfoPath:      "/konnect/v1/userinfo",
-
-		IdentityManager: identityManagers.NewDummyIdentityManager(
-			&identity.Config{},
-			"unittestuser",
-		),
-		CodeManager: codeManagers.NewMemoryMapManager(ctx),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = p.RegisterManagers(mgrs)
 	if err != nil {
 		t.Fatal(err)
 	}

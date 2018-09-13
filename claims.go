@@ -37,7 +37,6 @@ const (
 	IdentifiedUserIDClaim      = "kc.i.id"
 	IdentifiedUsernameClaim    = "kc.i.un"
 	IdentifiedDisplayNameClaim = "kc.i.dn"
-	IdentifiedSessionRefClaim  = "kc.i.sr"
 )
 
 // AccessTokenClaims define the claims found in access tokens issued

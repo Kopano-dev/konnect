@@ -20,49 +20,42 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
+
+	"stash.kopano.io/kc/konnect/managers"
 
 	identifierClients "stash.kopano.io/kc/konnect/identifier/clients"
-	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
-	"stash.kopano.io/kc/konnect/oidc/code"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 )
 
-type managers struct {
-	encryption *identityManagers.EncryptionManager
-	code       code.Manager
-	clients    *identifierClients.Registry
-
-	identity identity.Manager
-	handler  http.Handler
-}
-
-func newManagers(ctx context.Context, identityManagerName string, bs *bootstrap) (*managers, error) {
+func newManagers(ctx context.Context, bs *bootstrap) (*managers.Managers, error) {
 	logger := bs.cfg.Logger
 
 	var err error
-	managers := &managers{}
+	mgrs := managers.New()
 
 	// Encryption manager.
-	managers.encryption, err = identityManagers.NewEncryptionManager(nil)
+	encryption, err := identityManagers.NewEncryptionManager(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create encryption manager: %v", err)
 	}
-	err = managers.encryption.SetKey(bs.encryptionSecret)
+	encryption.SetKey(bs.encryptionSecret)
 	if err != nil {
 		return nil, fmt.Errorf("invalid --encryption-secret parameter value for encryption: %v", err)
 	}
-	logger.Infof("encryption set up with %d key size", managers.encryption.GetKeySize())
+	mgrs.Set("encryption", encryption)
+	logger.Infof("encryption set up with %d key size", encryption.GetKeySize())
 
 	// OIDC code manage.
-	managers.code = codeManagers.NewMemoryMapManager(ctx)
+	code := codeManagers.NewMemoryMapManager(ctx)
+	mgrs.Set("code", code)
 
 	// Identifier client registry manager.
-	managers.clients, err = identifierClients.NewRegistry(bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
+	clients, err := identifierClients.NewRegistry(bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client registry: %v", err)
 	}
+	mgrs.Set("clients", clients)
 
-	return managers, nil
+	return mgrs, nil
 }

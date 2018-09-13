@@ -39,6 +39,8 @@ import (
 	"gopkg.in/ldap.v2"
 )
 
+const ldapIdentifierBackendName = "identifier-ldap"
+
 var ldapSupportedScopes = []string{
 	oidc.ScopeProfile,
 	oidc.ScopeEmail,
@@ -303,7 +305,7 @@ func (b *LDAPIdentifierBackend) RunWithContext(ctx context.Context) error {
 
 // Logon implements the Backend interface, enabling Logon with user name and
 // password as provided. Requests are bound to the provided context.
-func (b *LDAPIdentifierBackend) Logon(ctx context.Context, username, password string) (bool, *string, *string, error) {
+func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, password string) (bool, *string, *string, error) {
 	loginAttributeName := b.attributeMapping[ldapDefinitions.AttributeLogin]
 	if loginAttributeName == "" {
 		return false, nil, nil, fmt.Errorf("ldap identifier backend logon impossible as no login attribute is set")
@@ -344,9 +346,9 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, username, password st
 	return true, &userDN, nil, nil
 }
 
-// ResolveUser implements the Beckend interface, providing lookup for user by
-// providing the username. Requests are bound to the provided context.
-func (b *LDAPIdentifierBackend) ResolveUser(ctx context.Context, username string, sessionRef *string) (identity.UserWithUsername, error) {
+// ResolveUserByUsername implements the Beckend interface, providing lookup for
+// user by providing the username. Requests are bound to the provided context.
+func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, username string) (identity.UserWithUsername, error) {
 	loginAttributeName := b.attributeMapping[ldapDefinitions.AttributeLogin]
 	if loginAttributeName == "" {
 		return nil, fmt.Errorf("ldap identifier backend resolve impossible as no login attribute is set")
@@ -401,7 +403,7 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string, sess
 }
 
 // RefreshSession implements the Backend interface.
-func (b *LDAPIdentifierBackend) RefreshSession(ctx context.Context, sessionRef *string) error {
+func (b *LDAPIdentifierBackend) RefreshSession(ctx context.Context, userID string, sessionRef *string) error {
 	return nil
 }
 
@@ -420,6 +422,11 @@ func (b *LDAPIdentifierBackend) UserClaims(userID string, authorizedScopes map[s
 // when running this backend.
 func (b *LDAPIdentifierBackend) ScopesSupported() []string {
 	return ldapSupportedScopes
+}
+
+// Name implements the Backend interface.
+func (b *LDAPIdentifierBackend) Name() string {
+	return ldapIdentifierBackendName
 }
 
 func (b *LDAPIdentifierBackend) connect(parentCtx context.Context) (*ldap.Conn, error) {

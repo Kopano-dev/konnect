@@ -110,9 +110,6 @@ func (u *IdentifiedUser) Claims() jwt.MapClaims {
 	claims[konnect.IdentifiedUserIDClaim] = u.Subject()
 	claims[konnect.IdentifiedUsernameClaim] = u.Username()
 	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
-	if u.sessionRef != nil {
-		claims[konnect.IdentifiedSessionRefClaim] = *u.sessionRef
-	}
 
 	return claims
 }
@@ -137,8 +134,13 @@ func (u *IdentifiedUser) SessionRef() *string {
 	return u.sessionRef
 }
 
-func (i *Identifier) resolveUser(ctx context.Context, username string, sessionRef *string) (*IdentifiedUser, error) {
-	u, err := i.backend.ResolveUser(ctx, username, sessionRef)
+// BackendName returns the accociated users underlaying backend name.
+func (u *IdentifiedUser) BackendName() string {
+	return u.backend.Name()
+}
+
+func (i *Identifier) resolveUser(ctx context.Context, username string) (*IdentifiedUser, error) {
+	u, err := i.backend.ResolveUserByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}

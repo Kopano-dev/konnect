@@ -65,7 +65,7 @@ func newCookieIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		ScopesSupported: bs.cfg.AllowedScopes,
 	}
 
-	cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, bs.managers.encryption, backendURI, cookieNames, 30*time.Second, bs.cfg.HTTPTransport)
+	cookieIdentityManager := identityManagers.NewCookieIdentityManager(identityManagerConfig, backendURI, cookieNames, 30*time.Second, bs.cfg.HTTPTransport)
 	logger.WithFields(logrus.Fields{
 		"backend": backendURI,
 		"signIn":  bs.signInFormURI,

@@ -23,8 +23,10 @@ import (
 	"encoding/gob"
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
 	"stash.kopano.io/kgol/rndm"
 
+	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
@@ -97,4 +99,18 @@ func (p *Provider) unserializeSession(value string) (*payload.Session, error) {
 	}
 
 	return &session, nil
+}
+
+func (p *Provider) getUserIDAndSessionRefFromClaims(claims *jwt.StandardClaims, identityClaims jwt.MapClaims) (string, *string) {
+	if claims == nil || identityClaims == nil {
+		return "", nil
+	}
+
+	var userID string
+	userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
+	if userID == "" {
+		return "", nil
+	}
+
+	return userID, identity.GetSessionRef(p.identityManager.Name(), claims.Audience, userID)
 }

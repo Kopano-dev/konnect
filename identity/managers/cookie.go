@@ -34,16 +34,17 @@ import (
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/version"
 )
 
+const cookieIdentityManagerName = "cookie"
+
 // CookieIdentityManager implements an identity manager which passes through
 // received HTTP cookies to a HTTP backend..
 type CookieIdentityManager struct {
-	*EncryptionManager
-
 	backendURI     *url.URL
 	allowedCookies map[string]bool
 
@@ -53,11 +54,13 @@ type CookieIdentityManager struct {
 	logger        logrus.FieldLogger
 
 	client *http.Client
+
+	encryptionManager *EncryptionManager
 }
 
 // NewCookieIdentityManager creates a new CookieIdentityManager from the
 // provided parameters.
-func NewCookieIdentityManager(c *identity.Config, em *EncryptionManager, backendURI *url.URL, cookieNames []string, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
+func NewCookieIdentityManager(c *identity.Config, backendURI *url.URL, cookieNames []string, timeout time.Duration, transport http.RoundTripper) *CookieIdentityManager {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
@@ -76,8 +79,6 @@ func NewCookieIdentityManager(c *identity.Config, em *EncryptionManager, backend
 	}
 
 	im := &CookieIdentityManager{
-		EncryptionManager: em,
-
 		backendURI:     backendURI,
 		allowedCookies: allowedCookies,
 
@@ -96,6 +97,13 @@ func NewCookieIdentityManager(c *identity.Config, em *EncryptionManager, backend
 	return im
 }
 
+// RegisterManagers registers the provided managers,
+func (im *CookieIdentityManager) RegisterManagers(mgrs *managers.Managers) error {
+	im.encryptionManager = mgrs.Must("encryption").(*EncryptionManager)
+
+	return nil
+}
+
 type cookieUser struct {
 	raw   string
 	name  string
@@ -110,7 +118,7 @@ func (u *cookieUser) Raw() string {
 }
 
 func (u *cookieUser) Subject() string {
-	sub, _ := getPublicSubject([]byte(u.raw), []byte("cookie"))
+	sub, _ := getPublicSubject([]byte(u.raw), []byte(cookieIdentityManagerName))
 	return sub
 }
 
@@ -193,7 +201,7 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 		return nil, fmt.Errorf("failed to parse response: %v", err)
 	}
 
-	encryptedCookies, err := im.EncryptStringToHexString(encodedCookies)
+	encryptedCookies, err := im.encryptionManager.EncryptStringToHexString(encodedCookies)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt cookies: %v", err)
 	}
@@ -278,7 +286,7 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 		return nil, identity.NewLoginRequiredError(err.Error(), u)
 	}
 
-	auth := NewAuthRecord(im, user.Subject(), nil, nil)
+	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil)
 	auth.SetUser(user)
 
 	return auth, nil
@@ -384,7 +392,7 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, sessi
 			}
 			encryptedCookies, _ := identityClaimsMap["cookie.v"].(string)
 			if encryptedCookies != "" {
-				encodedCookies, err = im.DecryptHexToString(encryptedCookies)
+				encodedCookies, err = im.encryptionManager.DecryptHexToString(encryptedCookies)
 				if err != nil {
 					return nil, false, fmt.Errorf("CookieIdentityManager: %v", err)
 				}
@@ -416,13 +424,18 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, sessi
 		return nil, false, fmt.Errorf("CookieIdentityManager: wrong user")
 	}
 
-	authorizedScopes, _ := authorizeScopes(im, user, scopes)
-	claims := getUserClaimsForScopes(user, authorizedScopes)
+	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
+	claims := identity.GetUserClaimsForScopes(user, authorizedScopes)
 
-	auth = NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
+	auth = identity.NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil
+}
+
+// Name implements the identity.Manager interface.
+func (im *CookieIdentityManager) Name() string {
+	return cookieIdentityManagerName
 }
 
 // ScopesSupported implements the identity.Manager interface.

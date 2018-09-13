@@ -15,30 +15,28 @@
  *
  */
 
-package managers
+package identity
 
 import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-
-	"stash.kopano.io/kc/konnect/identity"
 )
 
 type authRecord struct {
-	manager identity.Manager
+	manager Manager
 
 	sub              string
 	authorizedScopes map[string]bool
 	claimsByScope    map[string]jwt.Claims
 
-	user     identity.PublicUser
+	user     PublicUser
 	authTime time.Time
 }
 
 // NewAuthRecord returns a implementation of identity.AuthRecord holding
 // the provided data in memory.
-func NewAuthRecord(manager identity.Manager, sub string, authorizedScopes map[string]bool, claimsByScope map[string]jwt.Claims) identity.AuthRecord {
+func NewAuthRecord(manager Manager, sub string, authorizedScopes map[string]bool, claimsByScope map[string]jwt.Claims) AuthRecord {
 	if authorizedScopes == nil {
 		authorizedScopes = make(map[string]bool)
 	}
@@ -64,7 +62,7 @@ func (r *authRecord) AuthorizedScopes() map[string]bool {
 
 // AuthorizeScopes implements the identity.AuthRecord  interface.
 func (r *authRecord) AuthorizeScopes(scopes map[string]bool) {
-	authorizedScopes, unauthorizedScopes := authorizeScopes(r.manager, r.User(), scopes)
+	authorizedScopes, unauthorizedScopes := AuthorizeScopes(r.manager, r.User(), scopes)
 
 	for scope, grant := range authorizedScopes {
 		if grant {
@@ -91,12 +89,12 @@ func (r *authRecord) Claims(scopes ...string) []jwt.Claims {
 }
 
 // User implements the identity.AuthRecord interface.
-func (r *authRecord) User() identity.PublicUser {
+func (r *authRecord) User() PublicUser {
 	return r.user
 }
 
 // SetUser implements the identity.AuthRecord interface.
-func (r *authRecord) SetUser(u identity.PublicUser) {
+func (r *authRecord) SetUser(u PublicUser) {
 	r.user = u
 }
 

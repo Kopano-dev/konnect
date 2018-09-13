@@ -30,6 +30,11 @@ import (
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
+// MakeAccessToken implements the oidc.AccessTokenProvider interface.
+func (p *Provider) MakeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {
+	return p.makeAccessToken(ctx, audience, auth)
+}
+
 func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {
 	authorizedScopes := auth.AuthorizedScopes()
 	authorizedScopesList := makeArrayFromBoolMap(authorizedScopes)

@@ -33,6 +33,8 @@ import (
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
+const dummyIdentityManagerName = "dummy"
+
 // DummyIdentityManager implements an identity manager which always grants
 // access to a fixed user id.
 type DummyIdentityManager struct {
@@ -65,7 +67,7 @@ func (u *dummyUser) Raw() string {
 }
 
 func (u *dummyUser) Subject() string {
-	sub, _ := getPublicSubject([]byte(u.raw), []byte("dummy"))
+	sub, _ := getPublicSubject([]byte(u.raw), []byte(dummyIdentityManagerName))
 	return sub
 }
 
@@ -98,7 +100,7 @@ func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.Respon
 		return nil, err
 	}
 
-	auth := NewAuthRecord(im, user.Subject(), nil, nil)
+	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil)
 	auth.SetUser(user)
 
 	return auth, nil
@@ -184,10 +186,15 @@ func (im *DummyIdentityManager) Fetch(ctx context.Context, userID string, sessio
 
 	user := &dummyUser{im.sub}
 
-	authorizedScopes, _ := authorizeScopes(im, user, scopes)
-	claims := getUserClaimsForScopes(user, authorizedScopes)
+	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
+	claims := identity.GetUserClaimsForScopes(user, authorizedScopes)
 
-	return NewAuthRecord(im, user.Subject(), authorizedScopes, claims), true, nil
+	return identity.NewAuthRecord(im, user.Subject(), authorizedScopes, claims), true, nil
+}
+
+// Name implements the identity.Manager interface.
+func (im *DummyIdentityManager) Name() string {
+	return dummyIdentityManagerName
 }
 
 // ScopesSupported implements the identity.Manager interface.

@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -102,8 +103,8 @@ func serve(cmd *cobra.Command, args []string) error {
 	srv, err := server.NewServer(&server.Config{
 		Config: bs.cfg,
 
-		Handler: bs.managers.handler,
-		Routes:  []server.WithRoutes{bs.managers.identity},
+		Handler: bs.managers.Must("handler").(http.Handler),
+		Routes:  []server.WithRoutes{bs.managers.Must("identity").(server.WithRoutes)},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)

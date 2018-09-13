@@ -21,9 +21,6 @@ import (
 	"time"
 
 	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identity"
-	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
-	"stash.kopano.io/kc/konnect/oidc/code"
 )
 
 // Config defines a Provider's configuration settings.
@@ -48,8 +45,4 @@ type Config struct {
 	AccessTokenDuration  time.Duration
 	IDTokenDuration      time.Duration
 	RefreshTokenDuration time.Duration
-
-	IdentityManager   identity.Manager
-	CodeManager       code.Manager
-	EncryptionManager *identityManagers.EncryptionManager
 }
