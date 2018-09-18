@@ -157,6 +157,7 @@ func (p *Provider) SetSigningKey(id string, key crypto.Signer, signingMethod jwt
 	p.logger.WithFields(logrus.Fields{
 		"type": fmt.Sprintf("%T", key),
 		"id":   id,
+		"alg":  signingMethod.Alg(),
 	}).Infoln("set provider signing key")
 
 	p.signingKey = key

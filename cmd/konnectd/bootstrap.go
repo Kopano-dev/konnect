@@ -221,6 +221,13 @@ func (bs *bootstrap) initialize() error {
 		if bs.signingMethod == nil {
 			return fmt.Errorf("unknown signing method: %s", signingMethodString)
 		}
+		if signingMethodRSAPSS, ok := bs.signingMethod.(*jwt.SigningMethodRSAPSS); ok {
+			// NOTE(longsleep): Ensure to use same salt length the hash size.
+			// See https://www.ietf.org/mail-archive/web/jose/current/msg02901.html for
+			// reference and https://github.com/dgrijalva/jwt-go/issues/285 for
+			// the issue in upstream jwt-go.
+			signingMethodRSAPSS.Options.SaltLength = rsa.PSSSaltLengthEqualsHash
+		}
 
 		logger.WithField("path", signingKeyFn).Infoln("loading signing key")
 		err = addSignerWithIDFromFile(signingKeyFn, bs.signingKeyID, bs)
@@ -388,7 +395,7 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 			return nil, err
 		}
 	}
-	logger.WithField("alg", bs.signingMethod.Alg()).Infoln("oidc token signing set up")
+	logger.Infoln("oidc token signing set up")
 
 	return provider, nil
 }
