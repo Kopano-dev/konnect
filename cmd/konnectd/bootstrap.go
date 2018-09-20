@@ -236,9 +236,10 @@ func (bs *bootstrap) initialize() error {
 		}
 	} else {
 		//NOTE(longsleep): remove me - create keypair a random key pair.
-		logger.WithField("alg", jwt.SigningMethodRS256.Name).Warnf("missing --signing-private-key parameter, using random %d bit signing key with signing method RS256", defaultSigningKeyBits)
+		sm := jwt.SigningMethodPS256
+		bs.signingMethod = sm
+		logger.WithField("alg", sm.Name).Warnf("missing --signing-private-key parameter, using random %d bit signing key", defaultSigningKeyBits)
 		signer, _ := rsa.GenerateKey(rand.Reader, defaultSigningKeyBits)
-		bs.signingMethod = jwt.SigningMethodRS256
 		bs.signers[bs.signingKeyID] = signer
 	}
 

@@ -27,7 +27,7 @@ case "${1}" in
 	setup)
 
 	if [ -z "$signing_private_key" -a ! -e "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" -a -n "$USER" ]; then
-		if [ -z "$signing_method" -o "$signing_method" = "RS256" ]; then
+		if [ -z "$signing_method" -o "$signing_method" = "PS256" -o "$signing_method" = "RS256" ]; then
 			mkdir -p "${DEFAULT_VALIDATION_KEYS_PATH}"
 			rnd=$(RANDFILE=/tmp/.rnd $OPENSSL rand -hex 2)
 			key="${DEFAULT_VALIDATION_KEYS_PATH}/konnect-$(date +%Y%m%d)-${rnd}.pem"

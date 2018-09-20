@@ -88,7 +88,7 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.SetSigningKey("default", rsaPrivateKey, jwt.SigningMethodRS256)
+	p.SetSigningKey("default", rsaPrivateKey, jwt.SigningMethodPS256)
 	err = p.RegisterManagers(mgrs)
 	if err != nil {
 		t.Fatal(err)
