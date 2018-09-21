@@ -222,7 +222,7 @@ func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
 				expired := make([]string, 0)
 				for entry := range b.sessions.IterBuffered() {
 					session := entry.Val.(*kcc.Session)
-					if !session.IsActive() {
+					if session == nil || !session.IsActive() {
 						expired = append(expired, entry.Key)
 					}
 				}
