@@ -140,8 +140,15 @@ func addSignerWithIDFromFile(fn string, id string, bs *bootstrap) error {
 	// Validate signing method
 	switch bs.signingMethod.(type) {
 	case *jwt.SigningMethodRSA:
-		if _, ok := signer.(*rsa.PrivateKey); !ok {
+		rsaPrivateKey, ok := signer.(*rsa.PrivateKey)
+		if !ok {
 			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
+		}
+		// Ensure the private key is not vulnerable with PKCS-1.5 signatures. See
+		// https://paragonie.com/blog/2018/04/protecting-rsa-based-protocols-against-adaptive-chosen-ciphertext-attacks#rsa-anti-bb98
+		// for details.
+		if rsaPrivateKey.PublicKey.E < 65537 {
+			return fmt.Errorf("RSA signing key with public exponent < 65537")
 		}
 	case *jwt.SigningMethodRSAPSS:
 		if _, ok := signer.(*rsa.PrivateKey); !ok {

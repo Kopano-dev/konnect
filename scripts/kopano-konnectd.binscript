@@ -32,7 +32,7 @@ case "${1}" in
 			rnd=$(RANDFILE=/tmp/.rnd $OPENSSL rand -hex 2)
 			key="${DEFAULT_VALIDATION_KEYS_PATH}/konnect-$(date +%Y%m%d)-${rnd}.pem"
 			>&2	echo "setup: creating new RSA private key at ${key} ..."
-			RANDFILE=/tmp/.rnd $OPENSSL genpkey -algorithm RSA -out "${key}" -pkeyopt rsa_keygen_bits:4096 && chown "$USER" "${key}" || true
+			RANDFILE=/tmp/.rnd $OPENSSL genpkey -algorithm RSA -out "${key}" -pkeyopt rsa_keygen_bits:4096 -pkeyopt rsa_keygen_pubexp:65537 && chown "$USER" "${key}" || true
 			if [ -f "${key}" ]; then
 				ln -sn "${key}" "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" || true
 			fi
