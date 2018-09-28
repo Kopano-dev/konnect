@@ -57,6 +57,12 @@ lint: vendor | $(BASE) ; $(info running golint ...)	@
 		test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	done ; exit $$ret
 
+.PHONY: vet
+vet: vendor | $(BASE) ; $(info running go vet ...)	@
+	@cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
+		test -z "$$($(GO) vet $$pkg)" || ret=1 ; \
+	done ; exit $$ret
+
 .PHONY: fmt
 fmt: ; $(info running gofmt ...)	@
 	@ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... | grep -v /vendor/); do \
