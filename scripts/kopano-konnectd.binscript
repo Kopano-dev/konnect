@@ -108,7 +108,7 @@ case "${1}" in
 			set -- "$@" --signing-private-key="$signing_private_key"
 		fi
 
-		if [ -z "$signing_kid" ]; then
+		if [ -n "$signing_kid" ]; then
 			set -- "$@" --signing-kid="$signing_kid"
 		fi
 
