@@ -248,11 +248,12 @@ func (i *Identifier) UnsetLogonCookie(ctx context.Context, user *IdentifiedUser,
 		return err
 	}
 	// Destroy backend user session if any.
-	sessionRef := user.SessionRef()
-	if user != nil && sessionRef != nil {
-		err = i.backend.DestroySession(ctx, sessionRef)
-		if err != nil {
-			i.logger.WithError(err).Warnln("failed to destroy session on unset logon cookie")
+	if user != nil {
+		if sessionRef := user.SessionRef(); sessionRef != nil {
+			err = i.backend.DestroySession(ctx, sessionRef)
+			if err != nil {
+				i.logger.WithError(err).Warnln("failed to destroy session on unset logon cookie")
+			}
 		}
 	}
 	// Trigger callbacks.
