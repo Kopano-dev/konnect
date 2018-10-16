@@ -18,7 +18,7 @@ pipeline {
 			steps {
 				echo 'Bootstrapping..'
 				sh 'curl -sSL https://github.com/Masterminds/glide/releases/download/$GLIDE_VERSION/glide-$GLIDE_VERSION-linux-amd64.tar.gz | tar -vxz -C /usr/local/bin --strip=1'
-				sh 'go get -v github.com/golang/lint/golint'
+				sh 'go get -v golang.org/x/lint/golint'
 				sh 'go get -v github.com/tebeka/go2xunit'
 				sh 'apt-get update && apt-get install -y gettext-base imagemagick python-scour'
 			}
