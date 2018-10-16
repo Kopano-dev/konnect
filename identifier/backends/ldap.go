@@ -326,7 +326,7 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 	if err != nil {
 		return false, nil, nil, fmt.Errorf("ldap identifier backend logon search error: %v", err)
 	}
-	if entry.GetAttributeValue(loginAttributeName) != username {
+	if !strings.EqualFold(entry.GetAttributeValue(loginAttributeName), username) {
 		return false, nil, nil, fmt.Errorf("ldap identifier backend logon search returned wrong user")
 	}
 
@@ -369,7 +369,7 @@ func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, usern
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend resolve search error: %v", err)
 	}
-	if entry.GetAttributeValue(loginAttributeName) != username {
+	if !strings.EqualFold(entry.GetAttributeValue(loginAttributeName), username) {
 		return nil, fmt.Errorf("ldap identifier backend resolve search returned wrong user")
 	}
 
@@ -395,7 +395,7 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string, sess
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user error: %v", err)
 	}
-	if entry.DN != userID {
+	if !strings.EqualFold(entry.DN, userID) {
 		return nil, fmt.Errorf("ldap identifier backend get user returned wrong user")
 	}
 
