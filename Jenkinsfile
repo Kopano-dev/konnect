@@ -63,7 +63,7 @@ pipeline {
 	}
 	post {
 		always {
-			archive 'dist/*.tar.gz'
+			archiveArtifacts 'dist/*.tar.gz'
 			junit allowEmptyResults: true, testResults: 'test/*.xml'
 			warnings parserConfigurations: [[parserName: 'Go Lint', pattern: 'golint.txt'], [parserName: 'Go Vet', pattern: 'govet.txt']], unstableTotalAll: '0'
 			cleanWs()
