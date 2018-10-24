@@ -1,13 +1,16 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+
+import renderIf from 'render-if';
+
+import { withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Tooltip from '@material-ui/core/Tooltip';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import green from '@material-ui/core/colors/green';
 import Typography from '@material-ui/core/Typography';
-import renderIf from 'render-if';
+import DialogActions from '@material-ui/core/DialogActions';
 
 import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actions/login-actions';
 import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
@@ -25,9 +28,6 @@ const styles = theme => ({
     left: '50%',
     marginTop: -12,
     marginLeft: -12
-  },
-  buttonGroup: {
-    textAlign: 'right'
   },
   subHeader: {
     marginBottom: theme.spacing.unit * 2
@@ -76,7 +76,7 @@ class Consent extends Component {
         <Typography color="secondary">By clicking Allow, you allow this app to use your information.</Typography>
 
         <form action="" onSubmit={(event) => this.logon(event)}>
-          <div className={classes.buttonGroup}>
+          <DialogActions>
             <div className={classes.wrapper}>
               <Button
                 color="secondary"
@@ -97,7 +97,7 @@ class Consent extends Component {
               >Allow</Button>
               {loading === REQUEST_CONSENT_ALLOW && <CircularProgress size={24} className={classes.buttonProgress} />}
             </div>
-          </div>
+          </DialogActions>
 
           {renderIf(errors.http)(() => (
             <Typography variant="body1" color="error" className={classes.message}>{errors.http.message}</Typography>

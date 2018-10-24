@@ -1,13 +1,16 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+
+import renderIf from 'render-if';
+
+import { withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import green from '@material-ui/core/colors/green';
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
-import renderIf from 'render-if';
+import DialogActions from '@material-ui/core/DialogActions';
 
 import { updateInput, executeLogonIfFormValid, advanceLogonFlow } from '../actions/login-actions';
 
@@ -22,9 +25,6 @@ const styles = theme => ({
     left: '50%',
     marginTop: -12,
     marginLeft: -12
-  },
-  buttonGroup: {
-    textAlign: 'right'
   },
   subHeader: {
     marginBottom: theme.spacing.unit * 5
@@ -96,7 +96,7 @@ class Login extends Component {
               onChange={this.handleChange('password')}
               autoComplete="kopano-account current-password"
             />
-            <div className={classes.buttonGroup}>
+            <DialogActions>
               <div className={classes.wrapper}>
                 <Button
                   type="submit"
@@ -107,7 +107,7 @@ class Login extends Component {
                 >Next</Button>
                 {loading && <CircularProgress size={24} className={classes.buttonProgress} />}
               </div>
-            </div>
+            </DialogActions>
           </div>
 
           {renderIf(errors.http)(() => (

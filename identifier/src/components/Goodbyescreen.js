@@ -1,39 +1,18 @@
 import React from 'react';
-import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import { withStyles } from '@material-ui/core/styles';
-import Paper from '@material-ui/core/Paper';
-import Grid from '@material-ui/core/Grid';
-import Button from '@material-ui/core/Button';
-import Typography from '@material-ui/core/Typography';
+import { connect } from 'react-redux';
+
 import renderIf from 'render-if';
 
-import Loading from './Loading';
-import KopanoLogo from '../images/kopano-logo.svg';
+import { withStyles } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
+import Typography from '@material-ui/core/Typography';
+import DialogActions from '@material-ui/core/DialogActions';
+
+import ResponsiveScreen from './ResponsiveScreen';
 import { executeHello, executeLogoff } from '../actions/common-actions';
 
 const styles = theme => ({
-  root: {
-    display: 'flex',
-    flex: 1
-  },
-  logo: {
-    height: 18,
-    marginBottom: theme.spacing.unit * 2
-  },
-  limiter: {
-    maxWidth: 450
-  },
-  paper: theme.mixins.gutters({
-    backgroundColor: 'white',
-    paddingTop: 48,
-    paddingBottom: 36,
-    minHeight: 400,
-    position: 'relative'
-  }),
-  buttonGroup: {
-    textAlign: 'right'
-  },
   subHeader: {
     marginBottom: theme.spacing.unit * 5
   },
@@ -51,55 +30,49 @@ class Goodbyescreen extends React.PureComponent {
 
   render() {
     const { classes, hello } = this.props;
+
+    const loading = hello === null;
     return (
-      <Grid container justify="center" alignItems="center" spacing={0} className={classes.root}>
-        <Grid item xs={10} sm={5} md={4} className={classes.limiter}>
-          <Paper className={classes.paper} elevation={4}>
-            <img src={KopanoLogo} className={classes.logo} alt="Kopano"/>
-            {renderIf(hello !== null && !hello.state)(() => (
-              <div>
-                <Typography variant="headline" component="h3">
-                  Goodbye
-                </Typography>
-                <Typography variant="subheading" className={classes.subHeader}>
-                  you have been signed out from your Kopano account
-                </Typography>
+      <ResponsiveScreen loading={loading}>
+        {renderIf(hello !== null && !hello.state)(() => (
+          <div>
+            <Typography variant="headline" component="h3">
+              Goodbye
+            </Typography>
+            <Typography variant="subheading" className={classes.subHeader}>
+              you have been signed out from your Kopano account
+            </Typography>
 
-                <Typography gutterBottom>
-                  You can close this window now.
-                </Typography>
+            <Typography gutterBottom>
+              You can close this window now.
+            </Typography>
+          </div>
+        ))}
+        {renderIf(hello !== null && hello.state === true)(() => (
+          <div>
+            <Typography variant="headline" component="h3">
+              Hello {hello.displayName}
+            </Typography>
+            <Typography variant="subheading" className={classes.subHeader}>
+              please confirm sign out
+            </Typography>
+
+            <Typography gutterBottom>
+              Press the button below, to sign out from your Kopano account now.
+            </Typography>
+
+            <DialogActions>
+              <div className={classes.wrapper}>
+                <Button
+                  color="secondary"
+                  className={classes.button}
+                  onClick={(event) => this.logoff(event)}
+                >Sign out</Button>
               </div>
-            ))}
-            {renderIf(hello !== null && hello.state === true)(() => (
-              <div>
-                <Typography variant="headline" component="h3">
-                  Hello {hello.displayName}
-                </Typography>
-                <Typography variant="subheading" className={classes.subHeader}>
-                  please confirm sign out
-                </Typography>
-
-                <Typography gutterBottom>
-                  Press the button below, to sign out from your Kopano account now.
-                </Typography>
-
-                <div className={classes.buttonGroup}>
-                  <div className={classes.wrapper}>
-                    <Button
-                      color="secondary"
-                      className={classes.button}
-                      onClick={(event) => this.logoff(event)}
-                    >Sign out</Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {renderIf(hello === null)(() => (
-              <Loading/>
-            ))}
-          </Paper>
-        </Grid>
-      </Grid>
+            </DialogActions>
+          </div>
+        ))}
+      </ResponsiveScreen>
     );
   }
 
