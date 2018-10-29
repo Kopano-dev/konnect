@@ -33,7 +33,10 @@
     "eslint": "^5.1.0",
     "eslint-plugin-jest": "^21.15.1",
     "eslint-plugin-react": "^7.10.0",
+    "eslint-plugin-react-intl-format": "^1.1.6",
     "prop-types": "^15.6.2",
+    "react-intl-cra": "^0.3.3",
+    "react-intl-po": "^2.2.2",
     "source-map-explorer": "^1.5.0"
   },
   "resolutions": {
