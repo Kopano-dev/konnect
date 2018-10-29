@@ -1,12 +1,10 @@
 import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 
 import { withStyles } from '@material-ui/core/styles';
-import Snackbar from '@material-ui/core/Snackbar';
-import Button from '@material-ui/core/Button';
-import PropTypes from 'prop-types';
-import renderIf from 'render-if';
 
 import { enhanceBodyBackground } from '../utils';
 import Loginscreen from '../components/Loginscreen';
@@ -27,7 +25,7 @@ const styles = () => ({
 
 class Identifier extends PureComponent {
   render() {
-    const { classes, hello, updateAvailable } = this.props;
+    const { classes, hello } = this.props;
 
     return (
       <div className={classes.root}>
@@ -38,19 +36,6 @@ class Identifier extends PureComponent {
             <Route path="/" component={Loginscreen}></Route>
           </Switch>
         </BrowserRouter>
-        {renderIf(updateAvailable)(() => (
-          <Snackbar
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'left'}}
-            open
-            action={<Button color="accent" dense onClick={(event) => this.reload(event)}>
-              Reload
-            </Button>}
-            SnackbarContentProps={{
-              'aria-describedby': 'message-id'
-            }}
-            message={<span id="message-id">Update available</span>}
-          />
-        ))}
       </div>
     );
   }

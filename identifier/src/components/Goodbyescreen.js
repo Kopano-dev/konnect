@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import renderIf from 'render-if';
+import { FormattedMessage } from 'react-intl';
 
 import { withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -37,28 +38,39 @@ class Goodbyescreen extends React.PureComponent {
         {renderIf(hello !== null && !hello.state)(() => (
           <div>
             <Typography variant="headline" component="h3">
-              Goodbye
+              <FormattedMessage id="konnect.goodbye.headline" defaultMessage="Goodbye"></FormattedMessage>
             </Typography>
             <Typography variant="subheading" className={classes.subHeader}>
-              you have been signed out from your Kopano account
+              <FormattedMessage id="konnect.goodbye.subHeader"
+                defaultMessage="you have been signed out from your Kopano account">
+              </FormattedMessage>
             </Typography>
-
             <Typography gutterBottom>
-              You can close this window now.
+              <FormattedMessage id="konnect.goodbye.message.close"
+                defaultMessage="You can close this window now.">
+              </FormattedMessage>
             </Typography>
           </div>
         ))}
         {renderIf(hello !== null && hello.state === true)(() => (
           <div>
             <Typography variant="headline" component="h3">
-              Hello {hello.displayName}
+              <FormattedMessage
+                id="konnect.goodbye.confirm.headline"
+                defaultMessage="Hello {displayName}"
+                values={{displayName: hello.displayName}}>
+              </FormattedMessage>
             </Typography>
             <Typography variant="subheading" className={classes.subHeader}>
-              please confirm sign out
+              <FormattedMessage id="konnect.goodbye.confirm.subHeader"
+                defaultMessage="please confirm sign out">
+              </FormattedMessage>
             </Typography>
 
             <Typography gutterBottom>
-              Press the button below, to sign out from your Kopano account now.
+              <FormattedMessage id="konnect.goodbye.message.confirm"
+                defaultMessage="Press the button below, to sign out from your Kopano account now.">
+              </FormattedMessage>
             </Typography>
 
             <DialogActions>
@@ -67,7 +79,10 @@ class Goodbyescreen extends React.PureComponent {
                   color="secondary"
                   className={classes.button}
                   onClick={(event) => this.logoff(event)}
-                >Sign out</Button>
+                >
+                  <FormattedMessage id="konnect.goodbye.signoutButton.label"
+                    defaultMessage="Sign out"></FormattedMessage>
+                </Button>
               </div>
             </DialogActions>
           </div>

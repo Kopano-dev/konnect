@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+
+import { FormattedMessage } from 'react-intl';
+
+import { withStyles } from '@material-ui/core/styles';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
@@ -41,7 +44,8 @@ class Loading extends Component {
           {renderIf(error !== null)(() => (
             <div>
               <Typography variant="headline" gutterBottom align="center">
-                Failed to connect to Kopano
+                <FormattedMessage id="konnect.loading.error.headline" defaultMessage="Failed to connect to Kopano">
+                </FormattedMessage>
               </Typography>
               <Typography variant="body1" gutterBottom align="center" color="error">
                 {error.message}
@@ -51,7 +55,9 @@ class Loading extends Component {
                 variant="raised"
                 className={classes.button}
                 onClick={(event) => this.retry(event)}
-              >Retry</Button>
+              >
+                <FormattedMessage id="konnect.login.retryButton.label" defaultMessage="Retry"></FormattedMessage>
+              </Button>
             </div>
           ))}
         </Grid>

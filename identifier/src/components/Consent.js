@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import renderIf from 'render-if';
+import { FormattedMessage } from 'react-intl';
 
 import { withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -62,18 +63,53 @@ class Consent extends Component {
     return (
       <div>
         <Typography variant="headline" component="h3">
-          Hi {hello.displayName}
+          <FormattedMessage
+            id="konnect.consent.headline"
+            defaultMessage="Hi {displayName}"
+            values={{displayName: hello.displayName}}>
+          </FormattedMessage>
         </Typography>
         <Typography variant="subheading" className={classes.subHeader}>
           {hello.username}
         </Typography>
 
         <Typography variant="subheading" gutterBottom>
-          <Tooltip placement="bottom" title={`Clicking "Allow" will redirect you to: ${client.redirect_uri}`}><ClientDisplayName client={client}/></Tooltip> wants to
+          <FormattedMessage
+            id="konnect.consent.message"
+            defaultMessage="{clientDisplayName} wants to"
+            values={{clientDisplayName:
+              <Tooltip
+                placement="bottom"
+                title={<FormattedMessage
+                  id="konnect.consent.tooltip.client"
+                  defaultMessage='Clicking "Allow" will redirect you to: {redirectURI}'
+                  values={{
+                    redirectURI: client.redirect_uri
+                  }}
+                ></FormattedMessage>}
+              >
+                <em><ClientDisplayName client={client}/></em>
+              </Tooltip>
+            }}
+          ></FormattedMessage>
         </Typography>
         <ScopeList dense disablePadding className={classes.scopeList} scopes={scopes}></ScopeList>
-        <Typography variant="subheading" gutterBottom>Allow <ClientDisplayName client={client}/> to do this?</Typography>
-        <Typography color="secondary">By clicking Allow, you allow this app to use your information.</Typography>
+
+        <Typography variant="subheading" gutterBottom>
+          <FormattedMessage
+            id="konnect.consent.question"
+            defaultMessage="Allow {clientDisplayName} to do this?"
+            values={{
+              clientDisplayName: <em><ClientDisplayName client={client}/></em>
+            }}
+          ></FormattedMessage>
+        </Typography>
+        <Typography color="secondary">
+          <FormattedMessage
+            id="konnect.consent.consequence"
+            defaultMessage="By clicking Allow, you allow this app to use your information.">
+          </FormattedMessage>
+        </Typography>
 
         <form action="" onSubmit={(event) => this.logon(event)}>
           <DialogActions>
@@ -83,9 +119,11 @@ class Consent extends Component {
                 className={classes.button}
                 disabled={!!loading}
                 onClick={(event) => this.action(event, false)}
-              >Cancel
+              >
+                <FormattedMessage id="konnect.consent.cancelButton.label" defaultMessage="Cancel"></FormattedMessage>
               </Button>
-              {(loading && loading !== REQUEST_CONSENT_ALLOW) && <CircularProgress size={24} className={classes.buttonProgress} />}
+              {(loading && loading !== REQUEST_CONSENT_ALLOW) &&
+                <CircularProgress size={24} className={classes.buttonProgress} />}
             </div>
             <div className={classes.wrapper}>
               <Button
@@ -94,7 +132,9 @@ class Consent extends Component {
                 className={classes.button}
                 disabled={!!loading}
                 onClick={(event) => this.action(event, true)}
-              >Allow</Button>
+              >
+                <FormattedMessage id="konnect.consent.allowButton.label" defaultMessage="Allow"></FormattedMessage>
+              </Button>
               {loading === REQUEST_CONSENT_ALLOW && <CircularProgress size={24} className={classes.buttonProgress} />}
             </div>
           </DialogActions>

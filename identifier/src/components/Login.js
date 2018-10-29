@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import renderIf from 'render-if';
+import { FormattedMessage } from 'react-intl';
 
 import { withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -66,16 +67,18 @@ class Login extends Component {
     return (
       <div>
         <Typography variant="headline" component="h3">
-          Sign in
+          <FormattedMessage id="konnect.login.headline" defaultMessage="Sign in"></FormattedMessage>
         </Typography>
         <Typography variant="subheading" className={classes.subHeader}>
-          with your Kopano account
+          <FormattedMessage id="konnect.login.subHeader" defaultMessage="with your Kopano account"></FormattedMessage>
         </Typography>
 
         <form action="" onSubmit={(event) => this.logon(event)}>
           <div>
             <TextField
-              label="Username"
+              label={
+                <FormattedMessage id="konnect.login.usernameField.label" defaultMessage="Username"></FormattedMessage>
+              }
               error={!!errors.username}
               helperText={errors.username}
               fullWidth
@@ -88,7 +91,9 @@ class Login extends Component {
             />
             <TextField
               type="password"
-              label="Password"
+              label={
+                <FormattedMessage id="konnect.login.passwordField.label" defaultMessage="Password"></FormattedMessage>
+              }
               error={!!errors.password}
               helperText={errors.password}
               fullWidth
@@ -104,7 +109,9 @@ class Login extends Component {
                   className={classes.button}
                   disabled={!!loading}
                   onClick={(event) => this.logon(event)}
-                >Next</Button>
+                >
+                  <FormattedMessage id="konnect.login.nextButton.label" defaultMessage="Next"></FormattedMessage>
+                </Button>
                 {loading && <CircularProgress size={24} className={classes.buttonProgress} />}
               </div>
             </DialogActions>

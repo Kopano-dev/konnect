@@ -1,4 +1,24 @@
 {
+	"plugins": ["react-intl-format"],
 	"extends": ["plugin:react/recommended", "plugin:jest/recommended"],
-	"parser": "babel-eslint"
+	"parser": "babel-eslint",
+	"rules": {
+		"react-intl-format/missing-formatted-message": [
+			"error",
+			{
+				"noTrailingWhitespace": false,
+				"ignoreLinks": false
+			}
+		],
+		"react-intl-format/missing-attribute": [
+			"error",
+			{
+				"noTrailingWhitespace": false,
+				"noSpreadOperator": true
+			}
+		],
+		"react-intl-format/missing-values": [
+			"error"
+		]
+	}
 }

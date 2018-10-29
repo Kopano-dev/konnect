@@ -2,6 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
+import { FormattedMessage } from 'react-intl';
+
 import { withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
@@ -24,14 +26,19 @@ class Welcomescreen extends React.PureComponent {
     return (
       <ResponsiveScreen loading={loading}>
         <Typography variant="headline" component="h3">
-          Welcome {hello.displayName}
+          <FormattedMessage
+            id="konnect.welcome.headline"
+            defaultMessage="Welcome {displayName}"
+            values={{displayName: hello.displayName}}>
+          </FormattedMessage>
         </Typography>
         <Typography variant="subheading" className={classes.subHeader}>
           {hello.username}
         </Typography>
 
         <Typography gutterBottom>
-          You are signed in - awesome!
+          <FormattedMessage id="konnect.welcome.message"
+            defaultMessage="You are signed in - awesome!"></FormattedMessage>
         </Typography>
 
         <DialogActions>
@@ -39,7 +46,9 @@ class Welcomescreen extends React.PureComponent {
             color="secondary"
             className={classes.button}
             onClick={(event) => this.logoff(event)}
-          >Sign out</Button>
+          >
+            <FormattedMessage id="konnect.welcome.signoutButton.label" defaultMessage="Sign out"></FormattedMessage>
+          </Button>
         </DialogActions>
       </ResponsiveScreen>
     );

@@ -40,7 +40,8 @@ function ResponsiveScreen(props) {
     ...other
   } = props;
 
-  const logo = withoutLogo ? null : <DialogContent><img src={KopanoLogo} className={classes.logo} alt="Kopano"/></DialogContent>;
+  const logo = withoutLogo ? null :
+    <DialogContent><img src={KopanoLogo} className={classes.logo} alt="Kopano"/></DialogContent>;
 
   const content = loading ? <Loading/> : (withoutPadding ? children : <DialogContent>{children}</DialogContent>);
 

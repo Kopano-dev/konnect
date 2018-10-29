@@ -12,13 +12,8 @@ VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null |
 .PHONY: all
 all: build
 
-.yarninstall: package.json ; $(info getting depdencies with yarn ...)	@
-	$(YARN) install
-
-	@touch $@
-
 .PHONY: build
-build: .yarninstall | src ; $(info building identifier Webapp ...)	@
+build: vendor | src i18n ; $(info building identifier Webapp ...)	@
 	@rm -rf build
 
 	REACT_APP_KOPANO_BUILD="${VERSION}" $(YARN) run build
@@ -26,6 +21,25 @@ build: .yarninstall | src ; $(info building identifier Webapp ...)	@
 .PHONY: src
 src:
 	@$(MAKE) -C src
+
+.PHONY: i18n
+i18n: vendor
+	@$(MAKE) -C i18n
+
+.PHONY: lint
+lint: vendor ; $(info running eslint ...)	@
+	@$(YARN) eslint . --cache && echo "eslint: no lint errors"
+
+# Yarn
+
+.PHONY: vendor
+vendor: .yarninstall
+
+.yarninstall: package.json ; $(info getting depdencies with yarn ...)   @
+	@$(YARN) install --silent
+	@touch $@
+
+# Stuff
 
 .PHONY: clean ; $(info cleaning identifier Webapp ...)	@
 clean:

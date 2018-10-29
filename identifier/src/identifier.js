@@ -13,6 +13,10 @@ import { unregister } from 'kpop/es/serviceWorker';
 import store from './store';
 import translations from './locales';
 
+const onLocaleChanged = async locale => {
+  console.info('locale', locale); // eslint-disable-line no-console
+};
+
 // NOTE(longsleep): Load async with loader, this enables code splitting via Webpack.
 const LoadableApp = Loadable({
   loader: () => import(/* webpackChunkName: "identifier-container" */ './containers/Identifier'),
@@ -23,7 +27,7 @@ const LoadableApp = Loadable({
 ReactDOM.render(
   <Provider store={store}>
     <MuiThemeProvider theme={theme}>
-      <IntlContainer messages={translations}>
+      <IntlContainer onLocaleChanged={onLocaleChanged} messages={translations}>
         <LoadableApp />
       </IntlContainer>
     </MuiThemeProvider>

@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
+
+import { FormattedMessage } from 'react-intl';
+
+import { withStyles } from '@material-ui/core/styles';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
@@ -40,7 +43,9 @@ class Chooseaccount extends Component {
 
     let errorMessage = null;
     if (errors.http) {
-      errorMessage = <Typography variant="body1" color="error" className={classes.message}>{errors.http.message}</Typography>;
+      errorMessage = <Typography variant="body1" color="error" className={classes.message}>
+        {errors.http.message}
+      </Typography>;
     }
 
     let username = '';
@@ -51,10 +56,11 @@ class Chooseaccount extends Component {
     return (
       <div>
         <Typography variant="headline" component="h3">
-          Choose an account
+          <FormattedMessage id="konnect.chooseaccount.headline" defaultMessage="Choose an account"></FormattedMessage>
         </Typography>
         <Typography variant="subheading" className={classes.subHeader}>
-          to sign in to Kopano
+          <FormattedMessage id="konnect.chooseaccount.subHeader" defaultMessage="to sign in to Kopano">
+          </FormattedMessage>
         </Typography>
 
         <form action="" onSubmit={(event) => this.logon(event)}>
@@ -74,8 +80,19 @@ class Chooseaccount extends Component {
               className={classes.accountListItem}
               disabled={!!loading}
               onClick={(event) => this.logoff(event)}
-            ><Avatar>?</Avatar>
-              <ListItemText primary="Use another account" />
+            >
+              <Avatar>
+                <FormattedMessage id="konnect.chooseaccount.useOther.persona.label" defaultMessage="?">
+                </FormattedMessage>
+              </Avatar>
+              <ListItemText
+                primary={
+                  <FormattedMessage
+                    id="konnect.chooseaccount.useOther.label"
+                    defaultMessage="Use another account">
+                  </FormattedMessage>
+                }
+              />
             </ListItem>
           </List>
 

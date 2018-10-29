@@ -53,7 +53,7 @@ identifier-webapp:
 
 .PHONY: lint
 lint: vendor | $(BASE) ; $(info running golint ...)	@
-	@cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
+	cd $(BASE) && ret=0 && $(MAKE) -C identifier lint || ret=1 && for pkg in $(PKGS); do \
 		test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	done ; exit $$ret
 
