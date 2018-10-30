@@ -3,7 +3,7 @@
 pipeline {
 	agent {
 		docker {
-			image 'golang:1.10'
+			image 'golang:1.11'
 			args '-u 0'
 		 }
 	}
@@ -56,6 +56,7 @@ pipeline {
 		stage('Dist') {
 			steps {
 				echo 'Dist..'
+				sh '$(git diff --stat)'
 				sh 'test -z "$(git diff --shortstat 2>/dev/null |tail -n1)" && echo "Clean check passed."'
 				sh 'make dist'
 			}
