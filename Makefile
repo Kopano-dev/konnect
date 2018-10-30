@@ -115,6 +115,7 @@ vendor: glide.lock | $(BASE) ; $(info retrieving dependencies ...)
 .PHONY: licenses
 licenses: ; $(info building licenses files ...)
 	scripts/go-license-ranger.py > 3rdparty-LICENSES.md
+	make -s -C identifier licenses >> 3rdparty-LICENSES.md
 
 3rdparty-LICENSES.md: licenses
 

@@ -41,6 +41,11 @@ vendor: .yarninstall
 
 # Stuff
 
+.PHONY: licenses
+licenses:
+	echo "## Konnect identifier webapp\n"
+	@$(YARN) run  -s licenses
+
 .PHONY: clean ; $(info cleaning identifier Webapp ...)	@
 clean:
 	$(YARN) cache clean
