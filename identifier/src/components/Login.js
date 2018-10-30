@@ -14,6 +14,7 @@ import Typography from '@material-ui/core/Typography';
 import DialogActions from '@material-ui/core/DialogActions';
 
 import { updateInput, executeLogonIfFormValid, advanceLogonFlow } from '../actions/login-actions';
+import { ErrorMessage } from '../errors';
 
 const styles = theme => ({
   button: {
@@ -80,7 +81,7 @@ class Login extends Component {
                 <FormattedMessage id="konnect.login.usernameField.label" defaultMessage="Username"></FormattedMessage>
               }
               error={!!errors.username}
-              helperText={errors.username}
+              helperText={<ErrorMessage error={errors.username}></ErrorMessage>}
               fullWidth
               margin="dense"
               autoFocus
@@ -95,7 +96,7 @@ class Login extends Component {
                 <FormattedMessage id="konnect.login.passwordField.label" defaultMessage="Password"></FormattedMessage>
               }
               error={!!errors.password}
-              helperText={errors.password}
+              helperText={<ErrorMessage error={errors.password}></ErrorMessage>}
               fullWidth
               margin="dense"
               onChange={this.handleChange('password')}
@@ -118,7 +119,9 @@ class Login extends Component {
           </div>
 
           {renderIf(errors.http)(() => (
-            <Typography variant="body1" color="error" className={classes.message}>{errors.http.message}</Typography>
+            <Typography variant="body1" color="error" className={classes.message}>
+              <ErrorMessage error={errors.http}></ErrorMessage>
+            </Typography>
           ))}
         </form>
       </div>

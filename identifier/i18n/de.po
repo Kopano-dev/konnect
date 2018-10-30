@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2018-10-29T18:09:47.444Z\n"
+"POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -68,12 +68,28 @@ msgctxt "konnect.consent.tooltip.client"
 msgid "Clicking \"Allow\" will redirect you to: {redirectURI}"
 msgstr ""
 
+#. [konnect.error.login.validate.missingPassword]
+#. defaultMessage is:
+#. Enter a password
+#: i18n/src/messages.json
+msgctxt "konnect.error.login.validate.missingPassword"
+msgid "Enter a password"
+msgstr ""
+
+#. [konnect.error.login.validate.missingUsername]
+#. defaultMessage is:
+#. Enter an username
+#: i18n/src/messages.json
+msgctxt "konnect.error.login.validate.missingUsername"
+msgid "Enter an username"
+msgstr ""
+
 #. [konnect.loading.error.headline]
 #. defaultMessage is:
-#. Failed to connect to Kopano
+#. Failed to connect to server
 #: i18n/src/messages.json
 msgctxt "konnect.loading.error.headline"
-msgid "Failed to connect to Kopano"
+msgid "Failed to connect to server"
 msgstr ""
 
 #. [konnect.goodbye.headline]
@@ -98,6 +114,22 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
+msgstr ""
+
+#. [konnect.error.login.failed]
+#. defaultMessage is:
+#. Logon failed. Please verify your credentials and try again.
+#: i18n/src/messages.json
+msgctxt "konnect.error.login.failed"
+msgid "Logon failed. Please verify your credentials and try again."
+msgstr ""
+
+#. [konnet.error.http.networkError]
+#. defaultMessage is:
+#. Network error. Please check your connection and try again.
+#: i18n/src/messages.json
+msgctxt "konnet.error.http.networkError"
+msgid "Network error. Please check your connection and try again."
 msgstr ""
 
 #. [konnect.login.nextButton.label]
@@ -154,6 +186,22 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.signoutButton.label"
 msgid "Sign out"
+msgstr ""
+
+#. [konnect.error.http.unexpectedResponseStatus]
+#. defaultMessage is:
+#. Unexpected HTTP response: {status}. Please check your connection and try again.
+#: i18n/src/messages.json
+msgctxt "konnect.error.http.unexpectedResponseStatus"
+msgid "Unexpected HTTP response: {status}. Please check your connection and try again."
+msgstr ""
+
+#. [konnect.error.http.unexpectedResponseState]
+#. defaultMessage is:
+#. Unexpected response state: {state}
+#: i18n/src/messages.json
+msgctxt "konnect.error.http.unexpectedResponseState"
+msgid "Unexpected response state: {state}"
 msgstr ""
 
 #. [konnect.chooseaccount.useOther.label]

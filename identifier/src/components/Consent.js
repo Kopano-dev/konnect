@@ -14,6 +14,7 @@ import Typography from '@material-ui/core/Typography';
 import DialogActions from '@material-ui/core/DialogActions';
 
 import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actions/login-actions';
+import { ErrorMessage } from '../errors';
 import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
 import ClientDisplayName from './ClientDisplayName';
 import ScopeList from './ScopeList';
@@ -140,7 +141,9 @@ class Consent extends Component {
           </DialogActions>
 
           {renderIf(errors.http)(() => (
-            <Typography variant="body1" color="error" className={classes.message}>{errors.http.message}</Typography>
+            <Typography variant="body1" color="error" className={classes.message}>
+              <ErrorMessage error={errors.http}></ErrorMessage>
+            </Typography>
           ))}
         </form>
       </div>

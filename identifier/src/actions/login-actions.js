@@ -5,6 +5,15 @@ import * as types from './action-types';
 import { receiveHello } from './common-actions';
 import { newHelloRequest } from '../models/hello';
 import { withClientRequestState } from '../utils';
+import { handleAxiosError } from './utils';
+import {
+  ExtendedError,
+  ERROR_LOGIN_VALIDATE_MISSINGUSERNAME,
+  ERROR_LOGIN_VALIDATE_MISSINGPASSWORD,
+  ERROR_LOGIN_FAILED,
+  ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS,
+  ERROR_HTTP_UNEXPECTED_RESPONSE_STATE
+} from '../errors';
 
 // Modes for logon.
 export const ModeLogonUsernameEmptyPasswordCookie = '0';
@@ -101,16 +110,16 @@ export function executeLogon(username, password, mode=ModeLogonUsernamePassword)
             success: false,
             state: response.headers['kopano-konnect-state'],
             errors: {
-              http: new Error('Logon failed. Please verify your credentials and try again.')
+              http: new Error(ERROR_LOGIN_FAILED)
             }
           };
         default:
           // error.
-          throw new Error('Unexpected http response: ' + response.status);
+          throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS, response);
       }
     }).then(response => {
       if (response.state !== r.state) {
-        throw new Error('Unexpected response state: ' + response.state);
+        throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATE, response);
       }
 
       let { hello } = response;
@@ -124,6 +133,7 @@ export function executeLogon(username, password, mode=ModeLogonUsernamePassword)
       dispatch(receiveLogon(response));
       return Promise.resolve(response);
     }).catch(error => {
+      error = handleAxiosError(error);
       const errors = {
         http: error
       };
@@ -168,16 +178,17 @@ export function executeConsent(allow=false) {
           };
         default:
           // error.
-          throw new Error('Unexpected http response: ' + response.status);
+          throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS, response);
       }
     }).then(response => {
       if (response.state !== r.state) {
-        throw new Error('Unexpected response state: ' + response.state);
+        throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATE, response);
       }
 
       dispatch(receiveConsent(response));
       return Promise.resolve(response);
     }).catch(error => {
+      error = handleAxiosError(error);
       const errors = {
         http: error
       };
@@ -197,10 +208,10 @@ export function validateUsernamePassword(username, password, isSignedIn) {
       const errors = {};
 
       if (!username) {
-        errors.username = 'Enter an username';
+        errors.username = new Error(ERROR_LOGIN_VALIDATE_MISSINGUSERNAME);
       }
       if (!password && !isSignedIn) {
-        errors.password = 'Enter a password';
+        errors.password = new Error(ERROR_LOGIN_VALIDATE_MISSINGPASSWORD);
       }
 
       dispatch(receiveValidateLogon(errors));

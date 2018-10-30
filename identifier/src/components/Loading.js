@@ -12,6 +12,7 @@ import Button from '@material-ui/core/Button';
 import renderIf from 'render-if';
 
 import { retryHello } from '../actions/common-actions';
+import { ErrorMessage } from '../errors';
 
 const styles = theme => ({
   root: {
@@ -44,15 +45,16 @@ class Loading extends Component {
           {renderIf(error !== null)(() => (
             <div>
               <Typography variant="headline" gutterBottom align="center">
-                <FormattedMessage id="konnect.loading.error.headline" defaultMessage="Failed to connect to Kopano">
+                <FormattedMessage id="konnect.loading.error.headline" defaultMessage="Failed to connect to server">
                 </FormattedMessage>
               </Typography>
               <Typography variant="body1" gutterBottom align="center" color="error">
-                {error.message}
+                <ErrorMessage error={error}></ErrorMessage>
               </Typography>
               <Button
                 autoFocus
-                variant="raised"
+                color="primary"
+                variant="outlined"
                 className={classes.button}
                 onClick={(event) => this.retry(event)}
               >

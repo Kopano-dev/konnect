@@ -12,6 +12,7 @@ import Avatar from '@material-ui/core/Avatar';
 import Typography from '@material-ui/core/Typography';
 
 import { executeLogonIfFormValid, advanceLogonFlow } from '../actions/login-actions';
+import { ErrorMessage } from '../errors';
 
 const styles = theme => ({
   subHeader: {
@@ -44,7 +45,7 @@ class Chooseaccount extends Component {
     let errorMessage = null;
     if (errors.http) {
       errorMessage = <Typography variant="body1" color="error" className={classes.message}>
-        {errors.http.message}
+        <ErrorMessage error={errors.http}></ErrorMessage>
       </Typography>;
     }
 

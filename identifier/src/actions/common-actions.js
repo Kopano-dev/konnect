@@ -3,6 +3,12 @@ import axios from 'axios';
 import * as types from './action-types';
 import { newHelloRequest } from '../models/hello';
 import { withClientRequestState } from '../utils';
+import { handleAxiosError } from './utils';
+import {
+  ExtendedError,
+  ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS,
+  ERROR_HTTP_UNEXPECTED_RESPONSE_STATE
+} from '../errors';
 
 export function receiveError(error) {
   return {
@@ -53,16 +59,18 @@ export function executeHello() {
           };
         default:
           // error.
-          throw new Error('Unexpected http response: ' + response.status);
+          throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS, response);
       }
     }).then(response => {
       if (response.state !== r.state) {
-        throw new Error('Unexpected response state: ' + response.state);
+        throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATE, response);
       }
 
       dispatch(receiveHello(response));
       return Promise.resolve(response);
     }).catch(error => {
+      error = handleAxiosError(error);
+
       dispatch(receiveError(error));
     });
   };
@@ -106,16 +114,18 @@ export function executeLogoff() {
           return response.data;
         default:
           // error.
-          throw new Error('Unexpected http response: ' + response.status);
+          throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS, response);
       }
     }).then(response => {
       if (response.state !== r.state) {
-        throw new Error('Unexpected response state: ' + response.state);
+        throw new ExtendedError(ERROR_HTTP_UNEXPECTED_RESPONSE_STATE, response);
       }
 
       dispatch(receiveLogoff(response.success === true));
       return Promise.resolve(response);
     }).catch(error => {
+      error = handleAxiosError(error);
+
       dispatch(receiveError(error));
     });
   };
