@@ -153,8 +153,8 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 	if _, ok := ar.ResponseTypes[oidc.ResponseTypeCode]; ok {
 		codeString, err = p.codeManager.Create(&code.Record{
 			AuthenticationRequest: ar,
-			Auth:    auth,
-			Session: session,
+			Auth:                  auth,
+			Session:               session,
 		})
 		if err != nil {
 			goto done
