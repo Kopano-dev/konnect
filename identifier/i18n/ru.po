@@ -2,15 +2,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
-"PO-Revision-Date: 2018-10-30T16:08:29.860Z\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2018-11-01 15:36+0000\n"
+"Last-Translator: Sotneo <kerovsot@gmail.com>\n"
+"Language-Team: Russian "
+"<http://translate.kopano.io/projects/kopano/konnect/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: react-intl-po\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<="
+"4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"X-Generator: Weblate 2.4\n"
 
 #. [konnect.chooseaccount.useOther.persona.label]
 #. defaultMessage is:
@@ -18,7 +20,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #. [konnect.consent.allowButton.label]
 #. defaultMessage is:
@@ -26,7 +28,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.allowButton.label"
 msgid "Allow"
-msgstr ""
+msgstr "Разрешить"
 
 #. [konnect.consent.question]
 #. defaultMessage is:
@@ -34,7 +36,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.question"
 msgid "Allow {clientDisplayName} to do this?"
-msgstr ""
+msgstr "Разрешить {clientDisplayName} сделать это?"
 
 #. [konnect.consent.consequence]
 #. defaultMessage is:
@@ -43,6 +45,8 @@ msgstr ""
 msgctxt "konnect.consent.consequence"
 msgid "By clicking Allow, you allow this app to use your information."
 msgstr ""
+"Нажимая Разрешить, ты даёте разрешение этому приложению использовать вашу "
+"информацию."
 
 #. [konnect.consent.cancelButton.label]
 #. defaultMessage is:
@@ -50,7 +54,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.cancelButton.label"
 msgid "Cancel"
-msgstr ""
+msgstr "Отмена"
 
 #. [konnect.chooseaccount.headline]
 #. defaultMessage is:
@@ -58,7 +62,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.headline"
 msgid "Choose an account"
-msgstr ""
+msgstr "Выберите учётную запись"
 
 #. [konnect.consent.tooltip.client]
 #. defaultMessage is:
@@ -66,7 +70,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.tooltip.client"
 msgid "Clicking \"Allow\" will redirect you to: {redirectURI}"
-msgstr ""
+msgstr "После нажатия \"Разрешить\" вы будете перенаправлена на: {redirectURI}"
 
 #. [konnect.error.login.validate.missingPassword]
 #. defaultMessage is:
@@ -74,7 +78,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.validate.missingPassword"
 msgid "Enter a password"
-msgstr ""
+msgstr "Введите пароль"
 
 #. [konnect.error.login.validate.missingUsername]
 #. defaultMessage is:
@@ -82,7 +86,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.validate.missingUsername"
 msgid "Enter an username"
-msgstr ""
+msgstr "Введите имя пользователя"
 
 #. [konnect.loading.error.headline]
 #. defaultMessage is:
@@ -90,7 +94,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.loading.error.headline"
 msgid "Failed to connect to server"
-msgstr ""
+msgstr "Не удалось подключиться к серверу"
 
 #. [konnect.goodbye.headline]
 #. defaultMessage is:
@@ -98,7 +102,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.headline"
 msgid "Goodbye"
-msgstr ""
+msgstr "До свидания"
 
 #. [konnect.goodbye.confirm.headline]
 #. defaultMessage is:
@@ -106,7 +110,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.confirm.headline"
 msgid "Hello {displayName}"
-msgstr ""
+msgstr "Здравствуйте,  {displayName}"
 
 #. [konnect.consent.headline]
 #. defaultMessage is:
@@ -114,7 +118,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
-msgstr ""
+msgstr "Привет,  {displayName}"
 
 #. [konnect.error.login.failed]
 #. defaultMessage is:
@@ -123,6 +127,8 @@ msgstr ""
 msgctxt "konnect.error.login.failed"
 msgid "Logon failed. Please verify your credentials and try again."
 msgstr ""
+"Не удалось войти. Пожалуйста, проверьте ваши учетные данные и попробуйте "
+"снова."
 
 #. [konnet.error.http.networkError]
 #. defaultMessage is:
@@ -131,6 +137,7 @@ msgstr ""
 msgctxt "konnet.error.http.networkError"
 msgid "Network error. Please check your connection and try again."
 msgstr ""
+"Сетевая ошибка. Пожалуйста, проверьте ваше соединение и попробуйте снова."
 
 #. [konnect.login.nextButton.label]
 #. defaultMessage is:
@@ -138,7 +145,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.nextButton.label"
 msgid "Next"
-msgstr ""
+msgstr "Далее"
 
 #. [konnect.login.passwordField.label]
 #. defaultMessage is:
@@ -146,7 +153,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.passwordField.label"
 msgid "Password"
-msgstr ""
+msgstr "Пароль"
 
 #. [konnect.goodbye.message.confirm]
 #. defaultMessage is:
@@ -154,7 +161,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.confirm"
 msgid "Press the button below, to sign out from your Kopano account now."
-msgstr ""
+msgstr "Нажмите кнопку ниже, чтобы выйти из вашей учетной записи Kopano."
 
 #. [konnect.login.retryButton.label]
 #. defaultMessage is:
@@ -162,7 +169,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.retryButton.label"
 msgid "Retry"
-msgstr ""
+msgstr "Повторить"
 
 #. [konnect.login.headline]
 #. defaultMessage is:
@@ -170,7 +177,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.headline"
 msgid "Sign in"
-msgstr ""
+msgstr "Вход"
 
 #. [konnect.goodbye.signoutButton.label]
 #. defaultMessage is:
@@ -178,7 +185,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.signoutButton.label"
 msgid "Sign out"
-msgstr ""
+msgstr "Выход"
 
 #. [konnect.welcome.signoutButton.label]
 #. defaultMessage is:
@@ -186,7 +193,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.signoutButton.label"
 msgid "Sign out"
-msgstr ""
+msgstr "Выход"
 
 #. [konnect.error.http.unexpectedResponseStatus]
 #. defaultMessage is:
@@ -195,6 +202,7 @@ msgstr ""
 msgctxt "konnect.error.http.unexpectedResponseStatus"
 msgid "Unexpected HTTP response: {status}. Please check your connection and try again."
 msgstr ""
+"Неожиданный ответ HTTP: {status}. Проверьте подключение и повторите попытку."
 
 #. [konnect.error.http.unexpectedResponseState]
 #. defaultMessage is:
@@ -202,7 +210,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.http.unexpectedResponseState"
 msgid "Unexpected response state: {state}"
-msgstr ""
+msgstr "Неожиданный ответ: {state}"
 
 #. [konnect.chooseaccount.useOther.label]
 #. defaultMessage is:
@@ -210,7 +218,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.useOther.label"
 msgid "Use another account"
-msgstr ""
+msgstr "Другой пользователь"
 
 #. [konnect.login.usernameField.label]
 #. defaultMessage is:
@@ -218,7 +226,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.usernameField.label"
 msgid "Username"
-msgstr ""
+msgstr "Имя пользователя"
 
 #. [konnect.welcome.headline]
 #. defaultMessage is:
@@ -226,7 +234,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.headline"
 msgid "Welcome {displayName}"
-msgstr ""
+msgstr "Добро пожаловать, {displayName}"
 
 #. [konnect.welcome.message]
 #. defaultMessage is:
@@ -234,7 +242,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.message"
 msgid "You are signed in - awesome!"
-msgstr ""
+msgstr "Вы вошли - круто!"
 
 #. [konnect.goodbye.message.close]
 #. defaultMessage is:
@@ -242,7 +250,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.close"
 msgid "You can close this window now."
-msgstr ""
+msgstr "Теперь вы можете закрыть окно."
 
 #. [konnect.goodbye.confirm.subHeader]
 #. defaultMessage is:
@@ -250,7 +258,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.confirm.subHeader"
 msgid "please confirm sign out"
-msgstr ""
+msgstr "пожалуйста, подтвердите выход"
 
 #. [konnect.chooseaccount.subHeader]
 #. defaultMessage is:
@@ -258,7 +266,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.subHeader"
 msgid "to sign in to Kopano"
-msgstr ""
+msgstr "для входа в Kopano"
 
 #. [konnect.login.subHeader]
 #. defaultMessage is:
@@ -266,7 +274,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.subHeader"
 msgid "with your Kopano account"
-msgstr ""
+msgstr "с вашей учётной записью Kopano"
 
 #. [konnect.goodbye.subHeader]
 #. defaultMessage is:
@@ -274,7 +282,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.subHeader"
 msgid "you have been signed out from your Kopano account"
-msgstr ""
+msgstr "вы вышли из вашей учетной записи Kopano"
 
 #. [konnect.consent.message]
 #. defaultMessage is:
@@ -282,4 +290,4 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.message"
 msgid "{clientDisplayName} wants to"
-msgstr ""
+msgstr "{clientDisplayName} хочет"
