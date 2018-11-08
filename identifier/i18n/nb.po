@@ -2,15 +2,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
-"PO-Revision-Date: 2018-10-30T16:08:29.860Z\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2018-11-08 16:18+0000\n"
+"Last-Translator: Klaus <klaus@linuxavdelingen.no>\n"
+"Language-Team: Norwegian Bokmål "
+"<http://translate.kopano.io/projects/kopano/konnect/nb/>\n"
 "Language: nb\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: react-intl-po\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2.4\n"
 
 #. [konnect.chooseaccount.useOther.persona.label]
 #. defaultMessage is:
@@ -18,7 +19,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #. [konnect.consent.allowButton.label]
 #. defaultMessage is:
@@ -26,7 +27,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.allowButton.label"
 msgid "Allow"
-msgstr ""
+msgstr "Tillat"
 
 #. [konnect.consent.question]
 #. defaultMessage is:
@@ -34,7 +35,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.question"
 msgid "Allow {clientDisplayName} to do this?"
-msgstr ""
+msgstr "Tillatt {clientDisplayName} å gjøre dette?"
 
 #. [konnect.consent.consequence]
 #. defaultMessage is:
@@ -43,6 +44,7 @@ msgstr ""
 msgctxt "konnect.consent.consequence"
 msgid "By clicking Allow, you allow this app to use your information."
 msgstr ""
+"Ved å klikke på Aksepter, så tillater du at appen bruker din informasjon."
 
 #. [konnect.consent.cancelButton.label]
 #. defaultMessage is:
@@ -50,7 +52,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.cancelButton.label"
 msgid "Cancel"
-msgstr ""
+msgstr "Avbryt"
 
 #. [konnect.chooseaccount.headline]
 #. defaultMessage is:
@@ -58,7 +60,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.headline"
 msgid "Choose an account"
-msgstr ""
+msgstr "Velg en konto"
 
 #. [konnect.consent.tooltip.client]
 #. defaultMessage is:
@@ -66,7 +68,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.tooltip.client"
 msgid "Clicking \"Allow\" will redirect you to: {redirectURI}"
-msgstr ""
+msgstr "Ved å klikke på \"Tillatt\" så vil du bli ledet til: {redirectURI}"
 
 #. [konnect.error.login.validate.missingPassword]
 #. defaultMessage is:
@@ -74,7 +76,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.validate.missingPassword"
 msgid "Enter a password"
-msgstr ""
+msgstr "Skriv inn et passord"
 
 #. [konnect.error.login.validate.missingUsername]
 #. defaultMessage is:
@@ -82,7 +84,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.validate.missingUsername"
 msgid "Enter an username"
-msgstr ""
+msgstr "Skriv inn et brukernavn"
 
 #. [konnect.loading.error.headline]
 #. defaultMessage is:
@@ -90,7 +92,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.loading.error.headline"
 msgid "Failed to connect to server"
-msgstr ""
+msgstr "Klarte ikke å forbinde med server"
 
 #. [konnect.goodbye.headline]
 #. defaultMessage is:
@@ -98,7 +100,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.headline"
 msgid "Goodbye"
-msgstr ""
+msgstr "Farvel"
 
 #. [konnect.goodbye.confirm.headline]
 #. defaultMessage is:
@@ -106,7 +108,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.confirm.headline"
 msgid "Hello {displayName}"
-msgstr ""
+msgstr "Hallo {displayName}"
 
 #. [konnect.consent.headline]
 #. defaultMessage is:
@@ -114,7 +116,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
-msgstr ""
+msgstr "Hei {displayName}"
 
 #. [konnect.error.login.failed]
 #. defaultMessage is:
@@ -122,7 +124,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.failed"
 msgid "Logon failed. Please verify your credentials and try again."
-msgstr ""
+msgstr "Logg inn feilet. Vennligst sjekk brukernavn/passord, og forsøk igjen."
 
 #. [konnet.error.http.networkError]
 #. defaultMessage is:
@@ -130,7 +132,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnet.error.http.networkError"
 msgid "Network error. Please check your connection and try again."
-msgstr ""
+msgstr "Nettverksfeil. Sjekk din forbindelse, og forsøk igjen."
 
 #. [konnect.login.nextButton.label]
 #. defaultMessage is:
@@ -138,7 +140,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.nextButton.label"
 msgid "Next"
-msgstr ""
+msgstr "Neste"
 
 #. [konnect.login.passwordField.label]
 #. defaultMessage is:
@@ -146,7 +148,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.passwordField.label"
 msgid "Password"
-msgstr ""
+msgstr "Passord"
 
 #. [konnect.goodbye.message.confirm]
 #. defaultMessage is:
@@ -170,7 +172,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.headline"
 msgid "Sign in"
-msgstr ""
+msgstr "Logg inn"
 
 #. [konnect.goodbye.signoutButton.label]
 #. defaultMessage is:
@@ -178,7 +180,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.signoutButton.label"
 msgid "Sign out"
-msgstr ""
+msgstr "Logg ut"
 
 #. [konnect.welcome.signoutButton.label]
 #. defaultMessage is:
@@ -186,7 +188,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.signoutButton.label"
 msgid "Sign out"
-msgstr ""
+msgstr "Logg ut"
 
 #. [konnect.error.http.unexpectedResponseStatus]
 #. defaultMessage is:
@@ -210,7 +212,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.useOther.label"
 msgid "Use another account"
-msgstr ""
+msgstr "Bruk en annen konto"
 
 #. [konnect.login.usernameField.label]
 #. defaultMessage is:
@@ -218,7 +220,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.usernameField.label"
 msgid "Username"
-msgstr ""
+msgstr "Brukernavn"
 
 #. [konnect.welcome.headline]
 #. defaultMessage is:
@@ -226,7 +228,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.headline"
 msgid "Welcome {displayName}"
-msgstr ""
+msgstr "Velkommen {displayName}"
 
 #. [konnect.welcome.message]
 #. defaultMessage is:
@@ -242,7 +244,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.close"
 msgid "You can close this window now."
-msgstr ""
+msgstr "Du kan lukke dette vinduet nå."
 
 #. [konnect.goodbye.confirm.subHeader]
 #. defaultMessage is:
@@ -250,7 +252,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.confirm.subHeader"
 msgid "please confirm sign out"
-msgstr ""
+msgstr "vennligst bekreft utlogging"
 
 #. [konnect.chooseaccount.subHeader]
 #. defaultMessage is:
@@ -282,4 +284,4 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.message"
 msgid "{clientDisplayName} wants to"
-msgstr ""
+msgstr "{clientDisplayName} ønsker"
