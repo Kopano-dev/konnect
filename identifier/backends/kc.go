@@ -509,7 +509,7 @@ func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userID stri
 			return nil, fmt.Errorf("kc identifier backend sso logon returned no session")
 		}
 	default:
-		return nil, fmt.Errorf("kc identifier backend sso logon failed: %v", err)
+		return nil, fmt.Errorf("kc identifier backend sso logon failed: %v", response.Er)
 	}
 
 	// Create session instance, for internal use.
