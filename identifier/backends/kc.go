@@ -40,7 +40,6 @@ import (
 const (
 	kcSessionMaxRetries = 3
 	kcSessionRetryDelay = 50 * time.Millisecond
-	scopeKopanoGc       = "kopano/gc"
 
 	kcIdentifierBackendName = "identifier-kc"
 )
@@ -488,8 +487,8 @@ func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userID stri
 	// Create new auth record with attached identity manager for userID and
 	// ensure that we have the required scopes to access kc.
 	auth := identity.NewAuthRecord(b.identityManager, userID, map[string]bool{
-		oidc.ScopeOpenID: true,
-		scopeKopanoGc:    true,
+		oidc.ScopeOpenID:            true,
+		kcDefinitions.ScopeKopanoGC: true,
 	}, nil)
 	// Create a new access token which hopefully gets accepted by our backend.
 	accessToken, err := b.oidcProvider.MakeAccessToken(ctx, "konnect", auth)
