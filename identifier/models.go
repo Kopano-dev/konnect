@@ -26,6 +26,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 
 	"stash.kopano.io/kc/konnect/identifier/clients"
+	"stash.kopano.io/kc/konnect/identifier/meta"
 )
 
 // A LogonRequest is the request data as sent to the logon endpoint
@@ -100,10 +101,11 @@ type HelloResponse struct {
 	Username    string `json:"username,omitempty"`
 	DisplayName string `json:"displayName,omitempty"`
 
-	Next            string           `json:"next,omitempty"`
-	ContinueURI     string           `json:"continue_uri,omitempty"`
-	RequestedScopes map[string]bool  `json:"scopes,omitempty"`
-	ClientDetails   *clients.Details `json:"client,omitempty"`
+	Next          string           `json:"next,omitempty"`
+	ContinueURI   string           `json:"continue_uri,omitempty"`
+	Scopes        map[string]bool  `json:"scopes,omitempty"`
+	ClientDetails *clients.Details `json:"client,omitempty"`
+	Meta          *meta.Meta       `json:"meta,omitempty"`
 }
 
 // A StateRequest is a general request with a state.

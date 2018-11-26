@@ -36,6 +36,7 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identifier/clients"
+	"stash.kopano.io/kc/konnect/identifier/meta"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/utils"
@@ -57,6 +58,8 @@ type Identifier struct {
 	recipient *jose.Recipient
 	backend   backends.Backend
 	clients   *clients.Registry
+
+	meta *meta.Meta
 
 	onSetLogonCallbacks   []func(ctx context.Context, rw http.ResponseWriter, user identity.User) error
 	onUnsetLogonCallbacks []func(ctx context.Context, rw http.ResponseWriter) error
@@ -88,11 +91,20 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 
 		backend: c.Backend,
 
+		meta: &meta.Meta{
+			Scopes: &meta.Scopes{
+				Mapping:     make(map[string]string),
+				Definitions: make(map[string]*meta.ScopeDefinition),
+			},
+		},
+
 		onSetLogonCallbacks:   make([]func(ctx context.Context, rw http.ResponseWriter, user identity.User) error, 0),
 		onUnsetLogonCallbacks: make([]func(ctx context.Context, rw http.ResponseWriter) error, 0),
 
 		logger: c.Config.Logger,
 	}
+
+	i.meta.Scopes.Extend(c.Backend.ScopesMeta())
 
 	return i, nil
 }

@@ -17,7 +17,7 @@ import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actio
 import { ErrorMessage } from '../errors';
 import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
 import ClientDisplayName from './ClientDisplayName';
-import ScopeList from './ScopeList';
+import ScopesList from './ScopesList';
 
 const styles = theme => ({
   button: {
@@ -34,7 +34,7 @@ const styles = theme => ({
   subHeader: {
     marginBottom: theme.spacing.unit * 2
   },
-  scopeList: {
+  scopesList: {
     marginBottom: theme.spacing.unit * 2
   },
   wrapper: {
@@ -61,6 +61,8 @@ class Consent extends Component {
     const { classes, loading, hello, errors, client } = this.props;
 
     const scopes = hello.details.scopes || {};
+    const meta = hello.details.meta || {};
+
     return (
       <div>
         <Typography variant="headline" component="h3">
@@ -94,7 +96,7 @@ class Consent extends Component {
             }}
           ></FormattedMessage>
         </Typography>
-        <ScopeList dense disablePadding className={classes.scopeList} scopes={scopes}></ScopeList>
+        <ScopesList dense disablePadding className={classes.scopesList} scopes={scopes} meta={meta.scopes}></ScopesList>
 
         <Typography variant="subheading" gutterBottom>
           <FormattedMessage

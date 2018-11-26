@@ -30,6 +30,7 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/config"
 	ldapDefinitions "stash.kopano.io/kc/konnect/identifier/backends/ldap"
+	"stash.kopano.io/kc/konnect/identifier/meta"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 
@@ -422,6 +423,12 @@ func (b *LDAPIdentifierBackend) UserClaims(userID string, authorizedScopes map[s
 // when running this backend.
 func (b *LDAPIdentifierBackend) ScopesSupported() []string {
 	return ldapSupportedScopes
+}
+
+// ScopesMeta implements the Backend interface, providing meta data for
+// supported scopes.
+func (b *LDAPIdentifierBackend) ScopesMeta() *meta.Scopes {
+	return nil
 }
 
 // Name implements the Backend interface.

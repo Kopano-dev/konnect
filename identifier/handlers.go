@@ -27,6 +27,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"stash.kopano.io/kc/konnect/identifier/meta"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -493,12 +494,13 @@ handleHelloLoop:
 		}
 
 		if promptConsent {
-
 			// TODO(longsleep): Filter scopes to scopes we know about and all.
-
 			response.Next = FlowConsent
-			response.RequestedScopes = r.Scopes
+			response.Scopes = r.Scopes
 			response.ClientDetails = clientDetails
+			response.Meta = &meta.Meta{
+				Scopes: meta.NewScopesFromIDs(r.Scopes, i.meta.Scopes),
+			}
 		}
 
 		// Add authorize endpoint URI as continue URI.

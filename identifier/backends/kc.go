@@ -32,6 +32,7 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/config"
 	kcDefinitions "stash.kopano.io/kc/konnect/identifier/backends/kc"
+	"stash.kopano.io/kc/konnect/identifier/meta"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/oidc"
@@ -50,6 +51,14 @@ var kcSupportedScopes = []string{
 	konnect.ScopeID,
 	konnect.ScopeRawSubject,
 	kcDefinitions.ScopeKopanoGC,
+}
+
+var scopesMeta = &meta.Scopes{
+	Definitions: map[string]*meta.ScopeDefinition{
+		kcDefinitions.ScopeKopanoGC: &meta.ScopeDefinition{
+			Description: "Read and write your Kopano Groupware data",
+		},
+	},
 }
 
 // Property mappings for Kopano Server user meta data.
@@ -394,6 +403,12 @@ func (b *KCIdentifierBackend) UserClaims(userID string, authorizedScopes map[str
 // when running this backend.
 func (b *KCIdentifierBackend) ScopesSupported() []string {
 	return kcSupportedScopes
+}
+
+// ScopesMeta implements the Backend interface, providing meta data for
+// supported scopes.
+func (b *KCIdentifierBackend) ScopesMeta() *meta.Scopes {
+	return scopesMeta
 }
 
 // Name implements the Backend interface.

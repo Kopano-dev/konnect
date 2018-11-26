@@ -6,26 +6,6 @@ import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import Checkbox from '@material-ui/core/Checkbox';
 
-const scopesMap = {
-  'openid': 'basic',
-  'email': 'basic',
-  'profile': 'basic',
-
-  'konnect/id': 'basic',
-  'konnect/uuid': 'basic',
-  'konnect/hashed_sub': 'basic',
-  'konnect/raw_sub': 'basic',
-
-  'kopano/gc': 'kopano/gc'
-};
-
-const descriptionMap = {
-  'basic': 'Access your basic account information',
-  'offline_access': 'Keep the allowed access persistently and forever',
-
-  'kopano/gc': 'Read and write your Kopano Groupware data'
-};
-
 const styles = () => ({
   row: {
     paddingTop: 0,
@@ -33,15 +13,18 @@ const styles = () => ({
   }
 });
 
-const ScopeList = ({scopes, classes, ...rest}) => {
+const ScopesList = ({scopes, meta, classes, ...rest}) => {
+  const { mapping, definitions } = meta;
+
   const rows = [];
   const known = {};
 
+  // TODO(longsleep): Sort scopes according to priority.
   for (let scope in scopes) {
     if (!scopes[scope]) {
       continue;
     }
-    let id = scopesMap[scope];
+    let id = mapping[scope];
     if (id) {
       if (known[id]) {
         continue;
@@ -50,9 +33,12 @@ const ScopeList = ({scopes, classes, ...rest}) => {
     } else {
       id = scope;
     }
-    let label = descriptionMap[id];
-    if (!label) {
+    let definition = definitions[id];
+    let label ;
+    if (!definition) {
       label = `Scope: ${scope}`;
+    } else {
+      label = definition.description;
     }
 
     rows.push(
@@ -78,10 +64,11 @@ const ScopeList = ({scopes, classes, ...rest}) => {
   );
 };
 
-ScopeList.propTypes = {
+ScopesList.propTypes = {
   classes: PropTypes.object.isRequired,
 
-  scopes: PropTypes.object.isRequired
+  scopes: PropTypes.object.isRequired,
+  meta: PropTypes.object.isRequired
 };
 
-export default withStyles(styles)(ScopeList);
+export default withStyles(styles)(ScopesList);
