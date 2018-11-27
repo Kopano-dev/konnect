@@ -15,9 +15,14 @@
  *
  */
 
-package meta
+package scopes
 
 import (
+	"io/ioutil"
+
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/oidc"
 )
@@ -42,12 +47,12 @@ var defaultScopesMap = map[string]string{
 	konnect.ScopeRawSubject:   scopeAliasBasic,
 }
 
-var defaultScopesDefinitionMap = map[string]*ScopeDefinition{
-	scopeAliasBasic: &ScopeDefinition{
+var defaultScopesDefinitionMap = map[string]*Definition{
+	scopeAliasBasic: &Definition{
 		Description: "Access your basic account information",
 		Priority:    priorityBasic,
 	},
-	oidc.ScopeOfflineAccess: &ScopeDefinition{
+	oidc.ScopeOfflineAccess: &Definition{
 		Description: "Keep the allowed access persistently and forever",
 		Priority:    priorityOfflineAccess,
 	},
@@ -55,15 +60,15 @@ var defaultScopesDefinitionMap = map[string]*ScopeDefinition{
 
 // Scopes contain collections for scope related meta data
 type Scopes struct {
-	Mapping     map[string]string           `json:"mapping"`
-	Definitions map[string]*ScopeDefinition `json:"definitions"`
+	Mapping     map[string]string      `json:"mapping" yaml:"mapping"`
+	Definitions map[string]*Definition `json:"definitions" yaml:"scopes"`
 }
 
 // NewScopesFromIDs creates a new scopes meta data collection from the provided
 // scopes IDs optionally also adding definitions from a parent.
 func NewScopesFromIDs(scopes map[string]bool, parent *Scopes) *Scopes {
 	mapping := make(map[string]string)
-	definitions := make(map[string]*ScopeDefinition)
+	definitions := make(map[string]*Definition)
 
 	for scope, enabled := range scopes {
 		if !enabled {
@@ -92,6 +97,44 @@ func NewScopesFromIDs(scopes map[string]bool, parent *Scopes) *Scopes {
 	}
 }
 
+// NewScopesFromFile loads scope definitions from a file.
+func NewScopesFromFile(scopesConfFilepath string, logger logrus.FieldLogger) (*Scopes, error) {
+	scopes := &Scopes{}
+
+	if scopesConfFilepath != "" {
+		logger.Debugf("parsing scopes conf from %v", scopesConfFilepath)
+		confFile, err := ioutil.ReadFile(scopesConfFilepath)
+		if err != nil {
+			return nil, err
+		}
+
+		err = yaml.Unmarshal(confFile, scopes)
+		if err != nil {
+			return nil, err
+		}
+
+		for id, definition := range scopes.Definitions {
+			fields := logrus.Fields{
+				"id":       id,
+				"priority": definition.Priority,
+			}
+
+			logger.WithFields(fields).Debugln("registered scope")
+		}
+
+		for id, mapped := range scopes.Mapping {
+			fields := logrus.Fields{
+				"id": id,
+				"to": mapped,
+			}
+
+			logger.WithFields(fields).Debugln("registered scope mapping")
+		}
+	}
+
+	return scopes, nil
+}
+
 // Extend adds the provided scope mappings and definitions to the accociated
 // scopes mappings and definitions with replacing already existing. If scopes is
 // nil, Extends is a no-op.
@@ -108,10 +151,4 @@ func (s *Scopes) Extend(scopes *Scopes) error {
 	}
 
 	return nil
-}
-
-// A ScopeDefinition contains the meta data for a single scope.
-type ScopeDefinition struct {
-	Priority    int    `json:"priority"`
-	Description string `json:"description"`
 }

@@ -31,6 +31,7 @@ type Config struct {
 	PathPrefix      string
 	StaticFolder    string
 	LogonCookieName string
+	ScopesConf      string
 
 	AuthorizationEndpointURI *url.URL
 

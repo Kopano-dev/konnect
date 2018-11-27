@@ -62,6 +62,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("endsession-endpoint-uri", "", "Custom endsession endpoint URI")
 	serveCmd.Flags().String("identifier-client-path", "", fmt.Sprintf("Path to the identifier web client base folder (default \"%s\")", defaultIdentifierClientPath))
 	serveCmd.Flags().String("identifier-registration-conf", "", "Path to a identifier-registration.yaml configuration file")
+	serveCmd.Flags().String("identifier-scopes-conf", "", "Path to a scopes.yaml configuration file")
 	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
 	serveCmd.Flags().StringArray("trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
 	serveCmd.Flags().StringArray("allow-scope", nil, "Allow OAuth 2 scope (can be used multiple times, if not set default scopes are allowed)")

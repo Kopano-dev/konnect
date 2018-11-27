@@ -67,6 +67,7 @@ type bootstrap struct {
 	issuerIdentifierURI        *url.URL
 	identifierClientPath       string
 	identifierRegistrationConf string
+	identifierScopesConf       string
 
 	encryptionSecret []byte
 	signingMethod    jwt.SigningMethod
@@ -200,6 +201,14 @@ func (bs *bootstrap) initialize() error {
 		bs.identifierRegistrationConf, _ = filepath.Abs(bs.identifierRegistrationConf)
 		if _, errStat := os.Stat(bs.identifierRegistrationConf); errStat != nil {
 			return fmt.Errorf("identifier-registration-conf file not found or unable to access: %v", errStat)
+		}
+	}
+
+	bs.identifierScopesConf, _ = cmd.Flags().GetString("identifier-scopes-conf")
+	if bs.identifierScopesConf != "" {
+		bs.identifierScopesConf, _ = filepath.Abs(bs.identifierScopesConf)
+		if _, errStat := os.Stat(bs.identifierScopesConf); errStat != nil {
+			return fmt.Errorf("identifier-scopes-conf file not found or unable to access: %v", errStat)
 		}
 	}
 

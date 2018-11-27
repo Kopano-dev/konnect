@@ -15,14 +15,10 @@
  *
  */
 
-package meta
+package scopes
 
-import (
-	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
-)
-
-// Meta is a container to hold identifier meta data which can be requested by
-// clients.
-type Meta struct {
-	Scopes *scopes.Scopes `json:"scopes"`
+// A Definition contains the meta data for a single scope.
+type Definition struct {
+	Priority    int    `json:"priority" yaml:"priority"`
+	Description string `json:"description" yaml:"description"`
 }

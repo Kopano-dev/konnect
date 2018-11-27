@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"stash.kopano.io/kc/konnect/identifier/meta"
+	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -499,7 +500,7 @@ handleHelloLoop:
 			response.Scopes = r.Scopes
 			response.ClientDetails = clientDetails
 			response.Meta = &meta.Meta{
-				Scopes: meta.NewScopesFromIDs(r.Scopes, i.meta.Scopes),
+				Scopes: scopes.NewScopesFromIDs(r.Scopes, i.meta.Scopes),
 			}
 		}
 

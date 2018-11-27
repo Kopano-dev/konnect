@@ -32,7 +32,7 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/config"
 	kcDefinitions "stash.kopano.io/kc/konnect/identifier/backends/kc"
-	"stash.kopano.io/kc/konnect/identifier/meta"
+	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/oidc"
@@ -53,9 +53,9 @@ var kcSupportedScopes = []string{
 	kcDefinitions.ScopeKopanoGC,
 }
 
-var scopesMeta = &meta.Scopes{
-	Definitions: map[string]*meta.ScopeDefinition{
-		kcDefinitions.ScopeKopanoGC: &meta.ScopeDefinition{
+var scopesMeta = &scopes.Scopes{
+	Definitions: map[string]*scopes.Definition{
+		kcDefinitions.ScopeKopanoGC: &scopes.Definition{
 			Description: "Read and write your Kopano Groupware data",
 		},
 	},
@@ -407,7 +407,7 @@ func (b *KCIdentifierBackend) ScopesSupported() []string {
 
 // ScopesMeta implements the Backend interface, providing meta data for
 // supported scopes.
-func (b *KCIdentifierBackend) ScopesMeta() *meta.Scopes {
+func (b *KCIdentifierBackend) ScopesMeta() *scopes.Scopes {
 	return scopesMeta
 }
 

@@ -37,6 +37,7 @@ import (
 	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identifier/meta"
+	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/utils"
@@ -50,6 +51,7 @@ type Identifier struct {
 	pathPrefix      string
 	staticFolder    string
 	logonCookieName string
+	scopesConf      string
 	webappIndexHTML []byte
 
 	authorizationEndpointURI *url.URL
@@ -85,23 +87,23 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		pathPrefix:      c.PathPrefix,
 		staticFolder:    staticFolder,
 		logonCookieName: c.LogonCookieName,
+		scopesConf:      c.ScopesConf,
 		webappIndexHTML: webappIndexHTML,
 
 		authorizationEndpointURI: c.AuthorizationEndpointURI,
 
 		backend: c.Backend,
 
-		meta: &meta.Meta{
-			Scopes: &meta.Scopes{
-				Mapping:     make(map[string]string),
-				Definitions: make(map[string]*meta.ScopeDefinition),
-			},
-		},
-
 		onSetLogonCallbacks:   make([]func(ctx context.Context, rw http.ResponseWriter, user identity.User) error, 0),
 		onUnsetLogonCallbacks: make([]func(ctx context.Context, rw http.ResponseWriter) error, 0),
 
 		logger: c.Config.Logger,
+	}
+
+	i.meta = &meta.Meta{}
+	i.meta.Scopes, err = scopes.NewScopesFromFile(i.scopesConf, i.logger)
+	if err != nil {
+		return nil, err
 	}
 
 	i.meta.Scopes.Extend(c.Backend.ScopesMeta())

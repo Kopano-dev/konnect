@@ -20,7 +20,7 @@ package backends
 import (
 	"context"
 
-	"stash.kopano.io/kc/konnect/identifier/meta"
+	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity"
 )
 
@@ -39,7 +39,7 @@ type Backend interface {
 
 	UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{}
 	ScopesSupported() []string
-	ScopesMeta() *meta.Scopes
+	ScopesMeta() *scopes.Scopes
 
 	Name() string
 }
