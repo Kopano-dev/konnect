@@ -15,6 +15,7 @@ OPENSSL=openssl
 DEFAULT_IDENTIY_MANAGER=kc
 DEFAULT_WEB_RESOURCES_PATH=/usr/share/kopano-konnect
 DEFAULT_IDENTIFIER_REGISTRATION_FILE=/etc/kopano/konnectd-identifier-registration.yaml
+DEFAULT_IDENTIFIER_SCOPES_FILE=/etc/kopano/konnectd-identifier-scopes.yaml
 DEFAULT_OIDC_ISSUER_IDENTIFIER=https://localhost
 DEFAULT_SIGNING_PRIVATE_KEY_FILE=/etc/kopano/konnectd-signing-private-key.pem
 DEFAULT_VALIDATION_KEYS_PATH=/etc/kopano/konnectkeys
@@ -71,6 +72,12 @@ case "${1}" in
 			fi
 		fi
 
+		if [ -z "$identifier_scopes_conf" ]; then
+			if [ -f "${DEFAULT_IDENTIFIER_SCOPES_FILE}" ]; then
+				identifier_scopes_conf="${DEFAULT_IDENTIFIER_SCOPES_FILE}"
+			fi
+		fi
+
 		if [ -n "$oidc_issuer_identifier" ]; then
 			if [ -n "$OIDC_ISSUER_IDENTIFIER" ]; then
 				>&2	echo "Warning: duplicate setting of issuer identifier - using value from environment"
@@ -99,6 +106,10 @@ case "${1}" in
 			for scope in $allowed_scopes; do
 				set -- "$@" --allow-scope="$scope"
 			done
+		fi
+
+		if [ -n "$identifier_scopes_conf" ]; then
+			set -- "$@" --identifier-scopes-conf="$identifier_scopes_conf"
 		fi
 
 		if [ -z "$signing_private_key" -a -f "${DEFAULT_SIGNING_PRIVATE_KEY_FILE}" ]; then
