@@ -27,6 +27,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/deckarep/golang-set"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	jose "gopkg.in/square/go-jose.v2"
@@ -455,9 +456,24 @@ func (i *Identifier) Name() string {
 	return i.backend.Name()
 }
 
-// ScopesSupported return the scopes supported by the accociaged Identifier.
+// ScopesSupported return the scopes supported by the accociated Identifier.
 func (i *Identifier) ScopesSupported() []string {
-	return i.backend.ScopesSupported()
+	scopes := mapset.NewThreadUnsafeSet()
+
+	for scope := range i.meta.Scopes.Definitions {
+		scopes.Add(scope)
+	}
+	for _, scope := range i.backend.ScopesSupported() {
+		scopes.Add(scope)
+	}
+
+	supportedScopes := make([]string, 0)
+	it := scopes.Iterator()
+	for scope := range it.C {
+		supportedScopes = append(supportedScopes, scope.(string))
+	}
+
+	return supportedScopes
 }
 
 // OnSetLogon implements a way to register hooks whenever logon information is

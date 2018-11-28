@@ -1,6 +1,8 @@
-hash: 9e4de3f1da341dab5ce1808d183ab953a37a96be2c75fc95a690de779abec0a5
-updated: 2018-09-11T23:05:39.242515791+02:00
+hash: 4f3053d7ce9463845e85fa613010dd80ec37dd6a70d5fc36f66699709a57b48e
+updated: 2018-11-28T16:58:29.985573026+01:00
 imports:
+- name: github.com/deckarep/golang-set
+  version: cbaa98ba5575e67703b32b4b19f73c91f3c4159e
 - name: github.com/dgrijalva/jwt-go
   version: 06ea1031745cb8b3dab3f6a236daf2b0aa468b7e
 - name: github.com/eternnoir/gncp
@@ -37,21 +39,23 @@ imports:
 - name: github.com/spf13/cobra
   version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
 - name: github.com/spf13/pflag
-  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+  version: 9a97c102cda95a86cec2345a6f09f55a939babf5
 - name: golang.org/x/crypto
   version: 2faea1465de239e4babd8f5905cc25b781712442
   subpackages:
   - ed25519
   - ed25519/internal/edwards25519
   - nacl/secretbox
+  - pbkdf2
   - poly1305
   - salsa20/salsa
+  - ssh/terminal
 - name: golang.org/x/net
-  version: d866cfc389cec985d6fda2859936a575a55a3ab6
+  version: c39426892332e1bb5ec0a434a079bf82f5d30c54
   subpackages:
   - context
 - name: golang.org/x/sys
-  version: 833a04a10549a95dc34458c195cbad61bbb6cb4d
+  version: 14742f9018cd6651ec7364dc6ee08af0baaa1031
   subpackages:
   - unix
 - name: golang.org/x/time

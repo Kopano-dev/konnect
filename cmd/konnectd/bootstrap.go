@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"stash.kopano.io/kgol/rndm"
 
@@ -350,7 +351,11 @@ func (bs *bootstrap) setupIdentity(ctx context.Context) (identity.Manager, error
 	if err != nil {
 		return nil, err
 	}
-	logger.WithField("name", identityManagerName).Infoln("identity manager set up")
+	logger.WithFields(logrus.Fields{
+		"name":   identityManagerName,
+		"scopes": identityManager.ScopesSupported(),
+		"claims": identityManager.ClaimsSupported(),
+	}).Infoln("identity manager set up")
 
 	return identityManager, nil
 }
