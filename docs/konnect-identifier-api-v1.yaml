@@ -1,7 +1,7 @@
 openapi: '3.0.0'
 
 info:
-  version: '1.0.20181031'
+  version: '1.0.20181130'
   title: Konnect Identifier REST API
   contact:
     name: Kopano Developers
@@ -9,7 +9,7 @@ info:
   license:
     name: GNU Affero General Public License
     url: https://www.gnu.org/licenses/agpl-3.0.en.html
-    
+
 servers:
   - url: 'https://{hostnameWithPort}/signin/v1'
     variables:
@@ -32,7 +32,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: 
+            schema:
               $ref: '#/components/schemas/LogonRequest'
       parameters:
         - in: header
@@ -258,8 +258,12 @@ components:
           $ref: '#/components/schemas/ScopesMap'
         client:
           $ref: '#/components/schemas/ClientDetails'
+        meta:
+          $ref: '#/components/schemas/Meta'
     ScopesMap:
       type: object
+      additionalProperties:
+        type: boolean
       example: {
         'scope1': true,
         'scope2': true
@@ -279,6 +283,28 @@ components:
           type: string
         trusted:
           type: boolean
+    Meta:
+      required:
+        - scopes
+      properties:
+        scopes:
+          $ref: '#/components/schemas/Scopes'
+    Scopes:
+      properties:
+        mapping:
+          type: object
+          additionalProperties:
+            type: string
+        definitions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ScopesDefinition'
+    ScopesDefinition:
+      properties:
+        priority:
+          type: number
+        description:
+          type: string
     LogonRequest:
       required:
         - state
@@ -347,7 +373,7 @@ components:
           type: string
         flow_nonce:
           type: string
-          
+
   securitySchemes:
     cookieAuth:
       type: apiKey
