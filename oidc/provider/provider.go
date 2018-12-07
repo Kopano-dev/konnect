@@ -220,7 +220,15 @@ func (p *Provider) InitializeMetadata() error {
 	}
 	if p.signingMethod != nil {
 		p.metadata.IDTokenSigningAlgValuesSupported = []string{
-			p.signingMethod.Alg(),
+			jwt.SigningMethodES256.Alg(),
+			jwt.SigningMethodES384.Alg(),
+			jwt.SigningMethodES512.Alg(),
+			jwt.SigningMethodRS256.Alg(),
+			jwt.SigningMethodRS384.Alg(),
+			jwt.SigningMethodRS512.Alg(),
+			jwt.SigningMethodPS256.Alg(),
+			jwt.SigningMethodPS384.Alg(),
+			jwt.SigningMethodPS512.Alg(),
 		}
 	}
 
