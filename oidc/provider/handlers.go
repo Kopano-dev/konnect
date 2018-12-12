@@ -95,7 +95,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 
 	ar, err := payload.DecodeAuthenticationRequest(req, p.metadata)
 	if err != nil {
-		p.logger.WithError(err).Errorln("authorize request invalid request data")
+		p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("authorize request invalid request data")
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
 		return
 	}

@@ -217,6 +217,8 @@ func (p *Provider) InitializeMetadata() error {
 			oidc.ExpirationClaim,
 			oidc.IssuedAtClaim,
 		}, p.identityManager.ClaimsSupported()...)),
+		RequestParameterSupported:    true,
+		RequestURIParameterSupported: false,
 	}
 	if p.signingMethod != nil {
 		p.metadata.IDTokenSigningAlgValuesSupported = []string{

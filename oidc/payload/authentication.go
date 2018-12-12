@@ -58,6 +58,7 @@ type AuthenticationRequest struct {
 	RedirectURI   *url.URL        `schema:"-"`
 	IDTokenHint   *jwt.Token      `schema:"-"`
 	MaxAge        time.Duration   `schema:"-"`
+	Request       *jwt.Token      `schema:"-"`
 
 	UseFragment bool   `schema:"-"`
 	Flow        string `schema:"-"`
@@ -84,16 +85,46 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown) (*
 		return nil, err
 	}
 
+	if ar.RawScope != "" {
+		// Parse scope early, since the value is needed to handle the request
+		// parameter properly.
+		for _, scope := range strings.Split(ar.RawScope, " ") {
+			ar.Scopes[scope] = true
+		}
+	}
+
+	if ar.RawRequest != "" {
+		parser := &jwt.Parser{}
+		request, err := parser.ParseWithClaims(ar.RawRequest, &oidc.RequestObjectClaims{}, func(token *jwt.Token) (interface{}, error) {
+			if token.Method == jwt.SigningMethodNone {
+				// Request parameters do not need to be signed to be valid, so
+				// none is allowed in this special case.
+				return jwt.UnsafeAllowNoneSignatureType, nil
+			}
+
+			// TODO(longsleep): Validate signed request tokens according to spec
+			// defined at https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
+			return nil, fmt.Errorf("Not validated")
+		})
+		if err != nil {
+			return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, err.Error())
+		}
+
+		if claims, ok := request.Claims.(*oidc.RequestObjectClaims); ok {
+			err = ar.ApplyRequestObject(claims, request.Method)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		ar.Request = request
+	}
+
 	ar.RedirectURI, _ = url.Parse(ar.RawRedirectURI)
 
 	if ar.RawResponseType != "" {
 		for _, rt := range strings.Split(ar.RawResponseType, " ") {
 			ar.ResponseTypes[rt] = true
-		}
-	}
-	if ar.RawScope != "" {
-		for _, scope := range strings.Split(ar.RawScope, " ") {
-			ar.Scopes[scope] = true
 		}
 	}
 	if ar.RawPrompt != "" {
@@ -144,6 +175,65 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown) (*
 	}
 
 	return ar, nil
+}
+
+// ApplyRequestObject applies the provided request object claims to the
+// associated authentication request data with validation as required.
+func (ar *AuthenticationRequest) ApplyRequestObject(roc *oidc.RequestObjectClaims, method jwt.SigningMethod) error {
+	// Basic consistency validation following spec at
+	// https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
+	if ok := ar.Scopes[oidc.ScopeOpenID]; !ok {
+		return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "openid scope required when using the request parameter")
+	}
+	if roc.RawScope != "" {
+		ar.Scopes = make(map[string]bool)
+		// Parse scope directly, since the accociated authentication request
+		// has already parsed it when this is called.
+		for _, scope := range strings.Split(roc.RawScope, " ") {
+			ar.Scopes[scope] = true
+		}
+	}
+	if roc.RawResponseType != "" {
+		if roc.RawResponseType != ar.RawResponseType {
+			return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "request object response_type mismatch")
+		}
+	}
+	if roc.ClientID != "" {
+		if roc.ClientID != ar.ClientID {
+			return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "request object client_id mismatch")
+		}
+	}
+
+	if method != jwt.SigningMethodNone {
+		// Additional claim validation when signed. The spec says that iss and
+		// aud SHOULD have defined values. So for now we do not enforce here.
+	}
+
+	// Apply rest of the provided request object values to the accociated
+	// authentication request.
+	if roc.RawRedirectURI != "" {
+		ar.RawRedirectURI = roc.RawRedirectURI
+	}
+	if roc.State != "" {
+		ar.State = roc.State
+	}
+	if roc.Nonce != "" {
+		ar.Nonce = roc.Nonce
+	}
+	if roc.RawPrompt != "" {
+		ar.RawPrompt = roc.RawPrompt
+	}
+	if roc.RawIDTokenHint != "" {
+		ar.RawIDTokenHint = roc.RawIDTokenHint
+	}
+	if roc.RawMaxAge != "" {
+		ar.RawMaxAge = roc.RawMaxAge
+	}
+	if roc.RawRegistration != "" {
+		ar.RawRegistration = roc.RawRegistration
+	}
+
+	return nil
 }
 
 // Validate validates the request data of the accociated authentication request.
@@ -224,9 +314,6 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 		}
 	}
 
-	if ar.RawRequest != "" {
-		return ar.NewError(oidc.ErrorOIDCRequestNotSupported, "")
-	}
 	if ar.RawRequestURI != "" {
 		return ar.NewError(oidc.ErrorOIDCRequestURINotSupported, "")
 	}
