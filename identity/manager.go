@@ -23,6 +23,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
@@ -45,4 +46,6 @@ type Manager interface {
 
 	OnSetLogon(func(ctx context.Context, rw http.ResponseWriter, user User) error) error
 	OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error) error
+
+	GetClientRegistration(ctx context.Context, clientID string) (*clients.ClientRegistration, bool)
 }

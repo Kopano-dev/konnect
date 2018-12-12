@@ -66,13 +66,13 @@ type AuthenticationRequest struct {
 
 // DecodeAuthenticationRequest returns a AuthenticationRequest holding the
 // provided requests form data.
-func DecodeAuthenticationRequest(req *http.Request, providerMetadata *WellKnown) (*AuthenticationRequest, error) {
-	return NewAuthenticationRequest(req.Form, providerMetadata)
+func DecodeAuthenticationRequest(req *http.Request, providerMetadata *WellKnown, keyFunc jwt.Keyfunc) (*AuthenticationRequest, error) {
+	return NewAuthenticationRequest(req.Form, providerMetadata, keyFunc)
 }
 
 // NewAuthenticationRequest returns a AuthenticationRequest holding the
 // provided url values.
-func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown) (*AuthenticationRequest, error) {
+func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, keyFunc jwt.Keyfunc) (*AuthenticationRequest, error) {
 	ar := &AuthenticationRequest{
 		providerMetadata: providerMetadata,
 
@@ -96,14 +96,10 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown) (*
 	if ar.RawRequest != "" {
 		parser := &jwt.Parser{}
 		request, err := parser.ParseWithClaims(ar.RawRequest, &oidc.RequestObjectClaims{}, func(token *jwt.Token) (interface{}, error) {
-			if token.Method == jwt.SigningMethodNone {
-				// Request parameters do not need to be signed to be valid, so
-				// none is allowed in this special case.
-				return jwt.UnsafeAllowNoneSignatureType, nil
+			if keyFunc != nil {
+				return keyFunc(token)
 			}
 
-			// TODO(longsleep): Validate signed request tokens according to spec
-			// defined at https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
 			return nil, fmt.Errorf("Not validated")
 		})
 		if err != nil {

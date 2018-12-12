@@ -21,6 +21,21 @@ clients:
 #    application_type: web
 #    insecure: yes
 
+#  - id: client-with-keys
+#    secret: super
+#    application_type: native
+#    redirect_uris:
+#      - http://localhost
+#    jwks:
+#      keys:
+#        - kty: EC
+#          use: sig
+#          kid: client-with-keys-key-1
+#          crv: P-256
+#          x: RTZpWoRbjwX1YavmSHVBj6Cy3Yzdkkp6QLvTGB22D0c
+#          y: jeavjwcX0xlDSchFcBMzXSU7wGs2VPpNxWCwmxFvmF0
+#    request_object_signing_alg: ES256
+
 #  - id: first
 #    secret: lala
 #    application_type: native
@@ -32,3 +47,4 @@ clients:
 #    application_type: native
 #    redirect_uris:
 #      - http://localhost
+

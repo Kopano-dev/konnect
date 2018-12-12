@@ -260,3 +260,13 @@ func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret str
 		Trusted:     trusted,
 	}, nil
 }
+
+// Get returns the registerd clients registraion for the provided client ID.
+func (r *Registry) Get(ctx context.Context, clientID string) (*ClientRegistration, bool) {
+	// Lookup client registration.
+	r.mutex.RLock()
+	registration, ok := r.clients[clientID]
+	r.mutex.RUnlock()
+
+	return registration, ok
+}

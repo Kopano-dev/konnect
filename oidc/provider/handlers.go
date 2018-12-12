@@ -93,7 +93,58 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ar, err := payload.DecodeAuthenticationRequest(req, p.metadata)
+	ar, err := payload.DecodeAuthenticationRequest(req, p.metadata, func(token *jwt.Token) (interface{}, error) {
+		if claims, ok := token.Claims.(*oidc.RequestObjectClaims); ok {
+			// Validate signed request tokens according to spec defined at
+			// https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
+			registration, _ := p.identityManager.GetClientRegistration(req.Context(), claims.ClientID)
+			if registration != nil {
+				if registration.RawRequestObjectSigningAlg != "" {
+					if token.Method.Alg() != registration.RawRequestObjectSigningAlg {
+						return nil, fmt.Errorf("Token alg does not match client registration")
+					}
+				}
+				if token.Method == jwt.SigningMethodNone {
+					// Request parameters do not need to be signed to be valid, so
+					// none is allowed in this special case.
+					return jwt.UnsafeAllowNoneSignatureType, nil
+				}
+				// Validate signature via JWKS.
+				if registration.JWKS != nil {
+					switch len(registration.JWKS.Keys) {
+					case 0:
+						// breaks
+					case 1:
+						// Use the one and only, no matter what kid says.
+						return registration.JWKS.Keys[0].DecodePublicKey()
+					default:
+						// Find by kid.
+						rawKid, _ := token.Header[oidc.JWTHeaderKeyID]
+						kid, _ := rawKid.(string)
+						if kid == "" {
+							kid = "default"
+						}
+						for _, k := range registration.JWKS.Keys {
+							if kid == k.Kid {
+								return k.DecodePublicKey()
+							}
+						}
+						return nil, fmt.Errorf("Unknown kid")
+					}
+				}
+				return nil, fmt.Errorf("No client keys registered")
+			} else {
+				// Also allow, when client is not registered and the token is unsigned.
+				if token.Method == jwt.SigningMethodNone {
+					// Request parameters do not need to be signed to be valid, so
+					// none is allowed in this special case.
+					return jwt.UnsafeAllowNoneSignatureType, nil
+				}
+			}
+		}
+
+		return nil, fmt.Errorf("Not validated")
+	})
 	if err != nil {
 		p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("authorize request invalid request data")
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())

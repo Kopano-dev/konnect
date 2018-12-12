@@ -23,7 +23,7 @@ import (
 
 	"stash.kopano.io/kc/konnect/managers"
 
-	identifierClients "stash.kopano.io/kc/konnect/identifier/clients"
+	identityClients "stash.kopano.io/kc/konnect/identity/clients"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 )
@@ -51,7 +51,7 @@ func newManagers(ctx context.Context, bs *bootstrap) (*managers.Managers, error)
 	mgrs.Set("code", code)
 
 	// Identifier client registry manager.
-	clients, err := identifierClients.NewRegistry(bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
+	clients, err := identityClients.NewRegistry(bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client registry: %v", err)
 	}

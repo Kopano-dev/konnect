@@ -36,10 +36,10 @@ import (
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
-	"stash.kopano.io/kc/konnect/identifier/clients"
 	"stash.kopano.io/kc/konnect/identifier/meta"
 	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -488,4 +488,10 @@ func (i *Identifier) OnSetLogon(cb func(ctx context.Context, rw http.ResponseWri
 func (i *Identifier) OnUnsetLogon(cb func(ctx context.Context, rw http.ResponseWriter) error) error {
 	i.onUnsetLogonCallbacks = append(i.onUnsetLogonCallbacks, cb)
 	return nil
+}
+
+// GetClientRegistration implements the support to fetch client registration
+// data from the accoicated identifiers client registration.
+func (i *Identifier) GetClientRegistration(ctx context.Context, clientID string) (*clients.ClientRegistration, bool) {
+	return i.clients.Get(ctx, clientID)
 }

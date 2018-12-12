@@ -18,6 +18,7 @@
 package clients
 
 import (
+	"github.com/mendsley/gojwk"
 	_ "gopkg.in/yaml.v2" // Make sure we have yaml.
 )
 
@@ -38,4 +39,7 @@ type ClientRegistration struct {
 
 	RedirectURIs []string `yaml:"redirect_uris,flow"`
 	Origins      []string `yaml:"origins,flow"`
+
+	JWKS                       *gojwk.Key `yaml:"jwks"`
+	RawRequestObjectSigningAlg string     `yaml:"request_object_signing_alg"`
 }
