@@ -49,6 +49,8 @@ const (
 
 	EmailClaim         = "email"
 	EmailVerifiedClaim = "email_verified"
+
+	AuthTimeClaim = "auth_time"
 )
 
 // Additional claims as defined by OIDC extensions.

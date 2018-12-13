@@ -95,8 +95,18 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 	withAccessToken := accessTokenString != ""
 	withCode := codeString != ""
+	withAuthTime := ar.MaxAge > 0
+	withIDTokenClaimsRequest := authorizedClaimsRequest != nil && authorizedClaimsRequest.IDToken != nil
 
-	if !withAccessToken || (authorizedClaimsRequest != nil && authorizedClaimsRequest.IDToken != nil) {
+	if withIDTokenClaimsRequest {
+		// Apply additional information from ID token claims request.
+		if _, ok := authorizedClaimsRequest.IDToken.Get(oidc.AuthTimeClaim); !withAuthTime && ok {
+			// Return auth time claim if requested and not already requested by other means.
+			withAuthTime = true
+		}
+	}
+
+	if !withAccessToken || withIDTokenClaimsRequest {
 		user := auth.User()
 		if user == nil {
 			return "", fmt.Errorf("no user")
@@ -109,7 +119,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 		var requestedClaimsMap []*payload.ClaimsRequestMap
 		var requestedScopesMap map[string]bool
-		if authorizedClaimsRequest != nil && authorizedClaimsRequest.IDToken != nil {
+		if withIDTokenClaimsRequest {
 			requestedClaimsMap = []*payload.ClaimsRequestMap{authorizedClaimsRequest.IDToken}
 			requestedScopesMap = authorizedClaimsRequest.IDToken.ScopesMap(nil)
 		}
@@ -151,7 +161,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 		idTokenClaims.CodeHash = oidc.LeftmostHash([]byte(codeString), hash).String()
 	}
-	if ar.MaxAge > 0 {
+	if withAuthTime {
 		// Add AuthTime.
 		if loggedOn, logonAt := auth.LoggedOn(); loggedOn {
 			idTokenClaims.AuthTime = logonAt.Unix()
