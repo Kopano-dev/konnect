@@ -165,6 +165,18 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 		goto done
 	}
 
+	// Additional validation based on requested ID token claims.
+	if ar.Claims != nil && ar.Claims.IDToken != nil {
+		// Validate sub claim request
+		// https://openid.net/specs/openid-connect-core-1_0.html#ImplicitValidation
+		if subRequest, ok := ar.Claims.IDToken.Get(oidc.SubjectIdentifierClaim); ok {
+			if !subRequest.Match(auth.Subject()) {
+				err = ar.NewError(oidc.ErrorOAuth2AccessDenied, "sub claim request mismatch")
+				goto done
+			}
+		}
+	}
+
 	// Authorization Server Obtains End-User Consent/Authorization
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitConsent
 	auth, err = p.identityManager.Authorize(req.Context(), rw, req, ar, auth)

@@ -123,10 +123,32 @@ func (crm *ClaimsRequestMap) ScopesMap(excludedScopes map[string]bool) map[strin
 	return scopesMap
 }
 
+// Get returns the accociated maps claim value identified by the provided name.
+func (crm ClaimsRequestMap) Get(claim string) (*ClaimsRequestValue, bool) {
+	value, ok := crm[claim]
+
+	return value, ok
+}
+
 // ClaimsRequestValue is the claims request detail definition of an OpenID
 // Connect claims request parameter value.
 type ClaimsRequestValue struct {
 	Essential bool          `json:"essential,omitempty"`
 	Value     interface{}   `json:"value,omitempty"`
 	Values    []interface{} `json:"values,omitempty"`
+}
+
+// Match returns true of the provided value is contained inside the accociated
+// request values values or value.
+func (crv *ClaimsRequestValue) Match(value interface{}) bool {
+	if len(crv.Values) == 0 {
+		return value == crv.Value
+	}
+	for _, v := range crv.Values {
+		if v == value {
+			return true
+		}
+	}
+
+	return false
 }
