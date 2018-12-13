@@ -104,7 +104,7 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, ke
 			return nil, fmt.Errorf("Not validated")
 		})
 		if err != nil {
-			return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, err.Error())
+			return nil, ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, err.Error())
 		}
 
 		if claims, ok := request.Claims.(*RequestObjectClaims); ok {
@@ -180,7 +180,7 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, me
 	// Basic consistency validation following spec at
 	// https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
 	if ok := ar.Scopes[oidc.ScopeOpenID]; !ok {
-		return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "openid scope required when using the request parameter")
+		return ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "openid scope required when using the request parameter")
 	}
 	if roc.RawScope != "" {
 		ar.Scopes = make(map[string]bool)
@@ -192,12 +192,12 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, me
 	}
 	if roc.RawResponseType != "" {
 		if roc.RawResponseType != ar.RawResponseType {
-			return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "request object response_type mismatch")
+			return ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "request object response_type mismatch")
 		}
 	}
 	if roc.ClientID != "" {
 		if roc.ClientID != ar.ClientID {
-			return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "request object client_id mismatch")
+			return ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "request object client_id mismatch")
 		}
 	}
 

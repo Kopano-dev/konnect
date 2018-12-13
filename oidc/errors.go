@@ -41,6 +41,7 @@ const (
 	ErrorOIDCConsentRequired     = "consent_required"
 
 	ErrorOIDCRequestNotSupported      = "request_not_supported"
+	ErrorOIDCInvalidRequestObject     = "invalid_request_object"
 	ErrorOIDCRequestURINotSupported   = "request_uri_not_supported"
 	ErrorOIDCRegistrationNotSupported = "registration_not_supported"
 )
