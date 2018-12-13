@@ -547,13 +547,18 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 
 	var auth identity.AuthRecord
 	var found bool
+	var requestedClaimsMap []*payload.ClaimsRequestMap
 
 	if userID == "" {
 		err = fmt.Errorf("missing data in kc.identity claim")
 		goto done
 	}
 
-	auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, claims.AuthorizedScopes(), claims.AuthorizedClaimsRequest)
+	if claims.AuthorizedClaimsRequest != nil && claims.AuthorizedClaimsRequest.UserInfo != nil {
+		requestedClaimsMap = []*payload.ClaimsRequestMap{claims.AuthorizedClaimsRequest.UserInfo}
+	}
+
+	auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, claims.AuthorizedScopes(), requestedClaimsMap)
 	if !found {
 		p.logger.WithField("sub", claims.StandardClaims.Subject).Debugln("userinfo request user not found")
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")

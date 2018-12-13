@@ -36,7 +36,7 @@ type Manager interface {
 	ApproveScopes(ctx context.Context, sub string, audience string, approvedScopesList map[string]bool) (string, error)
 	ApprovedScopes(ctx context.Context, sub string, audience string, ref string) (map[string]bool, error)
 
-	Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaims *payload.ClaimsRequest) (AuthRecord, bool, error)
+	Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaimsMaps []*payload.ClaimsRequestMap) (AuthRecord, bool, error)
 
 	Name() string
 	ScopesSupported() []string

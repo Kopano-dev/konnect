@@ -367,7 +367,7 @@ func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, sub str
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaims *payload.ClaimsRequest) (identity.AuthRecord, bool, error) {
+func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaimsMaps []*payload.ClaimsRequestMap) (identity.AuthRecord, bool, error) {
 	identifiedUser, err := im.identifier.GetUserFromID(ctx, userID, sessionRef)
 	if err != nil {
 		im.logger.WithError(err).Errorln("IdentifierIdentityManager: identifier error")
@@ -385,9 +385,9 @@ func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, s
 	}
 
 	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
-	claims := identity.GetUserClaimsForScopes(user, authorizedScopes, requestedClaims)
+	claims := identity.GetUserClaimsForScopes(user, authorizedScopes, requestedClaimsMaps)
 
-	auth := identity.NewAuthRecord(im, user.Subject(), authorizedScopes, requestedClaims, claims)
+	auth := identity.NewAuthRecord(im, user.Subject(), authorizedScopes, nil, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil

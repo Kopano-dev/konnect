@@ -89,7 +89,14 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 		}
 	}
 
-	if accessTokenString == "" {
+	// Include requested scope data in ID token when no access token is
+	// generated.
+	authorizedClaimsRequest := auth.AuthorizedClaims()
+
+	withAccessToken := accessTokenString != ""
+	withCode := codeString != ""
+
+	if !withAccessToken || (authorizedClaimsRequest != nil && authorizedClaimsRequest.IDToken != nil) {
 		user := auth.User()
 		if user == nil {
 			return "", fmt.Errorf("no user")
@@ -100,9 +107,14 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			sessionRef = userWithSessionRef.SessionRef()
 		}
 
-		// Include requested scope data in ID token when no access token is
-		// generated.
-		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, user.Raw(), sessionRef, auth.AuthorizedScopes(), auth.AuthorizedClaims())
+		var requestedClaimsMap []*payload.ClaimsRequestMap
+		var requestedScopesMap map[string]bool
+		if authorizedClaimsRequest != nil && authorizedClaimsRequest.IDToken != nil {
+			requestedClaimsMap = []*payload.ClaimsRequestMap{authorizedClaimsRequest.IDToken}
+			requestedScopesMap = authorizedClaimsRequest.IDToken.ScopesMap(nil)
+		}
+
+		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, user.Raw(), sessionRef, auth.AuthorizedScopes(), requestedClaimsMap)
 		if !found {
 			return "", fmt.Errorf("user not found")
 		}
@@ -110,15 +122,16 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			return "", fetchErr
 		}
 
-		if _, ok := ar.Scopes[oidc.ScopeProfile]; ok {
+		if (!withAccessToken && ar.Scopes[oidc.ScopeProfile]) || requestedScopesMap[oidc.ScopeProfile] {
 			idTokenClaims.ProfileClaims = oidc.NewProfileClaims(freshAuth.Claims(oidc.ScopeProfile)[0])
 		}
-		if _, ok := ar.Scopes[oidc.ScopeEmail]; ok {
+		if (!withAccessToken && ar.Scopes[oidc.ScopeEmail]) || requestedScopesMap[oidc.ScopeEmail] {
 			idTokenClaims.EmailClaims = oidc.NewEmailClaims(freshAuth.Claims(oidc.ScopeEmail)[0])
 		}
 
 		auth = freshAuth
-	} else {
+	}
+	if withAccessToken {
 		// Add left-most hash of access token.
 		// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitIDToken
 		hash, hashErr := oidc.HashFromSigningMethod(p.signingMethod.Alg())
@@ -128,7 +141,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 		idTokenClaims.AccessTokenHash = oidc.LeftmostHash([]byte(accessTokenString), hash).String()
 	}
-	if codeString != "" {
+	if withCode {
 		// Add left-most hash of code.
 		// http://openid.net/specs/openid-connect-core-1_0.html#HybridIDToken
 		hash, hashErr := oidc.HashFromSigningMethod(p.signingMethod.Alg())
@@ -150,7 +163,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 	// Support extra non-standard claims in ID token.
 	var finalIDTokenClaims jwt.Claims = idTokenClaims
-	if accessTokenString == "" {
+	if !withAccessToken {
 		// Include requested scope data in ID token when no access token is
 		// generated - additional custom user specific claims.
 		idTokenClaimsMap, err := payload.ToMap(idTokenClaims)

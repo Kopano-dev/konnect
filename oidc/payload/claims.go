@@ -39,6 +39,12 @@ var scopedClaims = map[string]string{
 	oidc.EmailVerifiedClaim: oidc.ScopeEmail,
 }
 
+// GetScopeForClaim returns the known scope if any for the provided claim name.
+func GetScopeForClaim(claim string) (string, bool) {
+	scope, ok := scopedClaims[claim]
+	return scope, ok
+}
+
 // ClaimsRequest define the base claims structure for OpenID Connect claims
 // request parameter value as specified at
 // https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
@@ -102,6 +108,20 @@ func (cr *ClaimsRequest) Scopes(excludedScopes map[string]bool) []string {
 // ClaimsRequestMap defines a mapping of claims request values used with
 // OpenID Connect claims request parameter values.
 type ClaimsRequestMap map[string]*ClaimsRequestValue
+
+// ScopesMap returns a map of scopes defined by the claims in tha associated map.
+func (crm *ClaimsRequestMap) ScopesMap(excludedScopes map[string]bool) map[string]bool {
+	scopesMap := make(map[string]bool)
+
+	for claim := range *crm {
+		scope := scopedClaims[claim]
+		if _, excluded := excludedScopes[scope]; !excluded {
+			scopesMap[scope] = true
+		}
+	}
+
+	return scopesMap
+}
 
 // ClaimsRequestValue is the claims request detail definition of an OpenID
 // Connect claims request parameter value.

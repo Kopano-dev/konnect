@@ -70,7 +70,7 @@ func AuthorizeScopes(manager Manager, user User, scopes map[string]bool) (map[st
 
 // GetUserClaimsForScopes returns a mapping of user claims of the provided user
 // filtered by the provided scopes.
-func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaims *payload.ClaimsRequest) map[string]jwt.Claims {
+func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMaps []*payload.ClaimsRequestMap) map[string]jwt.Claims {
 	if user == nil {
 		return nil
 	}
@@ -91,6 +91,52 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaims *
 				Name:       userWithProfile.Name(),
 				FamilyName: userWithProfile.FamilyName(),
 				GivenName:  userWithProfile.GivenName(),
+			}
+		}
+	}
+
+	// Add additional supported values for email and profile claims.
+	for _, requestedClaimMap := range requestedClaimsMaps {
+		for requestedClaim := range *requestedClaimMap {
+			// NOTE(longsleep): We ignore the actuall value of the claim request
+			// and always return requested scopes with standard behavior.
+			if scope, ok := payload.GetScopeForClaim(requestedClaim); ok {
+				if authorizedScope, _ := scopes[scope]; !authorizedScope {
+					// Add claim values if known.
+					switch scope {
+					case oidc.ScopeEmail:
+						if userWithEmail, ok := user.(UserWithEmail); ok {
+							scopeClaims := oidc.NewEmailClaims(claims[scope])
+							if scopeClaims == nil {
+								scopeClaims = &oidc.EmailClaims{}
+								claims[scope] = scopeClaims
+							}
+							switch requestedClaim {
+							case oidc.EmailClaim:
+								scopeClaims.Email = userWithEmail.Email()
+								fallthrough // Always include EmailVerified claim.
+							case oidc.EmailVerifiedClaim:
+								scopeClaims.EmailVerified = userWithEmail.EmailVerified()
+							}
+						}
+					case oidc.ScopeProfile:
+						if userWithProfile, ok := user.(UserWithProfile); ok {
+							scopeClaims := oidc.NewProfileClaims(claims[scope])
+							if scopeClaims == nil {
+								scopeClaims = &oidc.ProfileClaims{}
+								claims[scope] = scopeClaims
+							}
+							switch requestedClaim {
+							case oidc.NameClaim:
+								scopeClaims.Name = userWithProfile.Name()
+							case oidc.FamilyNameClaim:
+								scopeClaims.Name = userWithProfile.FamilyName()
+							case oidc.GivenNameClaim:
+								scopeClaims.Name = userWithProfile.GivenName()
+							}
+						}
+					}
+				}
 			}
 		}
 	}
