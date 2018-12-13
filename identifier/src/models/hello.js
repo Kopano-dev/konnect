@@ -20,6 +20,10 @@ export function newHelloRequest(flow, query) {
       if (query.max_age) {
         r.max_age = query.max_age;  // eslint-disable-line camelcase
       }
+      if (query.claims_scope) {
+        // Add additional scopes from claims request if given.
+        r.scope += ' ' + query.claims_scope;
+      }
       break;
 
     default:

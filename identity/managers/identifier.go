@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -154,7 +155,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 		return nil, &identity.IsHandledError{}
 	}
 
-	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil)
+	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil, nil)
 	auth.SetUser(user)
 	if loggedOn, logonAt := u.LoggedOn(); loggedOn {
 		auth.SetAuthTime(logonAt)
@@ -206,7 +207,17 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 		}
 
 		promptConsent = false
-		approvedScopes = consent.ApprovedScopes(ar.Scopes)
+		filteredApprovedScopes, allApprovedScopes := consent.Scopes(ar.Scopes)
+
+		// Filter claims request by approved scopes.
+		if ar.Claims != nil {
+			err = ar.Claims.ApplyScopes(allApprovedScopes)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		approvedScopes = filteredApprovedScopes
 	}
 
 	if promptConsent {
@@ -214,8 +225,21 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
 		}
 
+		// Build consent URL.
+		query, err := url.ParseQuery(req.URL.RawQuery)
+		if err != nil {
+			return nil, err
+		}
+		query.Set("flow", identifier.FlowConsent)
+		if ar.Claims != nil {
+			// Add derived scope list from claims request.
+			claimsScopes := ar.Claims.Scopes(ar.Scopes)
+			if len(claimsScopes) > 0 {
+				query.Set("claims_scope", strings.Join(claimsScopes, " "))
+			}
+		}
 		u, _ := url.Parse(im.signInFormURI)
-		u.RawQuery = fmt.Sprintf("flow=%s&%s", identifier.FlowConsent, req.URL.RawQuery)
+		u.RawQuery = query.Encode()
 		utils.WriteRedirect(rw, http.StatusFound, u, nil, false)
 
 		return nil, &identity.IsHandledError{}
@@ -260,6 +284,7 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 	}
 
 	auth.AuthorizeScopes(approvedScopes)
+	auth.AuthorizeClaims(ar.Claims)
 	return auth, nil
 }
 
@@ -342,7 +367,7 @@ func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, sub str
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaims *payload.ClaimsRequest) (identity.AuthRecord, bool, error) {
 	identifiedUser, err := im.identifier.GetUserFromID(ctx, userID, sessionRef)
 	if err != nil {
 		im.logger.WithError(err).Errorln("IdentifierIdentityManager: identifier error")
@@ -360,9 +385,9 @@ func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, s
 	}
 
 	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
-	claims := identity.GetUserClaimsForScopes(user, authorizedScopes)
+	claims := identity.GetUserClaimsForScopes(user, authorizedScopes, requestedClaims)
 
-	auth := identity.NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
+	auth := identity.NewAuthRecord(im, user.Subject(), authorizedScopes, requestedClaims, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil

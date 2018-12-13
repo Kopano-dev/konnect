@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
 type authRecord struct {
@@ -28,6 +30,7 @@ type authRecord struct {
 
 	sub              string
 	authorizedScopes map[string]bool
+	authorizedClaims *payload.ClaimsRequest
 	claimsByScope    map[string]jwt.Claims
 
 	user     PublicUser
@@ -36,7 +39,7 @@ type authRecord struct {
 
 // NewAuthRecord returns a implementation of identity.AuthRecord holding
 // the provided data in memory.
-func NewAuthRecord(manager Manager, sub string, authorizedScopes map[string]bool, claimsByScope map[string]jwt.Claims) AuthRecord {
+func NewAuthRecord(manager Manager, sub string, authorizedScopes map[string]bool, authorizedClaims *payload.ClaimsRequest, claimsByScope map[string]jwt.Claims) AuthRecord {
 	if authorizedScopes == nil {
 		authorizedScopes = make(map[string]bool)
 	}
@@ -46,6 +49,7 @@ func NewAuthRecord(manager Manager, sub string, authorizedScopes map[string]bool
 
 		sub:              sub,
 		authorizedScopes: authorizedScopes,
+		authorizedClaims: authorizedClaims,
 		claimsByScope:    claimsByScope,
 	}
 }
@@ -74,6 +78,16 @@ func (r *authRecord) AuthorizeScopes(scopes map[string]bool) {
 	for scope := range unauthorizedScopes {
 		delete(r.authorizedScopes, scope)
 	}
+}
+
+// AuthorizedClaims implements the identity.AuthRecord interface.
+func (r *authRecord) AuthorizedClaims() *payload.ClaimsRequest {
+	return r.authorizedClaims
+}
+
+// AuthorizeClaims implements the identity.AuthRecord interface.
+func (r *authRecord) AuthorizeClaims(claims *payload.ClaimsRequest) {
+	r.authorizedClaims = claims
 }
 
 // Claims implements the identity.AuthRecord  interface.

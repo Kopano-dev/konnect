@@ -147,7 +147,7 @@ export function executeLogon(username, password, mode=ModeLogonUsernamePassword)
   };
 }
 
-export function executeConsent(allow=false) {
+export function executeConsent(allow=false, scope='') {
   return function(dispatch, getState) {
     dispatch(requestConsent(allow));
 
@@ -155,7 +155,7 @@ export function executeConsent(allow=false) {
 
     const r = withClientRequestState({
       allow,
-      scope: query.scope || '',
+      scope,
       client_id: query.client_id || '', // eslint-disable-line camelcase
       redirect_uri: query.redirect_uri || '', // eslint-disable-line camelcase
       ref: query.state || '',

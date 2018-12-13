@@ -94,7 +94,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	ar, err := payload.DecodeAuthenticationRequest(req, p.metadata, func(token *jwt.Token) (interface{}, error) {
-		if claims, ok := token.Claims.(*oidc.RequestObjectClaims); ok {
+		if claims, ok := token.Claims.(*payload.RequestObjectClaims); ok {
 			// Validate signed request tokens according to spec defined at
 			// https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
 			registration, _ := p.identityManager.GetClientRegistration(req.Context(), claims.ClientID)
@@ -411,7 +411,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		if len(tr.Scopes) > 0 {
-			// Make sure all requested scopes are granted and limited authorized
+			// Make sure all requested scopes are granted and limit authorized
 			// scopes to the requested scopes.
 			authorizedScopes = make(map[string]bool)
 			for scope := range tr.Scopes {
@@ -427,8 +427,8 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 			authorizedScopes = approvedScopes
 		}
 
-		// Load user record from identitymanager, without any scopes.
-		auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, nil)
+		// Load user record from identitymanager, without any scopes or claims.
+		auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, nil, nil)
 		if !found {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "user not found")
 			goto done
@@ -438,6 +438,8 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 		// Add authorized scopes.
 		auth.AuthorizeScopes(authorizedScopes)
+		// Add authorized claims from request.
+		auth.AuthorizeClaims(claims.ApprovedClaimsRequest)
 
 		// Create fake request for token generation.
 		ar = &payload.AuthenticationRequest{
@@ -551,7 +553,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		goto done
 	}
 
-	auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, claims.AuthorizedScopes())
+	auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, claims.AuthorizedScopes(), claims.AuthorizedClaimsRequest)
 	if !found {
 		p.logger.WithField("sub", claims.StandardClaims.Subject).Debugln("userinfo request user not found")
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")

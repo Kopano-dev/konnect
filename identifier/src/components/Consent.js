@@ -57,6 +57,26 @@ class Consent extends Component {
     dispatch(receiveValidateLogon({})); // XXX(longsleep): hack to reset loading and errors.
   }
 
+  action = (allow=false, scopes={}) => (event) => {
+    event.preventDefault();
+
+    if (allow === undefined) {
+      return;
+    }
+
+    // Convert all scopes which are true to a scope value.
+    const scope = Object.keys(scopes).filter(scope => {
+      return !!scopes[scope];
+    }).join(' ');
+
+    const { dispatch, history } = this.props;
+    dispatch(executeConsent(allow, scope)).then((response) => {
+      if (response.success) {
+        dispatch(advanceLogonFlow(response.success, history, true, {konnect: response.state}));
+      }
+    });
+  }
+
   render() {
     const { classes, loading, hello, errors, client } = this.props;
 
@@ -114,14 +134,14 @@ class Consent extends Component {
           </FormattedMessage>
         </Typography>
 
-        <form action="" onSubmit={(event) => this.logon(event)}>
+        <form action="" onSubmit={this.action(undefined, scopes)}>
           <DialogActions>
             <div className={classes.wrapper}>
               <Button
                 color="secondary"
                 className={classes.button}
                 disabled={!!loading}
-                onClick={(event) => this.action(event, false)}
+                onClick={this.action(false, scopes)}
               >
                 <FormattedMessage id="konnect.consent.cancelButton.label" defaultMessage="Cancel"></FormattedMessage>
               </Button>
@@ -134,7 +154,7 @@ class Consent extends Component {
                 color="primary"
                 className={classes.button}
                 disabled={!!loading}
-                onClick={(event) => this.action(event, true)}
+                onClick={this.action(true, scopes)}
               >
                 <FormattedMessage id="konnect.consent.allowButton.label" defaultMessage="Allow"></FormattedMessage>
               </Button>
@@ -150,17 +170,6 @@ class Consent extends Component {
         </form>
       </div>
     );
-  }
-
-  action(event, allow=false) {
-    event.preventDefault();
-
-    const { dispatch, history } = this.props;
-    dispatch(executeConsent(allow)).then((response) => {
-      if (response.success) {
-        dispatch(advanceLogonFlow(response.success, history, true, {konnect: response.state}));
-      }
-    });
   }
 }
 

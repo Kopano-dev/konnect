@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
 // AuthRecord is an interface which provides identity auth information with scopes and claims..
@@ -28,6 +30,8 @@ type AuthRecord interface {
 	Subject() string
 	AuthorizedScopes() map[string]bool
 	AuthorizeScopes(map[string]bool)
+	AuthorizedClaims() *payload.ClaimsRequest
+	AuthorizeClaims(*payload.ClaimsRequest)
 	Claims(...string) []jwt.Claims
 
 	User() PublicUser

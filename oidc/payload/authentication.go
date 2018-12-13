@@ -37,16 +37,17 @@ import (
 type AuthenticationRequest struct {
 	providerMetadata *WellKnown
 
-	RawScope        string `schema:"scope"`
-	RawResponseType string `schema:"response_type"`
-	ResponseMode    string `schema:"response_mode"`
-	ClientID        string `schema:"client_id"`
-	RawRedirectURI  string `schema:"redirect_uri"`
-	State           string `schema:"state"`
-	Nonce           string `schema:"nonce"`
-	RawPrompt       string `schema:"prompt"`
-	RawIDTokenHint  string `schema:"id_token_hint"`
-	RawMaxAge       string `schema:"max_age"`
+	RawScope        string         `schema:"scope"`
+	Claims          *ClaimsRequest `schema:"claims"`
+	RawResponseType string         `schema:"response_type"`
+	ResponseMode    string         `schema:"response_mode"`
+	ClientID        string         `schema:"client_id"`
+	RawRedirectURI  string         `schema:"redirect_uri"`
+	State           string         `schema:"state"`
+	Nonce           string         `schema:"nonce"`
+	RawPrompt       string         `schema:"prompt"`
+	RawIDTokenHint  string         `schema:"id_token_hint"`
+	RawMaxAge       string         `schema:"max_age"`
 
 	RawRequest      string `schema:"request"`
 	RawRequestURI   string `schema:"request_uri"`
@@ -82,7 +83,7 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, ke
 	}
 	err := DecodeSchema(ar, values)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode authentication request: %v", err)
 	}
 
 	if ar.RawScope != "" {
@@ -95,7 +96,7 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, ke
 
 	if ar.RawRequest != "" {
 		parser := &jwt.Parser{}
-		request, err := parser.ParseWithClaims(ar.RawRequest, &oidc.RequestObjectClaims{}, func(token *jwt.Token) (interface{}, error) {
+		request, err := parser.ParseWithClaims(ar.RawRequest, &RequestObjectClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if keyFunc != nil {
 				return keyFunc(token)
 			}
@@ -106,7 +107,7 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, ke
 			return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, err.Error())
 		}
 
-		if claims, ok := request.Claims.(*oidc.RequestObjectClaims); ok {
+		if claims, ok := request.Claims.(*RequestObjectClaims); ok {
 			err = ar.ApplyRequestObject(claims, request.Method)
 			if err != nil {
 				return nil, err
@@ -175,7 +176,7 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, ke
 
 // ApplyRequestObject applies the provided request object claims to the
 // associated authentication request data with validation as required.
-func (ar *AuthenticationRequest) ApplyRequestObject(roc *oidc.RequestObjectClaims, method jwt.SigningMethod) error {
+func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, method jwt.SigningMethod) error {
 	// Basic consistency validation following spec at
 	// https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
 	if ok := ar.Scopes[oidc.ScopeOpenID]; !ok {
@@ -207,6 +208,9 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *oidc.RequestObjectClaim
 
 	// Apply rest of the provided request object values to the accociated
 	// authentication request.
+	if roc.Claims != nil {
+		ar.Claims = roc.Claims
+	}
 	if roc.RawRedirectURI != "" {
 		ar.RawRedirectURI = roc.RawRedirectURI
 	}

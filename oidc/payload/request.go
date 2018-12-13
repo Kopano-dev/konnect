@@ -15,7 +15,7 @@
  *
  */
 
-package oidc
+package payload
 
 import (
 	"github.com/dgrijalva/jwt-go"
@@ -28,16 +28,17 @@ import (
 type RequestObjectClaims struct {
 	jwt.StandardClaims
 
-	RawScope        string `json:"scope"`
-	RawResponseType string `json:"response_type"`
-	ResponseMode    string `json:"response_mode"`
-	ClientID        string `json:"client_id"`
-	RawRedirectURI  string `json:"redirect_uri"`
-	State           string `json:"state"`
-	Nonce           string `json:"nonce"`
-	RawPrompt       string `json:"prompt"`
-	RawIDTokenHint  string `json:"id_token_hint"`
-	RawMaxAge       string `json:"max_age"`
+	RawScope        string         `json:"scope"`
+	Claims          *ClaimsRequest `json:"claims"`
+	RawResponseType string         `json:"response_type"`
+	ResponseMode    string         `json:"response_mode"`
+	ClientID        string         `json:"client_id"`
+	RawRedirectURI  string         `json:"redirect_uri"`
+	State           string         `json:"state"`
+	Nonce           string         `json:"nonce"`
+	RawPrompt       string         `json:"prompt"`
+	RawIDTokenHint  string         `json:"id_token_hint"`
+	RawMaxAge       string         `json:"max_age"`
 
 	RawRegistration string `schema:"registration"`
 }

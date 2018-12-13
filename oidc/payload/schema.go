@@ -18,6 +18,9 @@
 package payload
 
 import (
+	"encoding/json"
+	"reflect"
+
 	"github.com/gorilla/schema"
 )
 
@@ -34,6 +37,19 @@ func EncodeSchema(src interface{}, dst map[string][]string) error {
 	return encoder.Encode(src, dst)
 }
 
+// ConvertOIDCClaimsRequest is a converter function for oidc.ClaimsRequest data
+// provided in URL schema.
+func ConvertOIDCClaimsRequest(value string) reflect.Value {
+	v := ClaimsRequest{}
+
+	if err := json.Unmarshal([]byte(value), &v); err != nil {
+		return reflect.Value{}
+	}
+
+	return reflect.ValueOf(v)
+}
+
 func init() {
 	decoder.IgnoreUnknownKeys(true)
+	decoder.RegisterConverter(ClaimsRequest{}, ConvertOIDCClaimsRequest)
 }

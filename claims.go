@@ -21,6 +21,8 @@ import (
 	"errors"
 
 	"github.com/dgrijalva/jwt-go"
+
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
 // Access token claims used by Konnect.
@@ -44,8 +46,9 @@ const (
 type AccessTokenClaims struct {
 	jwt.StandardClaims
 
-	IsAccessToken        bool     `json:"kc.isAccessToken"`
-	AuthorizedScopesList []string `json:"kc.authorizedScopes"`
+	IsAccessToken           bool                   `json:"kc.isAccessToken"`
+	AuthorizedScopesList    []string               `json:"kc.authorizedScopes"`
+	AuthorizedClaimsRequest *payload.ClaimsRequest `json:"kc.authorizedClaims,omitempty"`
 
 	IdentityClaims jwt.MapClaims `json:"kc.identity"`
 }
@@ -81,9 +84,10 @@ func (c AccessTokenClaims) AuthorizedScopes() map[string]bool {
 type RefreshTokenClaims struct {
 	jwt.StandardClaims
 
-	IsRefreshToken     bool     `json:"kc.isRefreshToken"`
-	ApprovedScopesList []string `json:"kc.approvedScopes"`
-	Ref                string   `json:"kc.ref"`
+	IsRefreshToken        bool                   `json:"kc.isRefreshToken"`
+	ApprovedScopesList    []string               `json:"kc.approvedScopes"`
+	ApprovedClaimsRequest *payload.ClaimsRequest `json:"kc.approvedClaims,omitempty"`
+	Ref                   string                 `json:"kc.ref"`
 
 	IdentityClaims jwt.MapClaims `json:"kc.identity"`
 }

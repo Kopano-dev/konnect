@@ -40,8 +40,9 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 	authorizedScopesList := makeArrayFromBoolMap(authorizedScopes)
 
 	accessTokenClaims := konnect.AccessTokenClaims{
-		IsAccessToken:        true,
-		AuthorizedScopesList: authorizedScopesList,
+		IsAccessToken:           true,
+		AuthorizedScopesList:    authorizedScopesList,
+		AuthorizedClaimsRequest: auth.AuthorizedClaims(),
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    p.issuerIdentifier,
 			Subject:   auth.Subject(),
@@ -101,7 +102,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 		// Include requested scope data in ID token when no access token is
 		// generated.
-		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, user.Raw(), sessionRef, auth.AuthorizedScopes())
+		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, user.Raw(), sessionRef, auth.AuthorizedScopes(), auth.AuthorizedClaims())
 		if !found {
 			return "", fmt.Errorf("user not found")
 		}
@@ -193,9 +194,10 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 	}
 
 	refreshTokenClaims := &konnect.RefreshTokenClaims{
-		IsRefreshToken:     true,
-		ApprovedScopesList: approvedScopesList,
-		Ref:                ref,
+		IsRefreshToken:        true,
+		ApprovedScopesList:    approvedScopesList,
+		ApprovedClaimsRequest: auth.AuthorizedClaims(),
+		Ref:                   ref,
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    p.issuerIdentifier,
 			Subject:   auth.Subject(),

@@ -287,7 +287,7 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 		return nil, identity.NewLoginRequiredError(err.Error(), u)
 	}
 
-	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil)
+	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil, nil)
 	auth.SetUser(user)
 
 	return auth, nil
@@ -368,7 +368,7 @@ func (im *CookieIdentityManager) ApprovedScopes(ctx context.Context, sub string,
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaims *payload.ClaimsRequest) (identity.AuthRecord, bool, error) {
 	var user identity.PublicUser
 
 	// Try identty from context.
@@ -426,9 +426,9 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, sessi
 	}
 
 	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
-	claims := identity.GetUserClaimsForScopes(user, authorizedScopes)
+	claims := identity.GetUserClaimsForScopes(user, authorizedScopes, requestedClaims)
 
-	auth = identity.NewAuthRecord(im, user.Subject(), authorizedScopes, claims)
+	auth = identity.NewAuthRecord(im, user.Subject(), authorizedScopes, requestedClaims, claims)
 	auth.SetUser(user)
 
 	return auth, true, nil

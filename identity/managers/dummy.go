@@ -101,7 +101,7 @@ func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.Respon
 		return nil, err
 	}
 
-	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil)
+	auth := identity.NewAuthRecord(im, user.Subject(), nil, nil, nil)
 	auth.SetUser(user)
 
 	return auth, nil
@@ -180,7 +180,7 @@ func (im *DummyIdentityManager) ApprovedScopes(ctx context.Context, sub string, 
 }
 
 // Fetch implements the identity.Manager interface.
-func (im *DummyIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool) (identity.AuthRecord, bool, error) {
+func (im *DummyIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaims *payload.ClaimsRequest) (identity.AuthRecord, bool, error) {
 	if userID != im.sub {
 		return nil, false, fmt.Errorf("DummyIdentityManager: no user")
 	}
@@ -188,9 +188,9 @@ func (im *DummyIdentityManager) Fetch(ctx context.Context, userID string, sessio
 	user := &dummyUser{im.sub}
 
 	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
-	claims := identity.GetUserClaimsForScopes(user, authorizedScopes)
+	claims := identity.GetUserClaimsForScopes(user, authorizedScopes, requestedClaims)
 
-	return identity.NewAuthRecord(im, user.Subject(), authorizedScopes, claims), true, nil
+	return identity.NewAuthRecord(im, user.Subject(), authorizedScopes, requestedClaims, claims), true, nil
 }
 
 // Name implements the identity.Manager interface.

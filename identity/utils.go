@@ -23,6 +23,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 
 	"stash.kopano.io/kc/konnect/oidc"
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
 // AuthorizeScopes uses the provided manager and user to filter the provided
@@ -69,7 +70,7 @@ func AuthorizeScopes(manager Manager, user User, scopes map[string]bool) (map[st
 
 // GetUserClaimsForScopes returns a mapping of user claims of the provided user
 // filtered by the provided scopes.
-func GetUserClaimsForScopes(user User, scopes map[string]bool) map[string]jwt.Claims {
+func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaims *payload.ClaimsRequest) map[string]jwt.Claims {
 	if user == nil {
 		return nil
 	}

@@ -504,7 +504,7 @@ func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userID stri
 	auth := identity.NewAuthRecord(b.identityManager, userID, map[string]bool{
 		oidc.ScopeOpenID:            true,
 		kcDefinitions.ScopeKopanoGC: true,
-	}, nil)
+	}, nil, nil)
 	// Create a new access token which hopefully gets accepted by our backend.
 	accessToken, err := b.oidcProvider.MakeAccessToken(ctx, "konnect", auth)
 	if err != nil {

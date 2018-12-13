@@ -136,9 +136,9 @@ type Consent struct {
 	RawScope string `json:"scope"`
 }
 
-// ApprovedScopes returns the filtered list of the provied requested scopes to
-// only contain accociated scopes.
-func (c *Consent) ApprovedScopes(requestedScopes map[string]bool) map[string]bool {
+// Scopes returns the associated consents approved scopes filtered by the
+//provided requested scopes and the full unfiltered approved scopes table.
+func (c *Consent) Scopes(requestedScopes map[string]bool) (map[string]bool, map[string]bool) {
 	scopes := make(map[string]bool)
 	if c.RawScope != "" {
 		for _, scope := range strings.Split(c.RawScope, " ") {
@@ -153,5 +153,5 @@ func (c *Consent) ApprovedScopes(requestedScopes map[string]bool) map[string]boo
 		}
 	}
 
-	return approved
+	return approved, scopes
 }
