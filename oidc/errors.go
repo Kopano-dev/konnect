@@ -86,3 +86,18 @@ func WriteWWWAuthenticateError(rw http.ResponseWriter, code int, err error) {
 	rw.Header().Set("WWW-Authenticate", fmt.Sprintf("error=\"%s\", error_description=\"%s\"", err.Error(), description))
 	rw.WriteHeader(code)
 }
+
+// IsErrorWithCode returns true if the given error is an OAuth2Error error with
+// the given ID.
+func IsErrorWithID(err error, id string) bool {
+	if err == nil {
+		return false
+	}
+
+	oauth2Error, ok := err.(*OAuth2Error)
+	if !ok {
+		return false
+	}
+
+	return oauth2Error.ErrorID == id
+}

@@ -25,4 +25,7 @@ const (
 
 	// ScopeRawSubject is the string value for the Konnect Raw Subject scope.
 	ScopeRawSubject = "konnect/raw_sub"
+
+	// ScopeGuestOK is the string value for the Konnect Guest OK scope.
+	ScopeGuestOK = "konnect/guestok"
 )

@@ -92,7 +92,7 @@ func (u *dummyUser) Claims() jwt.MapClaims {
 }
 
 // Authenticate implements the identity.Manager interface.
-func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+func (im *DummyIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, next identity.Manager) (identity.AuthRecord, error) {
 	user := &dummyUser{im.sub}
 
 	// Check request.

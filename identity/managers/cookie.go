@@ -226,7 +226,7 @@ func (im *CookieIdentityManager) backendRequest(ctx context.Context, encodedCook
 }
 
 // Authenticate implements the identity.Manager interface.
-func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, next identity.Manager) (identity.AuthRecord, error) {
 	// Process incoming cookies, filter, and encode to string.
 	var encodedCookies []string
 	for _, cookie := range req.Cookies() {

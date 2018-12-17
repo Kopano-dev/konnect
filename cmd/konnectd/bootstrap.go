@@ -163,6 +163,11 @@ func (bs *bootstrap) initialize() error {
 		logger.Infoln("using custom allowed OAuth 2 scopes", bs.cfg.AllowedScopes)
 	}
 
+	bs.cfg.AllowClientGuests, _ = cmd.Flags().GetBool("allow-client-guests")
+	if bs.cfg.AllowClientGuests {
+		logger.Infoln("client controlled guests are enabled")
+	}
+
 	encryptionSecretFn, _ := cmd.Flags().GetString("encryption-secret")
 	if encryptionSecretFn == "" {
 		encryptionSecretFn = os.Getenv("KONNECTD_ENCRYPTION_SECRET")
@@ -298,6 +303,12 @@ func (bs *bootstrap) setup(ctx context.Context) error {
 	}
 	managers.Set("identity", identityManager)
 
+	guestManager, err := bs.setupGuest(ctx, identityManager)
+	if err != nil {
+		return err
+	}
+	managers.Set("guest", guestManager)
+
 	oidcProvider, err := bs.setupOIDCProvider(ctx)
 	if err != nil {
 		return err
@@ -358,6 +369,25 @@ func (bs *bootstrap) setupIdentity(ctx context.Context) (identity.Manager, error
 	}).Infoln("identity manager set up")
 
 	return identityManager, nil
+}
+
+func (bs *bootstrap) setupGuest(ctx context.Context, identityManager identity.Manager) (identity.Manager, error) {
+	if !bs.cfg.AllowClientGuests {
+		return nil, nil
+	}
+
+	var err error
+	logger := bs.cfg.Logger
+
+	guestManager, err := newGuestIdentityManager(bs)
+	if err != nil {
+		return nil, err
+	}
+
+	if guestManager != nil {
+		logger.Infoln("identity guest manager set up")
+	}
+	return guestManager, nil
 }
 
 func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provider, error) {

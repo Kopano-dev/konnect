@@ -101,7 +101,7 @@ func (im *IdentifierIdentityManager) RegisterManagers(mgrs *managers.Managers) e
 }
 
 // Authenticate implements the identity.Manager interface.
-func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest) (identity.AuthRecord, error) {
+func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, next identity.Manager) (identity.AuthRecord, error) {
 	var user *identifierUser
 	var err error
 
@@ -111,6 +111,26 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 		user = asIdentifierUser(u)
 	} else {
 		// Not signed in.
+		if next != nil {
+			// Give next handler a chance if any.
+			if auth, err := next.Authenticate(ctx, rw, req, ar, nil); err == nil {
+				// Inner handler success.
+				// TODO(longsleep): Add check and option to avoid that the inner
+				// handler can ever return users which exist at the outer.
+				return auth, err
+			} else {
+				switch err.(type) {
+				case *payload.AuthenticationError:
+					// ignore, breaks
+				case *identity.LoginRequiredError:
+					// ignore, breaks
+				case *identity.IsHandledError:
+					// breaks, breaks
+				default:
+					im.logger.WithFields(utils.ErrorAsFields(err)).Errorln("inner authorize request failed")
+				}
+			}
+		}
 		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
 	}
 

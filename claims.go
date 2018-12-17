@@ -32,13 +32,16 @@ const (
 	IsRefreshTokenClaim   = "kc.isRefreshToken"
 	RefClaim              = "kc.ref"
 	IdentityClaim         = "kc.identity"
+	IdentityProvider      = "kc.provider"
 )
 
-// Identifier claims used by Konnect.
+// Identifier identity sub claims used by Konnect.
 const (
 	IdentifiedUserIDClaim      = "kc.i.id"
 	IdentifiedUsernameClaim    = "kc.i.un"
 	IdentifiedDisplayNameClaim = "kc.i.dn"
+	IdentifiedData             = "kc.i.da"
+	IdentifiedUserIsGuest      = "kc.i.guest"
 )
 
 // AccessTokenClaims define the claims found in access tokens issued
@@ -50,7 +53,8 @@ type AccessTokenClaims struct {
 	AuthorizedScopesList    []string               `json:"kc.authorizedScopes"`
 	AuthorizedClaimsRequest *payload.ClaimsRequest `json:"kc.authorizedClaims,omitempty"`
 
-	IdentityClaims jwt.MapClaims `json:"kc.identity"`
+	IdentityClaims   jwt.MapClaims `json:"kc.identity"`
+	IdentityProvider string        `json:"kc.provider,omitempty"`
 }
 
 // Valid implements the jwt.Claims interface.
@@ -89,7 +93,8 @@ type RefreshTokenClaims struct {
 	ApprovedClaimsRequest *payload.ClaimsRequest `json:"kc.approvedClaims,omitempty"`
 	Ref                   string                 `json:"kc.ref"`
 
-	IdentityClaims jwt.MapClaims `json:"kc.identity"`
+	IdentityClaims   jwt.MapClaims `json:"kc.identity"`
+	IdentityProvider string        `json:"kc.provider,omitempty"`
 }
 
 // Valid implements the jwt.Claims interface.

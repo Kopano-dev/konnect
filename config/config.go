@@ -34,5 +34,6 @@ type Config struct {
 	TrustedProxyIPs  []*net.IP
 	TrustedProxyNets []*net.IPNet
 
-	AllowedScopes []string
+	AllowedScopes     []string
+	AllowClientGuests bool
 }

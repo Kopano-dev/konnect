@@ -160,7 +160,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 
 	// Authorization Server Authenticates End-User
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthenticates
-	auth, err = p.identityManager.Authenticate(req.Context(), rw, req, ar)
+	auth, err = p.identityManager.Authenticate(req.Context(), rw, req, ar, p.guestManager)
 	if err != nil {
 		goto done
 	}
@@ -179,7 +179,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 
 	// Authorization Server Obtains End-User Consent/Authorization
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitConsent
-	auth, err = p.identityManager.Authorize(req.Context(), rw, req, ar, auth)
+	auth, err = auth.Manager().Authorize(req.Context(), rw, req, ar, auth)
 	if err != nil {
 		goto done
 	}
@@ -409,8 +409,13 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 
 		ctx := konnect.NewClaimsContext(req.Context(), claims)
 
+		currentIdentityManager, err := p.getIdentityManagerFromClaims(claims.IdentityProvider, claims.IdentityClaims)
+		if err != nil {
+			goto done
+		}
+
 		// Lookup Ref values from backend.
-		approvedScopes, err = p.identityManager.ApprovedScopes(ctx, claims.Subject, tr.ClientID, claims.Ref)
+		approvedScopes, err = currentIdentityManager.ApprovedScopes(ctx, claims.Subject, tr.ClientID, claims.Ref)
 		if err != nil {
 			goto done
 		}
@@ -440,7 +445,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Load user record from identitymanager, without any scopes or claims.
-		auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, nil, nil)
+		auth, found, err = currentIdentityManager.Fetch(ctx, userID, sessionRef, nil, nil)
 		if !found {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "user not found")
 			goto done
@@ -553,13 +558,18 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var auth identity.AuthRecord
+	var found bool
+	var requestedClaimsMap []*payload.ClaimsRequestMap
+
 	userID, sessionRef := p.getUserIDAndSessionRefFromClaims(&claims.StandardClaims, claims.IdentityClaims)
 
 	ctx := konnect.NewClaimsContext(req.Context(), claims)
 
-	var auth identity.AuthRecord
-	var found bool
-	var requestedClaimsMap []*payload.ClaimsRequestMap
+	currentIdentityManager, err := p.getIdentityManagerFromClaims(claims.IdentityProvider, claims.IdentityClaims)
+	if err != nil {
+		goto done
+	}
 
 	if userID == "" {
 		err = fmt.Errorf("missing data in kc.identity claim")
@@ -570,7 +580,11 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 		requestedClaimsMap = []*payload.ClaimsRequestMap{claims.AuthorizedClaimsRequest.UserInfo}
 	}
 
-	auth, found, err = p.identityManager.Fetch(ctx, userID, sessionRef, claims.AuthorizedScopes(), requestedClaimsMap)
+	auth, found, err = currentIdentityManager.Fetch(ctx, userID, sessionRef, claims.AuthorizedScopes(), requestedClaimsMap)
+	if err != nil {
+		p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("identity manager fetch failed")
+		found = false
+	}
 	if !found {
 		p.logger.WithField("sub", claims.StandardClaims.Subject).Debugln("userinfo request user not found")
 		p.ErrorPage(rw, http.StatusNotFound, "", "user not found")
@@ -697,6 +711,9 @@ func (p *Provider) EndSessionHandler(rw http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		goto done
 	}
+
+	// TODO(longsleep): Add dynamic identity manager support based on the auth
+	// which should be ended.
 
 	// Authorization unauthenticates end user.
 	err = p.identityManager.EndSession(req.Context(), rw, req, esr)

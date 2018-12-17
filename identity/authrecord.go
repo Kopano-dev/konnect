@@ -54,6 +54,12 @@ func NewAuthRecord(manager Manager, sub string, authorizedScopes map[string]bool
 	}
 }
 
+// Manager implements the identity.AuthRecord interface, returning the
+// accociated identities manager.
+func (r *authRecord) Manager() Manager {
+	return r.manager
+}
+
 // Subject implements the identity.AuthRecord  interface.
 func (r *authRecord) Subject() string {
 	return r.sub

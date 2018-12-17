@@ -28,6 +28,7 @@ import (
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 // MakeAccessToken implements the oidc.AccessTokenProvider interface.
@@ -57,6 +58,7 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 		if userWithClaims, ok := user.(identity.UserWithClaims); ok {
 			accessTokenClaims.IdentityClaims = userWithClaims.Claims()
 		}
+		accessTokenClaims.IdentityProvider = auth.Manager().Name()
 	}
 
 	accessToken := jwt.NewWithClaims(p.signingMethod, accessTokenClaims)
@@ -124,12 +126,13 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			requestedScopesMap = authorizedClaimsRequest.IDToken.ScopesMap(nil)
 		}
 
-		freshAuth, found, fetchErr := p.identityManager.Fetch(ctx, user.Raw(), sessionRef, auth.AuthorizedScopes(), requestedClaimsMap)
+		freshAuth, found, fetchErr := auth.Manager().Fetch(ctx, user.Raw(), sessionRef, auth.AuthorizedScopes(), requestedClaimsMap)
+		if fetchErr != nil {
+			p.logger.WithFields(utils.ErrorAsFields(fetchErr)).Errorln("identity manager fetch failed")
+			found = false
+		}
 		if !found {
 			return "", fmt.Errorf("user not found")
-		}
-		if fetchErr != nil {
-			return "", fetchErr
 		}
 
 		if (!withAccessToken && ar.Scopes[oidc.ScopeProfile]) || requestedScopesMap[oidc.ScopeProfile] {
@@ -211,7 +214,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 		}
 	}
 
-	ref, err := p.identityManager.ApproveScopes(ctx, auth.Subject(), audience, approvedScopes)
+	ref, err := auth.Manager().ApproveScopes(ctx, auth.Subject(), audience, approvedScopes)
 	if err != nil {
 		return "", err
 	}
@@ -235,6 +238,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 		if userWithClaims, ok := user.(identity.UserWithClaims); ok {
 			refreshTokenClaims.IdentityClaims = userWithClaims.Claims()
 		}
+		refreshTokenClaims.IdentityProvider = auth.Manager().Name()
 	}
 
 	refreshToken := jwt.NewWithClaims(p.signingMethod, refreshTokenClaims)

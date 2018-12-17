@@ -209,6 +209,12 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, me
 	// Apply rest of the provided request object values to the accociated
 	// authentication request.
 	if roc.Claims != nil {
+		// NOTE(longsleep): Overwrite request claims with the signed claims
+		// from the request object. This ensures that only signed claims are
+		// processed if any have been given. If no signed claims have been
+		// given, the unsigned claims are kept, leaving it to further checks
+		// to ensure that only signed claims are used by checking that the
+		// roc object has claims.
 		ar.Claims = roc.Claims
 	}
 	if roc.RawRedirectURI != "" {

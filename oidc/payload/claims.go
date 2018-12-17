@@ -130,6 +130,18 @@ func (crm ClaimsRequestMap) Get(claim string) (*ClaimsRequestValue, bool) {
 	return value, ok
 }
 
+// GetStringValue returns the accociated maps claim value identified by the
+// provided name as string value.
+func (crm ClaimsRequestMap) GetStringValue(claim string) (string, bool) {
+	value, ok := crm.Get(claim)
+	if !ok {
+		return "", false
+	}
+
+	s, ok := value.Value.(string)
+	return s, ok
+}
+
 // ClaimsRequestValue is the claims request detail definition of an OpenID
 // Connect claims request parameter value.
 type ClaimsRequestValue struct {

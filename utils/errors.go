@@ -42,6 +42,10 @@ func DescribeError(err error) error {
 
 // ErrorAsFields returns a mapping of all fields of the provided error.
 func ErrorAsFields(err error) map[string]interface{} {
+	if err == nil {
+		return nil
+	}
+
 	fields := make(map[string]interface{})
 	fields["error"] = err.Error()
 	switch err.(type) {
