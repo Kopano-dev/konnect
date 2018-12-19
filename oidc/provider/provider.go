@@ -116,22 +116,17 @@ func (p *Provider) RegisterManagers(mgrs *managers.Managers) error {
 	p.codeManager = mgrs.Must("code").(code.Manager)
 	p.encryptionManager = mgrs.Must("encryption").(*identityManagers.EncryptionManager)
 
-	// Add guest manager if any can be found.
-	if guestManager, ok := mgrs.Get("guest"); ok {
-		p.guestManager, _ = guestManager.(identity.Manager)
-	}
-
 	// Register callback to cleanup our cookie whenever the identity is unset or
 	// set.
-	p.identityManager.OnSetLogon(func(ctx context.Context, rw http.ResponseWriter, user identity.User) error {
+	onSetLogon := func(ctx context.Context, rw http.ResponseWriter, user identity.User) error {
 		// NOTE(longsleep): This leaves room for optionmization. In theory it
 		// should be possible to set the new browser state here directly since
 		// the relevant information should be available in the identity manager
 		// and thus avoiding a potentially unset refresh and client side
 		// redirects whenever the same user signs in again.
 		return p.removeBrowserStateCookie(rw)
-	})
-	p.identityManager.OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error {
+	}
+	onUnsetLogon := func(ctx context.Context, rw http.ResponseWriter) error {
 		var err error
 
 		// Remove browser state cookie.
@@ -144,7 +139,16 @@ func (p *Provider) RegisterManagers(mgrs *managers.Managers) error {
 		}
 
 		return err
-	})
+	}
+	p.identityManager.OnSetLogon(onSetLogon)
+	p.identityManager.OnUnsetLogon(onUnsetLogon)
+
+	// Add guest manager if any can be found.
+	if guestManager, ok := mgrs.Get("guest"); ok {
+		p.guestManager, _ = guestManager.(identity.Manager)
+		p.guestManager.OnSetLogon(onSetLogon)
+		p.guestManager.OnUnsetLogon(onUnsetLogon)
+	}
 
 	return nil
 }

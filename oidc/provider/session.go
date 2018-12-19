@@ -31,28 +31,41 @@ import (
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
-func (p *Provider) getOrCreateSession(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (*payload.Session, error) {
-	var session *payload.Session
+const sessionVersion = 2
+
+func (p *Provider) getSession(req *http.Request) (*payload.Session, error) {
 	serialized, err := p.getSessionCookie(req)
-	if err == nil {
-		// Decode.
-		session, err = p.unserializeSession(serialized)
-		if err != nil {
-			p.logger.WithError(err).Debugln("failed to secode client session")
-		}
+	switch err {
+	case nil:
+		// breaks
+	case http.ErrNoCookie:
+		return nil, nil
+	default:
+		return nil, err
 	}
-	if session != nil && session.Sub == auth.Subject() {
+	// Decode.
+	return p.unserializeSession(serialized)
+}
+
+func (p *Provider) getOrCreateSession(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (*payload.Session, error) {
+	session, err := p.getSession(req)
+	if err != nil {
+		p.logger.WithError(err).Debugln("failed to decode client session")
+	}
+	if session != nil && session.Version == sessionVersion && session.Sub == auth.Subject() {
 		// Existing session with same sub.
 		return session, nil
 	}
 
 	// Create new session.
 	session = &payload.Session{
-		ID:  rndm.GenerateRandomString(32),
-		Sub: auth.Subject(),
+		Version:  sessionVersion,
+		ID:       rndm.GenerateRandomString(32),
+		Sub:      auth.Subject(),
+		Provider: auth.Manager().Name(),
 	}
 
-	serialized, err = p.serializeSession(session)
+	serialized, err := p.serializeSession(session)
 	if err != nil {
 		return session, err
 	}

@@ -23,6 +23,8 @@ package payload
 // is implemented as defined in the OIDC Front Channel logout extension
 // https://openid.net/specs/openid-connect-frontchannel-1_0.html#OPLogout
 type Session struct {
-	ID  string
-	Sub string
+	Version  int
+	ID       string
+	Sub      string
+	Provider string
 }

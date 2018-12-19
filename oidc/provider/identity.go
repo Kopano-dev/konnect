@@ -23,14 +23,10 @@ import (
 	"github.com/dgrijalva/jwt-go"
 
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
-func (p *Provider) getIdentityManagerFromClaims(identityProvider string, identityClaims jwt.MapClaims) (identity.Manager, error) {
-	if identityClaims == nil {
-		// Return default manager when no claims.
-		return p.identityManager, nil
-	}
-
+func (p *Provider) getIdentityManager(identityProvider string) (identity.Manager, error) {
 	if identityProvider == "" {
 		// Return default manager when empty (backwards compatibility).
 		return p.identityManager, nil
@@ -44,4 +40,22 @@ func (p *Provider) getIdentityManagerFromClaims(identityProvider string, identit
 	}
 
 	return nil, errors.New("identity provider mismatch")
+}
+
+func (p *Provider) getIdentityManagerFromClaims(identityProvider string, identityClaims jwt.MapClaims) (identity.Manager, error) {
+	if identityClaims == nil {
+		// Return default manager when no claims.
+		return p.identityManager, nil
+	}
+
+	return p.getIdentityManager(identityProvider)
+}
+
+func (p *Provider) getIdentityManagerFromSession(session *payload.Session) (identity.Manager, error) {
+	if session == nil {
+		// Return default manager when no session.
+		return p.identityManager, nil
+	}
+
+	return p.getIdentityManager(session.Provider)
 }

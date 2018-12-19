@@ -687,6 +687,8 @@ done:
 // https://openid.net/specs/openid-connect-session-1_0.html#RPLogout
 func (p *Provider) EndSessionHandler(rw http.ResponseWriter, req *http.Request) {
 	var err error
+	var session *payload.Session
+	var currentIdentityManager identity.Manager
 
 	addResponseHeaders(rw.Header())
 
@@ -712,11 +714,19 @@ func (p *Provider) EndSessionHandler(rw http.ResponseWriter, req *http.Request) 
 		goto done
 	}
 
-	// TODO(longsleep): Add dynamic identity manager support based on the auth
-	// which should be ended.
+	// Get our session.
+	session, err = p.getSession(req)
+	if err != nil {
+		goto done
+	}
+
+	currentIdentityManager, err = p.getIdentityManagerFromSession(session)
+	if err != nil {
+		goto done
+	}
 
 	// Authorization unauthenticates end user.
-	err = p.identityManager.EndSession(req.Context(), rw, req, esr)
+	err = currentIdentityManager.EndSession(req.Context(), rw, req, esr)
 	if err != nil {
 		goto done
 	}

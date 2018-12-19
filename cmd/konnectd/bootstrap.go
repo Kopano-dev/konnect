@@ -394,6 +394,11 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 	var err error
 	logger := bs.cfg.Logger
 
+	sessionCookiePath, err := getCommonURLPathPrefix(bs.authorizationEndpointURI.EscapedPath(), bs.endSessionEndpointURI.EscapedPath())
+	if err != nil {
+		return nil, fmt.Errorf("failed to find common URL prefix for authorize and endsession: %v", err)
+	}
+
 	provider, err := oidcProvider.NewProvider(&oidcProvider.Config{
 		Config: bs.cfg,
 
@@ -409,7 +414,7 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 		BrowserStateCookiePath: "/konnect/v1/session/",
 		BrowserStateCookieName: "__Secure-KKBS", // Kopano-Konnect-Browser-State
 
-		SessionCookiePath: bs.authorizationEndpointURI.EscapedPath(),
+		SessionCookiePath: sessionCookiePath,
 		SessionCookieName: "__Secure-KKCS", // Kopano-Konnect-Client-Session
 
 		AccessTokenDuration:  time.Duration(bs.accessTokenDurationSeconds) * time.Second,

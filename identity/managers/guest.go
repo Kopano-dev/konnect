@@ -39,6 +39,9 @@ const guestIdentitityManagerName = "guest"
 type GuestIdentityManager struct {
 	scopesSupported []string
 	claimsSupported []string
+
+	onSetLogonCallbacks   []func(ctx context.Context, rw http.ResponseWriter, user identity.User) error
+	onUnsetLogonCallbacks []func(ctx context.Context, rw http.ResponseWriter) error
 }
 
 // NewGuestIdentityManager creates a new GuestIdentityManager from the
@@ -59,6 +62,9 @@ func NewGuestIdentityManager(c *identity.Config) *GuestIdentityManager {
 			oidc.EmailClaim,
 			oidc.EmailVerifiedClaim,
 		},
+
+		onSetLogonCallbacks:   make([]func(ctx context.Context, rw http.ResponseWriter, user identity.User) error, 0),
+		onUnsetLogonCallbacks: make([]func(ctx context.Context, rw http.ResponseWriter) error, 0),
 	}
 
 	return im
@@ -299,6 +305,15 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 // EndSession implements the identity.Manager interface.
 func (im *GuestIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
 	// TODO(longsleep): Implement end session for guests.
+
+	// Trigger callbacks.
+	for _, f := range im.onUnsetLogonCallbacks {
+		err := f(ctx, rw)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -383,12 +398,14 @@ func (im *GuestIdentityManager) AddRoutes(ctx context.Context, router *mux.Route
 }
 
 // OnSetLogon implements the identity.Manager interface.
-func (im *GuestIdentityManager) OnSetLogon(func(ctx context.Context, rw http.ResponseWriter, user identity.User) error) error {
+func (im *GuestIdentityManager) OnSetLogon(cb func(ctx context.Context, rw http.ResponseWriter, user identity.User) error) error {
+	im.onSetLogonCallbacks = append(im.onSetLogonCallbacks, cb)
 	return nil
 }
 
 // OnUnsetLogon implements the identity.Manager interface.
-func (im *GuestIdentityManager) OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error) error {
+func (im *GuestIdentityManager) OnUnsetLogon(cb func(ctx context.Context, rw http.ResponseWriter) error) error {
+	im.onUnsetLogonCallbacks = append(im.onUnsetLogonCallbacks, cb)
 	return nil
 }
 

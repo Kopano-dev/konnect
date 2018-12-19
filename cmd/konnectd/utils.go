@@ -23,6 +23,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -236,4 +237,25 @@ func withSchemeAndHost(u, base *url.URL) *url.URL {
 func getKeyIDFromFilename(fn string) string {
 	ext := filepath.Ext(fn)
 	return strings.TrimSuffix(fn, ext)
+}
+
+func getCommonURLPathPrefix(p1, p2 string) (string, error) {
+	parts1 := strings.Split(p1, "/")
+	parts2 := strings.Split(p2, "/")
+
+	common := make([]string, 0)
+	for idx, p := range parts1 {
+		if idx >= len(parts2) {
+			break
+		}
+		if p != parts2[idx] {
+			break
+		}
+		common = append(common, p)
+	}
+	if len(common) == 0 {
+		return "", errors.New("no common path prefix")
+	}
+
+	return strings.Join(common, "/"), nil
 }
