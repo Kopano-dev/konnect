@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
@@ -50,6 +51,7 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 			Audience:  audience,
 			ExpiresAt: time.Now().Add(p.accessTokenDuration).Unix(),
 			IssuedAt:  time.Now().Unix(),
+			Id:        rndm.GenerateRandomString(24),
 		},
 	}
 
@@ -230,6 +232,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 			Audience:  audience,
 			ExpiresAt: time.Now().Add(p.refreshTokenDuration).Unix(),
 			IssuedAt:  time.Now().Unix(),
+			Id:        rndm.GenerateRandomString(24),
 		},
 	}
 
