@@ -18,6 +18,8 @@
 package payload
 
 import (
+	"encoding/json"
+
 	"stash.kopano.io/kc/konnect/oidc"
 )
 
@@ -47,10 +49,13 @@ func GetScopeForClaim(claim string) (string, bool) {
 
 // ClaimsRequest define the base claims structure for OpenID Connect claims
 // request parameter value as specified at
-// https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
+// https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter - in
+// addition a Konnect specific pass thru value can be used to pass through any
+// application specific values to access and reqfresh tokens.
 type ClaimsRequest struct {
 	UserInfo *ClaimsRequestMap `json:"userinfo,omitempty"`
 	IDToken  *ClaimsRequestMap `json:"id_token,omitempty"`
+	Passthru json.RawMessage   `json:"passthru,omitempty"`
 }
 
 // ApplyScopes removes all claims requests from the accociated claims request

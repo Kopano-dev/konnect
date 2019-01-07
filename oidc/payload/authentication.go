@@ -171,6 +171,15 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, ke
 		ar.MaxAge = time.Duration(maxAgeInt) * time.Second
 	}
 
+	if ar.Claims != nil && ar.Claims.Passthru != nil {
+		// Remove pass thru claims when not provided in a secure manner. This
+		// means that pass through claims can only be passed via a signed request
+		// objects and its claims.
+		if ar.Request == nil || ar.Request.Method == jwt.SigningMethodNone || ar.Request.Claims == nil {
+			ar.Claims.Passthru = nil
+		}
+	}
+
 	return ar, nil
 }
 
