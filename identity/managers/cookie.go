@@ -341,6 +341,7 @@ func (im *CookieIdentityManager) Authorize(ctx context.Context, rw http.Response
 	}
 
 	auth.AuthorizeScopes(approvedScopes)
+	auth.AuthorizeClaims(ar.Claims)
 	return auth, nil
 }
 

@@ -299,6 +299,7 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 	}
 
 	auth.AuthorizeScopes(approvedScopes)
+	auth.AuthorizeClaims(ar.Claims)
 	return auth, nil
 }
 
