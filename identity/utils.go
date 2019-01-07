@@ -96,8 +96,9 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 	}
 
 	// Add additional supported values for email and profile claims.
+	unknownRequestedClaimsWithValue := make(map[string]interface{})
 	for _, requestedClaimMap := range requestedClaimsMaps {
-		for requestedClaim := range *requestedClaimMap {
+		for requestedClaim, requestedClaimEntry := range *requestedClaimMap {
 			// NOTE(longsleep): We ignore the actuall value of the claim request
 			// and always return requested scopes with standard behavior.
 			if scope, ok := payload.GetScopeForClaim(requestedClaim); ok {
@@ -137,13 +138,34 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 						}
 					}
 				}
+			} else {
+				// Add claims which are unknown here to a list of unknown claims
+				// with value if the requested claim is with value. This returns
+				// the requested claim as is with the provided value.
+				if requestedClaimEntry != nil && requestedClaimEntry.Value != nil {
+					unknownRequestedClaimsWithValue[requestedClaim] = requestedClaimEntry.Value
+				}
 			}
 		}
 	}
 
+	// Add extra claims. Those can  either come from the backend user if it
+	// has own scoped claims or might be defined as value by the request.
+	var claimsWithoutScope jwt.MapClaims
 	if userWithScopedClaims, ok := user.(UserWithScopedClaims); ok {
 		// Inject additional scope claims.
-		claims[""] = userWithScopedClaims.ScopedClaims(scopes)
+		claimsWithoutScope = userWithScopedClaims.ScopedClaims(scopes)
+	}
+	if len(unknownRequestedClaimsWithValue) > 0 {
+		if claimsWithoutScope == nil {
+			claimsWithoutScope = make(jwt.MapClaims)
+		}
+		for claim, value := range unknownRequestedClaimsWithValue {
+			claimsWithoutScope[claim] = value
+		}
+	}
+	if claimsWithoutScope != nil {
+		claims[""] = claimsWithoutScope
 	}
 
 	return claims
