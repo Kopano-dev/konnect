@@ -19,6 +19,7 @@ package backends
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"reflect"
 	"strings"
@@ -49,6 +50,7 @@ var kcSupportedScopes = []string{
 	oidc.ScopeProfile,
 	oidc.ScopeEmail,
 	konnect.ScopeID,
+	konnect.ScopeUniqueUserID,
 	konnect.ScopeRawSubject,
 	kcDefinitions.ScopeKopanoGC,
 }
@@ -88,11 +90,33 @@ type KCIdentifierBackend struct {
 }
 
 type kcUser struct {
+	sub string
+
 	user *kcc.User
 }
 
+func newKCUser(user *kcc.User) (*kcUser, error) {
+	// NOTE(longsleep): KCC uses EntryIDs  which needs parsing to get the
+	// unique user identifier. We take the users entryID and extract the
+	// exID field and use its base64URL encoded value as subject.
+
+	// Parse user EntryID.
+	abeid, err := kcc.NewABEIDFromBase64([]byte(user.UserEntryID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse kcc user entryID: %v", err)
+	}
+	// Fetch external ID and as subject. Since its binary, encode it base64URL.
+	sub := exIDToString(abeid.ExID())
+
+	return &kcUser{
+		sub: sub,
+
+		user: user,
+	}, nil
+}
+
 func (u *kcUser) Subject() string {
-	return u.user.UserEntryID
+	return u.sub
 }
 
 func (u *kcUser) Email() string {
@@ -129,6 +153,12 @@ func (u *kcUser) GivenName() string {
 
 func (u *kcUser) ID() int64 {
 	return int64(u.user.ID)
+}
+
+func (u *kcUser) UniqueID() string {
+	// Provide our sub as unique ID since it is the exID part of the
+	// users ABEID which is unique in whatever user backend the server uses.
+	return u.sub
 }
 
 func (u *kcUser) Username() string {
@@ -286,17 +316,24 @@ func (b *KCIdentifierBackend) Logon(ctx context.Context, audience, username, pas
 		if err != nil {
 			return false, nil, nil, fmt.Errorf("kc identifier backend logon resolve error: %v", err)
 		}
+		resolveABEID, err := kcc.NewABEIDFromBase64([]byte(resolve.UserEntryID))
+		if err != nil {
+			return false, nil, nil, fmt.Errorf("kc identifier backend logon failed to process entryID: %v", err)
+		}
+		// Fetch exID as basic unique identifier.
+		userID := exIDToString(resolveABEID.ExID())
 
-		sessionRef := identity.GetSessionRef(b.Name(), audience, resolve.UserEntryID)
+		sessionRef := identity.GetSessionRef(b.Name(), audience, userID)
 		b.sessions.Set(*sessionRef, session)
 		b.logger.WithFields(logrus.Fields{
 			"session":  session,
 			"ref":      *sessionRef,
 			"username": username,
-			"id":       resolve.UserEntryID,
+			"id":       userID,
+			"abeid":    resolve.UserEntryID,
 		}).Debugln("kc identifier backend logon")
 
-		return true, &resolve.UserEntryID, sessionRef, nil
+		return true, &userID, sessionRef, nil
 
 	case kcc.KCERR_LOGON_FAILED:
 		return false, nil, nil, nil
@@ -319,13 +356,11 @@ func (b *KCIdentifierBackend) ResolveUserByUsername(ctx context.Context, usernam
 	case kcc.KCSuccess:
 		// success.
 
-		return &kcUser{
-			user: &kcc.User{
-				ID:          response.ID,
-				Username:    username,
-				UserEntryID: response.UserEntryID,
-			},
-		}, nil
+		return newKCUser(&kcc.User{
+			ID:          response.ID,
+			Username:    username,
+			UserEntryID: response.UserEntryID,
+		})
 
 	case kcc.KCERR_NOT_FOUND:
 		return nil, nil
@@ -337,13 +372,13 @@ func (b *KCIdentifierBackend) ResolveUserByUsername(ctx context.Context, usernam
 // GetUser implements the Backend interface, providing user meta data retrieval
 // for the user specified by the userID. Requests are bound to the provided
 // context.
-func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string, sessionRef *string) (identity.User, error) {
-	session, err := b.getSessionForUser(ctx, userID, sessionRef, true, true, false)
+func (b *KCIdentifierBackend) GetUser(ctx context.Context, userEntryID string, sessionRef *string) (identity.User, error) {
+	session, err := b.getSessionForUser(ctx, userEntryID, sessionRef, true, true, false)
 	if err != nil {
 		return nil, fmt.Errorf("kc identifier backend resolve session error: %v", err)
 	}
 
-	response, err := b.getUser(ctx, userID, session)
+	response, err := b.getUser(ctx, userEntryID, session)
 	if err != nil {
 		return nil, fmt.Errorf("kc identifier backend get user error: %v", err)
 	}
@@ -351,13 +386,12 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string, sessio
 	switch response.Er {
 	case kcc.KCSuccess:
 		// success.
-		if response.User.UserEntryID != userID {
-			return nil, fmt.Errorf("kc identifier backend get user returned wrong user")
+		user, err := newKCUser(response.User)
+		if err != nil {
+			return nil, fmt.Errorf("kc identifier backend get user failed to process user: %v", err)
 		}
 
-		return &kcUser{
-			user: response.User,
-		}, nil
+		return user, nil
 
 	case kcc.KCERR_NOT_FOUND:
 		return nil, nil
@@ -368,7 +402,18 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userID string, sessio
 
 // RefreshSession implements the Backend interface providing refresh to KC session.
 func (b *KCIdentifierBackend) RefreshSession(ctx context.Context, userID string, sessionRef *string) error {
-	_, err := b.getSessionForUser(ctx, userID, sessionRef, true, true, false)
+	userEntryID, err := userIDToUserEntryID(userID)
+	if err != nil {
+		return fmt.Errorf("kc identifier backend refresh session userID error: %v", err)
+	}
+
+	_, err = b.getSessionForUser(ctx, userEntryID, sessionRef, true, true, false)
+	if err != nil {
+		b.logger.WithFields(logrus.Fields{
+			"id":    userID,
+			"abeid": userEntryID,
+		}).Debugf("kc identifier backend refresh session failed: %v", err)
+	}
 	return err
 }
 
@@ -385,8 +430,21 @@ func (b *KCIdentifierBackend) DestroySession(ctx context.Context, sessionRef *st
 	return session.Destroy(ctx, true)
 }
 
+// SetIdentityClaims implements the Backend interface, providing user specific
+// identity claims.
+func (b *KCIdentifierBackend) SetIdentityClaims(userID string, claims map[string]interface{}) error {
+	userEntryID, err := userIDToUserEntryID(userID)
+	if err != nil {
+		return fmt.Errorf("kc identifier backend failed to set identity claim: %v", err)
+	}
+
+	claims[konnect.IdentifiedUserIDClaim] = userEntryID
+	claims[konnect.IdentifiedUserClaim] = userID
+	return nil
+}
+
 // UserClaims implements the Backend interface, providing user specific claims
-// for the user specified by the userID.
+// for the user specified by userID.
 func (b *KCIdentifierBackend) UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{} {
 	var claims map[string]interface{}
 
@@ -458,7 +516,7 @@ func (b *KCIdentifierBackend) getUser(ctx context.Context, userEntryID string, s
 	return user, err
 }
 
-func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userID string, sessionRef *string, register bool, refresh bool, removeIfRegistered bool) (*kcc.Session, error) {
+func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userEntryID string, sessionRef *string, register bool, refresh bool, removeIfRegistered bool) (*kcc.Session, error) {
 	if b.useGlobalSession {
 		return nil, nil
 	}
@@ -495,13 +553,14 @@ func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userID stri
 		}
 	}
 
-	if !register || !refresh || userID == "" {
+	if !register || !refresh || userEntryID == "" {
 		return nil, nil
 	}
 
-	// Create new auth record with attached identity manager for userID and
-	// ensure that we have the required scopes to access kc.
-	auth := identity.NewAuthRecord(b.identityManager, userID, map[string]bool{
+	// Create new auth record with attached identity manager for userEntryID
+	// and ensure that we have the required scopes to access kc. We create a
+	// simple access which uses the entryID as subject.
+	auth := identity.NewAuthRecord(b.identityManager, userEntryID, map[string]bool{
 		oidc.ScopeOpenID:            true,
 		kcDefinitions.ScopeKopanoGC: true,
 	}, nil, nil)
@@ -512,7 +571,7 @@ func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userID stri
 	}
 
 	// Logon.
-	response, err := b.c.SSOLogon(ctx, kcc.KOPANO_SSO_TYPE_KCOIDC, userID, []byte(accessToken), kcc.KCNoSessionID, 0)
+	response, err := b.c.SSOLogon(ctx, kcc.KOPANO_SSO_TYPE_KCOIDC, userEntryID, []byte(accessToken), kcc.KCNoSessionID, 0)
 	if err != nil {
 		return nil, fmt.Errorf("kc identifier backend sso logon error: %v", err)
 	}
@@ -537,7 +596,7 @@ func (b *KCIdentifierBackend) getSessionForUser(ctx context.Context, userID stri
 			b.logger.WithFields(logrus.Fields{
 				"ref":     *sessionRef,
 				"session": session,
-				"id":      userID,
+				"abeid":   userEntryID,
 			}).Debugln("kc identifier backend session")
 		}
 	}
@@ -621,4 +680,30 @@ func (b *KCIdentifierBackend) getGlobalSession() *kcc.Session {
 	session := b.globalSession
 	b.globalSessionMutex.RUnlock()
 	return session
+}
+
+func exIDToString(exID []byte) string {
+	return base64.RawURLEncoding.EncodeToString(exID)
+}
+
+func stringExIDToByte(exIDString string) ([]byte, error) {
+	return base64.RawURLEncoding.DecodeString(exIDString)
+}
+
+func userIDToUserEntryID(userID string) (string, error) {
+	// Create ABEID value from provided userID which is an exID.
+	exID, err := stringExIDToByte(userID)
+	if err != nil {
+		return "", err
+	}
+	// NOTE(longsleep): We do not know the local IDs for the user. We set 0
+	// value and rely on Kopano server to resolve the user using the exID part.
+	// This requires Kopano 8.7 or higher.
+	var localID uint32
+	// Create new ABEID value for the user and return as Base64Std encoded string.
+	abeid, err := kcc.NewABEIDV1(kcc.MUIDECSAB, kcc.MAPI_MAILUSER, localID, exID)
+	if err != nil {
+		return "", err
+	}
+	return abeid.String(), nil
 }

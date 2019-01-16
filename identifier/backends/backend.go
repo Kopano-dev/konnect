@@ -37,6 +37,7 @@ type Backend interface {
 	RefreshSession(ctx context.Context, userID string, sessionRef *string) error
 	DestroySession(ctx context.Context, sessionRef *string) error
 
+	SetIdentityClaims(userID string, claims map[string]interface{}) error
 	UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{}
 	ScopesSupported() []string
 	ScopesMeta() *scopes.Scopes

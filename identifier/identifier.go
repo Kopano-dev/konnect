@@ -44,6 +44,8 @@ import (
 	"stash.kopano.io/kc/konnect/utils"
 )
 
+var audienceMarker = jwt.Audience([]string{"2019011600"})
+
 // Identifier defines a identification login area with its endpoints using
 // a Kopano Core server as backend logon provider.
 type Identifier struct {
@@ -224,6 +226,7 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 
 	// Encrypt cookie value.
 	claims := jwt.Claims{
+		Audience: audienceMarker,
 		Subject:  user.Subject(),
 		IssuedAt: jwt.NewNumericDate(logonAt),
 	}
@@ -305,6 +308,11 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		return nil, err
 	}
 
+	if !claims.Audience.Contains(audienceMarker[0]) {
+		// Ignore cookie, when audience marker does not match. This happens
+		// for cookies from an older version of konnect.
+		return nil, nil
+	}
 	if claims.Subject == "" {
 		return nil, fmt.Errorf("invalid subject in logon token")
 	}
@@ -361,10 +369,10 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	return user, nil
 }
 
-// GetUserFromID looks up the user identified by the provided subject by
+// GetUserFromID looks up the user identified by the provided userID by
 // requesting the associated backend.
-func (i *Identifier) GetUserFromID(ctx context.Context, sub string, sessionRef *string) (*IdentifiedUser, error) {
-	user, err := i.backend.GetUser(ctx, sub, sessionRef)
+func (i *Identifier) GetUserFromID(ctx context.Context, userID string, sessionRef *string) (*IdentifiedUser, error) {
+	user, err := i.backend.GetUser(ctx, userID, sessionRef)
 	if err != nil {
 		return nil, err
 	}

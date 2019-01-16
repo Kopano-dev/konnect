@@ -388,22 +388,17 @@ func (im *IdentifierIdentityManager) ApprovedScopes(ctx context.Context, sub str
 
 // Fetch implements the identity.Manager interface.
 func (im *IdentifierIdentityManager) Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaimsMaps []*payload.ClaimsRequestMap) (identity.AuthRecord, bool, error) {
-	identifiedUser, err := im.identifier.GetUserFromID(ctx, userID, sessionRef)
+	u, err := im.identifier.GetUserFromID(ctx, userID, sessionRef)
 	if err != nil {
-		im.logger.WithError(err).Errorln("IdentifierIdentityManager: identifier error")
+		im.logger.WithError(err).Errorln("IdentifierIdentityManager: fetch failed to get user from userID")
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: identifier error")
 	}
 
-	if identifiedUser == nil {
+	if u == nil {
 		return nil, false, fmt.Errorf("IdentifierIdentityManager: no user")
 	}
 
-	user := asIdentifierUser(identifiedUser)
-
-	if user.Raw() != userID {
-		return nil, false, fmt.Errorf("IdentifierIdentityManager: wrong user")
-	}
-
+	user := asIdentifierUser(u)
 	authorizedScopes, _ := identity.AuthorizeScopes(im, user, scopes)
 	claims := identity.GetUserClaimsForScopes(user, authorizedScopes, requestedClaimsMaps)
 

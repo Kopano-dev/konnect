@@ -1,5 +1,5 @@
-hash: 4f3053d7ce9463845e85fa613010dd80ec37dd6a70d5fc36f66699709a57b48e
-updated: 2018-11-28T16:58:29.985573026+01:00
+hash: 6286527117ea10aceaa06322cd5ea8c8344e4543fda6025246d8abfbf94b531d
+updated: 2019-01-17T19:48:36.439041863+01:00
 imports:
 - name: github.com/deckarep/golang-set
   version: cbaa98ba5575e67703b32b4b19f73c91f3c4159e
@@ -46,10 +46,8 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
   - nacl/secretbox
-  - pbkdf2
   - poly1305
   - salsa20/salsa
-  - ssh/terminal
 - name: golang.org/x/net
   version: c39426892332e1bb5ec0a434a079bf82f5d30c54
   subpackages:
@@ -75,7 +73,7 @@ imports:
 - name: gopkg.in/yaml.v2
   version: 7f97868eec74b32b0982dd158a51a446d1da7eb5
 - name: stash.kopano.io/kgol/kcc-go
-  version: 1d769321b4f2f4eef014c90d336a29b3bc9d3430
+  version: 2c0dac37069b3aa9ccfa81e5061b0d500f410f7e
 - name: stash.kopano.io/kgol/rndm
   version: 69ff9c69d5ce12d2fb19a552eab58ad657a5e8b2
 testImports: []

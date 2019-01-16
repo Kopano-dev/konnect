@@ -119,11 +119,17 @@ func (p *Provider) getUserIDAndSessionRefFromClaims(claims *jwt.StandardClaims, 
 		return "", nil
 	}
 
-	var userID string
-	userID, _ = identityClaims[konnect.IdentifiedUserIDClaim].(string)
-	if userID == "" {
-		return "", nil
+	userIDClaim, _ := identityClaims[konnect.IdentifiedUserIDClaim].(string)
+	if userIDClaim == "" {
+		return userIDClaim, nil
+	}
+	userClaim, _ := identityClaims[konnect.IdentifiedUserClaim].(string)
+	if userClaim == "" {
+		userClaim = userIDClaim
 	}
 
-	return userID, identity.GetSessionRef(p.identityManager.Name(), claims.Audience, userID)
+	// NOTE(longsleep): Return the userID from claims and generate a session ref
+	// for it. Session refs use the userClaim if available and set by the
+	// underlaying backend.
+	return userIDClaim, identity.GetSessionRef(p.identityManager.Name(), claims.Audience, userClaim)
 }

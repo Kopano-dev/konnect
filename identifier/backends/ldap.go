@@ -413,6 +413,13 @@ func (b *LDAPIdentifierBackend) DestroySession(ctx context.Context, sessionRef *
 	return nil
 }
 
+// SetIdentityClaims implements the Backend interface, providing user specific
+// identity claims.
+func (b *LDAPIdentifierBackend) SetIdentityClaims(userID string, claims map[string]interface{}) error {
+	claims[konnect.IdentifiedUserIDClaim] = userID
+	return nil
+}
+
 // UserClaims implements the Backend interface, providing user specific claims
 // for the user specified by the userID.
 func (b *LDAPIdentifierBackend) UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{} {

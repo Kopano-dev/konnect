@@ -116,6 +116,17 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			return "", fmt.Errorf("no user")
 		}
 
+		var userID string
+		if userWithClaims, ok := user.(identity.UserWithClaims); ok {
+			identityClaims := userWithClaims.Claims()
+			if userIDString, ok := identityClaims[konnect.IdentifiedUserIDClaim]; ok {
+				userID = userIDString.(string)
+			}
+		}
+		if userID == "" {
+			return "", fmt.Errorf("no id claim in user identity claims")
+		}
+
 		var sessionRef *string
 		if userWithSessionRef, ok := user.(identity.UserWithSessionRef); ok {
 			sessionRef = userWithSessionRef.SessionRef()
@@ -128,7 +139,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 			requestedScopesMap = authorizedClaimsRequest.IDToken.ScopesMap(nil)
 		}
 
-		freshAuth, found, fetchErr := auth.Manager().Fetch(ctx, user.Raw(), sessionRef, auth.AuthorizedScopes(), requestedClaimsMap)
+		freshAuth, found, fetchErr := auth.Manager().Fetch(ctx, userID, sessionRef, auth.AuthorizedScopes(), requestedClaimsMap)
 		if fetchErr != nil {
 			p.logger.WithFields(utils.ErrorAsFields(fetchErr)).Errorln("identity manager fetch failed")
 			found = false

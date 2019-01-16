@@ -19,6 +19,7 @@ package identifier
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -106,12 +107,15 @@ func (u *IdentifiedUser) Username() string {
 
 // Claims returns extra claims of the accociated user.
 func (u *IdentifiedUser) Claims() jwt.MapClaims {
-	claims := make(jwt.MapClaims)
-	claims[konnect.IdentifiedUserIDClaim] = u.Subject()
+	claims := make(map[string]interface{})
 	claims[konnect.IdentifiedUsernameClaim] = u.Username()
 	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
 
-	return claims
+	if u.backend != nil {
+		u.backend.SetIdentityClaims(u.Subject(), claims)
+	}
+
+	return jwt.MapClaims(claims)
 }
 
 // ScopedClaims returns scope bound extra claims of the accociated user.
@@ -158,7 +162,16 @@ func (i *Identifier) resolveUser(ctx context.Context, username string) (*Identif
 }
 
 func (i *Identifier) updateUser(ctx context.Context, user *IdentifiedUser) error {
-	u, err := i.backend.GetUser(ctx, user.Subject(), user.sessionRef)
+	var userID string
+	identityClaims := user.Claims()
+	if userIDString, ok := identityClaims[konnect.IdentifiedUserIDClaim]; ok {
+		userID = userIDString.(string)
+	}
+	if userID == "" {
+		return errors.New("no id claim in user identity claims")
+	}
+
+	u, err := i.backend.GetUser(ctx, userID, user.sessionRef)
 	if err != nil {
 		return err
 	}

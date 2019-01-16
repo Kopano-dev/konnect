@@ -171,7 +171,7 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 	return claims
 }
 
-// GetSessionRef builds a per useser and audience unique identifier.
+// GetSessionRef builds a per user and audience unique identifier.
 func GetSessionRef(label string, audience string, userID string) *string {
 	if userID == "" {
 		return nil
