@@ -29,18 +29,24 @@ import (
 type Backend interface {
 	RunWithContext(context.Context) error
 
-	Logon(ctx context.Context, audience string, username string, password string) (success bool, userID *string, sessionRef *string, err error)
-	GetUser(ctx context.Context, userID string, sessionRef *string) (user identity.User, err error)
+	Logon(ctx context.Context, audience string, username string, password string) (success bool, userID *string, sessionRef *string, claims map[string]interface{}, err error)
+	GetUser(ctx context.Context, userID string, sessionRef *string) (user UserFromBackend, err error)
 
-	ResolveUserByUsername(ctx context.Context, username string) (user identity.UserWithUsername, err error)
+	ResolveUserByUsername(ctx context.Context, username string) (user UserFromBackend, err error)
 
-	RefreshSession(ctx context.Context, userID string, sessionRef *string) error
+	RefreshSession(ctx context.Context, userID string, sessionRef *string, claims map[string]interface{}) error
 	DestroySession(ctx context.Context, sessionRef *string) error
 
-	SetIdentityClaims(userID string, claims map[string]interface{}) error
 	UserClaims(userID string, authorizedScopes map[string]bool) map[string]interface{}
 	ScopesSupported() []string
 	ScopesMeta() *scopes.Scopes
 
 	Name() string
+}
+
+// UserFromBackend are users as provided by backends which can have additional
+// claims together with a user name.
+type UserFromBackend interface {
+	identity.UserWithUsername
+	BackendClaims() map[string]interface{}
 }

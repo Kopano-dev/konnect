@@ -44,7 +44,7 @@ import (
 	"stash.kopano.io/kc/konnect/utils"
 )
 
-var audienceMarker = jwt.Audience([]string{"2019011600"})
+var audienceMarker = jwt.Audience([]string{"2019012100"})
 
 // Identifier defines a identification login area with its endpoints using
 // a Kopano Core server as backend logon provider.
@@ -236,6 +236,10 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 	if sessionRef != nil {
 		userClaims[SessionIDClaim] = user.SessionRef()
 	}
+	for k, v := range user.claims {
+		userClaims[k] = v
+	}
+
 	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(userClaims).CompactSerialize()
 	if err != nil {
 		return err
@@ -345,12 +349,13 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 
 	if v, _ := userClaims[SessionIDClaim]; v != nil {
 		sessionRef := v.(string)
+		delete(userClaims, SessionIDClaim)
 		if sessionRef != "" {
 			// Remember session ref in user.
 			user.sessionRef = &sessionRef
 			// Ensure the session is still valid, by refreshing it.
 			if refreshSession {
-				err = i.backend.RefreshSession(ctx, user.Subject(), &sessionRef)
+				err = i.backend.RefreshSession(ctx, user.Subject(), &sessionRef, userClaims)
 				if err != nil {
 					// Ignore logons which fail session refresh.
 					return nil, nil
@@ -361,10 +366,14 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 
 	if v, _ := userClaims[konnect.IdentifiedUsernameClaim]; v != nil {
 		user.username = v.(string)
+		delete(userClaims, konnect.IdentifiedUsernameClaim)
 	}
 	if v, _ := userClaims[konnect.IdentifiedDisplayNameClaim]; v != nil {
 		user.displayName = v.(string)
+		delete(userClaims, konnect.IdentifiedDisplayNameClaim)
 	}
+
+	user.claims = userClaims
 
 	return user, nil
 }
@@ -382,9 +391,12 @@ func (i *Identifier) GetUserFromID(ctx context.Context, userID string, sessionRe
 	identifiedUser := &IdentifiedUser{
 		sub: user.Subject(),
 
+		username: user.Username(),
+
 		backend: i.backend,
 
 		sessionRef: sessionRef,
+		claims:     user.BackendClaims(),
 	}
 	if userWithEmail, ok := user.(identity.UserWithEmail); ok {
 		identifiedUser.email = userWithEmail.Email()
@@ -400,9 +412,6 @@ func (i *Identifier) GetUserFromID(ctx context.Context, userID string, sessionRe
 	}
 	if userWithUniqueID, ok := user.(identity.UserWithUniqueID); ok {
 		identifiedUser.uid = userWithUniqueID.UniqueID()
-	}
-	if userWithUsername, ok := user.(identity.UserWithUsername); ok {
-		identifiedUser.username = userWithUsername.Username()
 	}
 
 	return identifiedUser, nil

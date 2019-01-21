@@ -218,24 +218,13 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		switch params[2] {
 		case ModeLogonUsernamePassword:
 			// Username and password validation mode.
-			success, subject, sessionRef, logonErr := i.backend.Logon(req.Context(), audience, params[0], params[1])
+			logonedUser, logonErr := i.logonUser(req.Context(), audience, params[0], params[1])
 			if logonErr != nil {
 				i.logger.WithError(logonErr).Errorln("identifier failed to logon with backend")
 				i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to logon")
 				return
 			}
-			if success {
-				// Construct logged on user from logon result.
-				user = &IdentifiedUser{
-					sub: *subject,
-
-					backend: i.backend,
-
-					username: params[0],
-
-					sessionRef: sessionRef,
-				}
-			}
+			user = logonedUser
 
 		default:
 			i.logger.Debugln("identifier unknown logon mode: %v", params[2])

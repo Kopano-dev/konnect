@@ -46,6 +46,7 @@ type IdentifiedUser struct {
 	uid string
 
 	sessionRef *string
+	claims     map[string]interface{}
 
 	logonAt time.Time
 }
@@ -111,8 +112,8 @@ func (u *IdentifiedUser) Claims() jwt.MapClaims {
 	claims[konnect.IdentifiedUsernameClaim] = u.Username()
 	claims[konnect.IdentifiedDisplayNameClaim] = u.Name()
 
-	if u.backend != nil {
-		u.backend.SetIdentityClaims(u.Subject(), claims)
+	for k, v := range u.claims {
+		claims[k] = v
 	}
 
 	return jwt.MapClaims(claims)
@@ -143,6 +144,30 @@ func (u *IdentifiedUser) BackendName() string {
 	return u.backend.Name()
 }
 
+func (i *Identifier) logonUser(ctx context.Context, audience, username, password string) (*IdentifiedUser, error) {
+	success, subject, sessionRef, claims, err := i.backend.Logon(ctx, audience, username, password)
+	if err != nil {
+		return nil, err
+	}
+
+	if !success {
+		return nil, nil
+	}
+
+	user := &IdentifiedUser{
+		sub: *subject,
+
+		username: username,
+
+		backend: i.backend,
+
+		sessionRef: sessionRef,
+		claims:     claims,
+	}
+
+	return user, nil
+}
+
 func (i *Identifier) resolveUser(ctx context.Context, username string) (*IdentifiedUser, error) {
 	u, err := i.backend.ResolveUserByUsername(ctx, username)
 	if err != nil {
@@ -156,6 +181,8 @@ func (i *Identifier) resolveUser(ctx context.Context, username string) (*Identif
 		username: u.Username(),
 
 		backend: i.backend,
+
+		claims: u.BackendClaims(),
 	}
 
 	return user, nil

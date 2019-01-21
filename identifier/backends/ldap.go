@@ -31,7 +31,6 @@ import (
 	"stash.kopano.io/kc/konnect/config"
 	ldapDefinitions "stash.kopano.io/kc/konnect/identifier/backends/ldap"
 	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
-	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/oidc"
 
 	"github.com/satori/go.uuid"
@@ -176,6 +175,10 @@ func (u *ldapUser) UniqueID() string {
 	return u.getAttributeValue(ldapDefinitions.AttributeUUID)
 }
 
+func (u *ldapUser) BackendClaims() map[string]interface{} {
+	return nil
+}
+
 // NewLDAPIdentifierBackend creates a new LDAPIdentifierBackend with the provided
 // parameters.
 func NewLDAPIdentifierBackend(
@@ -306,15 +309,15 @@ func (b *LDAPIdentifierBackend) RunWithContext(ctx context.Context) error {
 
 // Logon implements the Backend interface, enabling Logon with user name and
 // password as provided. Requests are bound to the provided context.
-func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, password string) (bool, *string, *string, error) {
+func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, password string) (bool, *string, *string, map[string]interface{}, error) {
 	loginAttributeName := b.attributeMapping[ldapDefinitions.AttributeLogin]
 	if loginAttributeName == "" {
-		return false, nil, nil, fmt.Errorf("ldap identifier backend logon impossible as no login attribute is set")
+		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon impossible as no login attribute is set")
 	}
 
 	l, err := b.connect(ctx)
 	if err != nil {
-		return false, nil, nil, fmt.Errorf("ldap identifier backend logon connect error: %v", err)
+		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon connect error: %v", err)
 	}
 	defer l.Close()
 
@@ -322,13 +325,13 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 	entry, err := b.searchUsername(l, username, b.attributeMapping.attributes())
 	switch {
 	case ldap.IsErrorWithCode(err, ldap.LDAPResultNoSuchObject):
-		return false, nil, nil, nil
+		return false, nil, nil, nil, nil
 	}
 	if err != nil {
-		return false, nil, nil, fmt.Errorf("ldap identifier backend logon search error: %v", err)
+		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon search error: %v", err)
 	}
 	if !strings.EqualFold(entry.GetAttributeValue(loginAttributeName), username) {
-		return false, nil, nil, fmt.Errorf("ldap identifier backend logon search returned wrong user")
+		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon search returned wrong user")
 	}
 
 	userDN := entry.DN
@@ -337,19 +340,19 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 	err = l.Bind(userDN, password)
 	switch {
 	case ldap.IsErrorWithCode(err, ldap.LDAPResultInvalidCredentials):
-		return false, nil, nil, nil
+		return false, nil, nil, nil, nil
 	}
 
 	if err != nil {
-		return false, nil, nil, fmt.Errorf("ldap identifier backend logon error: %v", err)
+		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon error: %v", err)
 	}
 
-	return true, &userDN, nil, nil
+	return true, &userDN, nil, nil, nil
 }
 
 // ResolveUserByUsername implements the Beckend interface, providing lookup for
 // user by providing the username. Requests are bound to the provided context.
-func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, username string) (identity.UserWithUsername, error) {
+func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, username string) (UserFromBackend, error) {
 	loginAttributeName := b.attributeMapping[ldapDefinitions.AttributeLogin]
 	if loginAttributeName == "" {
 		return nil, fmt.Errorf("ldap identifier backend resolve impossible as no login attribute is set")
@@ -380,7 +383,7 @@ func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, usern
 // GetUser implements the Backend interface, providing user meta data retrieval
 // for the user specified by the useID. Requests are bound to the provided
 // context.
-func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string, sessionRef *string) (identity.User, error) {
+func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string, sessionRef *string) (UserFromBackend, error) {
 	_, err := ldap.ParseDN(userID)
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user invalid user ID: %v", err)
@@ -404,19 +407,12 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string, sess
 }
 
 // RefreshSession implements the Backend interface.
-func (b *LDAPIdentifierBackend) RefreshSession(ctx context.Context, userID string, sessionRef *string) error {
+func (b *LDAPIdentifierBackend) RefreshSession(ctx context.Context, userID string, sessionRef *string, claims map[string]interface{}) error {
 	return nil
 }
 
 // DestroySession implements the Backend interface providing destroy to KC session.
 func (b *LDAPIdentifierBackend) DestroySession(ctx context.Context, sessionRef *string) error {
-	return nil
-}
-
-// SetIdentityClaims implements the Backend interface, providing user specific
-// identity claims.
-func (b *LDAPIdentifierBackend) SetIdentityClaims(userID string, claims map[string]interface{}) error {
-	claims[konnect.IdentifiedUserIDClaim] = userID
 	return nil
 }
 
