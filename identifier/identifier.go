@@ -384,7 +384,7 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	if v, _ := userClaims[konnect.IdentifiedDisplayNameClaim]; v != nil {
 		user.displayName = v.(string)
 	}
-	if v, ok := userClaims[UserClaimsClaim]; ok {
+	if v, _ := userClaims[UserClaimsClaim]; v != nil {
 		user.claims = v.(map[string]interface{})
 	}
 
