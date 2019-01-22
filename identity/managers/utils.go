@@ -20,7 +20,7 @@ package managers
 import (
 	"encoding/base64"
 
-	blake2b "github.com/minio/blake2b-simd"
+	"golang.org/x/crypto/blake2b"
 
 	"stash.kopano.io/kc/konnect/oidc"
 )
@@ -35,7 +35,11 @@ func setupSupportedScopes(scopes []string, extra []string, override []string) []
 
 func getPublicSubject(sub []byte, extra []byte) (string, error) {
 	// Hash the raw subject with a konnect specific salt.
-	hasher := blake2b.NewMAC(64, []byte(oidc.KonnectIDTokenSubjectSaltV1))
+	hasher, err := blake2b.New512([]byte(oidc.KonnectIDTokenSubjectSaltV1))
+	if err != nil {
+		return "", err
+	}
+
 	hasher.Write(sub)
 	hasher.Write([]byte(" "))
 	hasher.Write(extra)

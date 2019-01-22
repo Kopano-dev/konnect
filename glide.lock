@@ -1,5 +1,5 @@
-hash: 6286527117ea10aceaa06322cd5ea8c8344e4543fda6025246d8abfbf94b531d
-updated: 2019-01-17T19:48:36.439041863+01:00
+hash: febeb48479b7229dbde89a1b089d9c5effd49054dd819aafe297ed3af16d455e
+updated: 2019-01-22T12:29:38.079706956+01:00
 imports:
 - name: github.com/deckarep/golang-set
   version: cbaa98ba5575e67703b32b4b19f73c91f3c4159e
@@ -26,8 +26,6 @@ imports:
   - timing
 - name: github.com/mendsley/gojwk
   version: 4d5ec6e58103388d6cb0d7d72bc72649be4f0504
-- name: github.com/minio/blake2b-simd
-  version: 3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4
 - name: github.com/orcaman/concurrent-map
   version: 2ae17bc4c860c83513ee50feb9746f3e50d7515d
 - name: github.com/rs/cors
@@ -41,10 +39,12 @@ imports:
 - name: github.com/spf13/pflag
   version: 9a97c102cda95a86cec2345a6f09f55a939babf5
 - name: golang.org/x/crypto
-  version: 2faea1465de239e4babd8f5905cc25b781712442
+  version: 64072686203f69e3fd20143576b27200f18ab0fa
   subpackages:
+  - blake2b
   - ed25519
   - ed25519/internal/edwards25519
+  - internal/subtle
   - nacl/secretbox
   - poly1305
   - salsa20/salsa
@@ -55,6 +55,7 @@ imports:
 - name: golang.org/x/sys
   version: 14742f9018cd6651ec7364dc6ee08af0baaa1031
   subpackages:
+  - cpu
   - unix
 - name: golang.org/x/time
   version: 6dc17368e09b0e8634d71cac8168d853e869a0c7

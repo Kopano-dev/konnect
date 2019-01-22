@@ -21,7 +21,7 @@ import (
 	"encoding/base64"
 	"net/http"
 
-	blake2b "github.com/minio/blake2b-simd"
+	"golang.org/x/crypto/blake2b"
 )
 
 func (i *Identifier) setLogonCookie(rw http.ResponseWriter, value string) error {
@@ -108,7 +108,11 @@ func (i *Identifier) removeConsentCookie(rw http.ResponseWriter, req *http.Reque
 
 func (i *Identifier) getConsentCookieName(cr *ConsentRequest) (string, error) {
 	// Consent cookie names are based on parameters in the request.
-	hasher := blake2b.New256()
+	hasher, err := blake2b.New256(nil)
+	if err != nil {
+		return "", err
+	}
+
 	hasher.Write([]byte(cr.State))
 	hasher.Write([]byte("h"))
 	hasher.Write([]byte(cr.ClientID))

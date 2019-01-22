@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"net/url"
 
-	blake2b "github.com/minio/blake2b-simd"
+	"golang.org/x/crypto/blake2b"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/identity"
@@ -35,7 +35,10 @@ import (
 var browserStateMarker = []byte("kopano-konnect-1")
 
 func (p *Provider) makeBrowserState(ar *payload.AuthenticationRequest, auth identity.AuthRecord, err error) (string, error) {
-	hasher := blake2b.New256()
+	hasher, hasherErr := blake2b.New256(nil)
+	if hasherErr != nil {
+		return "", hasherErr
+	}
 	if auth != nil && err == nil {
 		hasher.Write([]byte(auth.Subject()))
 	} else {

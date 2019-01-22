@@ -20,6 +20,7 @@ import:
   version: v1.0.0
 - package: github.com/spf13/cobra
 - package: golang.org/x/crypto
+  version: 64072686203f69e3fd20143576b27200f18ab0fa
   subpackages:
   - nacl/secretbox
 - package: stash.kopano.io/kgol/rndm
@@ -29,7 +30,6 @@ import:
 - package: stash.kopano.io/kgol/kcc-go
   version: ^v2.0.1
 - package: github.com/eternnoir/gncp
-- package: github.com/minio/blake2b-simd
 - package: gopkg.in/ldap.v2
   version: v2.5.1
 - package: gopkg.in/asn1-ber.v1
