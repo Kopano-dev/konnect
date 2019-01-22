@@ -44,7 +44,12 @@ import (
 	"stash.kopano.io/kc/konnect/utils"
 )
 
-var audienceMarker = jwt.Audience([]string{"2019012100"})
+// audienceMarker defines the value which gets included in logon cookies. Valid
+// logon cookies must have the first value of this list in their audience claim.
+// Increment this value whenever logon cookie claims and format changes in
+// non-backwards compatible ways. User will have to sign in again to get a new
+// cookie.
+var audienceMarker = jwt.Audience([]string{"2019012201"})
 
 // Identifier defines a identification login area with its endpoints using
 // a Kopano Core server as backend logon provider.
@@ -224,22 +229,23 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 		return fmt.Errorf("refused to set cookie for not logged on user")
 	}
 
-	// Encrypt cookie value.
+	// Add standard claims.
 	claims := jwt.Claims{
+		Issuer:   user.BackendName(),
 		Audience: audienceMarker,
 		Subject:  user.Subject(),
 		IssuedAt: jwt.NewNumericDate(logonAt),
 	}
-
+	// Additional claims.
 	userClaims := map[string]interface{}(user.Claims())
 	sessionRef := user.SessionRef()
 	if sessionRef != nil {
 		userClaims[SessionIDClaim] = user.SessionRef()
 	}
-	for k, v := range user.claims {
-		userClaims[k] = v
-	}
+	// User defined claims.
+	userClaims[UserClaimsClaim] = user.claims
 
+	// Serialize and encrypt cookie value.
 	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(userClaims).CompactSerialize()
 	if err != nil {
 		return err
@@ -301,20 +307,27 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		return nil, err
 	}
 
+	// Decrypt and parse cookie value.
 	token, err := jwt.ParseEncrypted(cookie.Value)
 	if err != nil {
 		return nil, err
 	}
 
+	// Parse claims.
 	var claims jwt.Claims
 	var userClaims map[string]interface{}
 	if err = token.Claims(i.recipient.Key, &claims, &userClaims); err != nil {
 		return nil, err
 	}
 
+	// Ignore cookie, when audience marker does not match. This happens
+	// for cookies from an older version of konnect. Users need to sign in again.
 	if !claims.Audience.Contains(audienceMarker[0]) {
-		// Ignore cookie, when audience marker does not match. This happens
-		// for cookies from an older version of konnect.
+		return nil, nil
+	}
+	// Ignore cookie, when issuer does not match our backend name. This usually
+	// means that konnect was reconfigured. Users need to sign in again.
+	if claims.Issuer != i.backend.Name() {
 		return nil, nil
 	}
 	if claims.Subject == "" {
@@ -324,6 +337,7 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		return nil, fmt.Errorf("invalid user claims in logon token")
 	}
 
+	// New user with details from claims.
 	user := &IdentifiedUser{
 		sub: claims.Subject,
 
@@ -347,9 +361,9 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		}
 	}
 
+	// Get and refresh session via claim.
 	if v, _ := userClaims[SessionIDClaim]; v != nil {
 		sessionRef := v.(string)
-		delete(userClaims, SessionIDClaim)
 		if sessionRef != "" {
 			// Remember session ref in user.
 			user.sessionRef = &sessionRef
@@ -363,17 +377,16 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 			}
 		}
 	}
-
+	// Fill additional known claim data.
 	if v, _ := userClaims[konnect.IdentifiedUsernameClaim]; v != nil {
 		user.username = v.(string)
-		delete(userClaims, konnect.IdentifiedUsernameClaim)
 	}
 	if v, _ := userClaims[konnect.IdentifiedDisplayNameClaim]; v != nil {
 		user.displayName = v.(string)
-		delete(userClaims, konnect.IdentifiedDisplayNameClaim)
 	}
-
-	user.claims = userClaims
+	if v, ok := userClaims[UserClaimsClaim]; ok {
+		user.claims = v.(map[string]interface{})
+	}
 
 	return user, nil
 }
