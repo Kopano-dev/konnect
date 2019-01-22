@@ -176,7 +176,10 @@ func (u *ldapUser) UniqueID() string {
 }
 
 func (u *ldapUser) BackendClaims() map[string]interface{} {
-	return nil
+	claims := make(map[string]interface{})
+	claims[konnect.IdentifiedUserIDClaim] = u.getAttributeValue(ldapDefinitions.AttributeDN)
+
+	return claims
 }
 
 // NewLDAPIdentifierBackend creates a new LDAPIdentifierBackend with the provided
@@ -347,7 +350,13 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon error: %v", err)
 	}
 
-	return true, &userDN, nil, nil, nil
+	user := newLdapUser(b.attributeMapping, entry)
+	b.logger.WithFields(logrus.Fields{
+		"username": username,
+		"id":       userDN,
+	}).Debugln("ldap identifier backend logon")
+
+	return true, &userDN, nil, user.BackendClaims(), nil
 }
 
 // ResolveUserByUsername implements the Beckend interface, providing lookup for
