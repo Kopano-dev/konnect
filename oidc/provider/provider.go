@@ -144,8 +144,8 @@ func (p *Provider) RegisterManagers(mgrs *managers.Managers) error {
 	p.identityManager.OnUnsetLogon(onUnsetLogon)
 
 	// Add guest manager if any can be found.
-	if guestManager, ok := mgrs.Get("guest"); ok {
-		p.guestManager, _ = guestManager.(identity.Manager)
+	if guestManager, _ := mgrs.Get("guest"); guestManager != nil {
+		p.guestManager = guestManager.(identity.Manager)
 		p.guestManager.OnSetLogon(onSetLogon)
 		p.guestManager.OnUnsetLogon(onUnsetLogon)
 	}
