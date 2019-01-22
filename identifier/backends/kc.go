@@ -95,16 +95,19 @@ type kcUser struct {
 	user *kcc.User
 }
 
-func newKCUser(user *kcc.User) (*kcUser, error) {
+func newKCUser(user *kcc.User, abeid kcc.ABEID) (*kcUser, error) {
 	// NOTE(longsleep): KCC uses EntryIDs  which needs parsing to get the
 	// unique user identifier. We take the users entryID and extract the
 	// exID field and use its base64URL encoded value as subject.
 
 	// Parse user EntryID.
-	abeid, err := kcc.NewABEIDFromBase64([]byte(user.UserEntryID))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse kcc user entryID: %v", err)
+	if abeid == nil {
+		var err error
+		if abeid, err = kcc.NewABEIDFromBase64([]byte(user.UserEntryID)); err != nil {
+			return nil, fmt.Errorf("failed to parse user entry id: %v", err)
+		}
 	}
+
 	// Fetch external ID and as subject. Since its binary, encode it base64URL.
 	sub := exIDToString(abeid.ExID())
 
@@ -330,7 +333,7 @@ func (b *KCIdentifierBackend) Logon(ctx context.Context, audience, username, pas
 			ID:          resolve.ID,
 			Username:    username,
 			UserEntryID: resolve.UserEntryID,
-		})
+		}, nil)
 		if err != nil {
 			return false, nil, nil, nil, fmt.Errorf("kc identifier backend logon resolve format error: %v", err)
 		}
@@ -375,7 +378,7 @@ func (b *KCIdentifierBackend) ResolveUserByUsername(ctx context.Context, usernam
 			ID:          response.ID,
 			Username:    username,
 			UserEntryID: response.UserEntryID,
-		})
+		}, nil)
 
 	case kcc.KCERR_NOT_FOUND:
 		return nil, nil
@@ -388,6 +391,11 @@ func (b *KCIdentifierBackend) ResolveUserByUsername(ctx context.Context, usernam
 // for the user specified by the userID. Requests are bound to the provided
 // context.
 func (b *KCIdentifierBackend) GetUser(ctx context.Context, userEntryID string, sessionRef *string) (UserFromBackend, error) {
+	abeid, err := kcc.NewABEIDFromBase64([]byte(userEntryID))
+	if err != nil {
+		return nil, fmt.Errorf("kc identifier backend resolve session with invalid entry id: %v", err)
+	}
+
 	session, err := b.getSessionForUser(ctx, userEntryID, sessionRef, true, true, false)
 	if err != nil {
 		return nil, fmt.Errorf("kc identifier backend resolve session error: %v", err)
@@ -401,7 +409,12 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userEntryID string, s
 	switch response.Er {
 	case kcc.KCSuccess:
 		// success.
-		user, err := newKCUser(response.User)
+		responseAbeid, err := kcc.NewABEIDFromBase64([]byte(response.User.UserEntryID))
+		if !kcc.ABEIDEqual(abeid, responseAbeid) {
+			return nil, fmt.Errorf("kc identifier backend get user returned wrong user")
+		}
+
+		user, err := newKCUser(response.User, responseAbeid)
 		if err != nil {
 			return nil, fmt.Errorf("kc identifier backend get user failed to process user: %v", err)
 		}
@@ -422,7 +435,12 @@ func (b *KCIdentifierBackend) RefreshSession(ctx context.Context, userID string,
 		return fmt.Errorf("kc identifier backend refresh session missing claim")
 	}
 
-	_, err := b.getSessionForUser(ctx, userEntryID, sessionRef, true, true, false)
+	_, err := kcc.NewABEIDFromBase64([]byte(userEntryID))
+	if err != nil {
+		return fmt.Errorf("kc identifier backend refresh session with invalid entry id: %v", err)
+	}
+
+	_, err = b.getSessionForUser(ctx, userEntryID, sessionRef, true, true, false)
 	if err != nil {
 		b.logger.WithFields(logrus.Fields{
 			"id":    userID,
