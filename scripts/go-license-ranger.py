@@ -1,8 +1,8 @@
 #!/usr/bin/python
 #
 # go-license-ranger. A simple script to generate a 3rd party license file out o
-# a Go dependency tree. Requires [glide](https://glide.sh) to find the
-# dependencies.
+# a Go dependency tree. Requires [glide](https://glide.sh) or
+# [dep](https://golang.github.io/dep/) to find the dependencies.
 #
 #
 # Copyright 2018 Kopano and its licensors
@@ -43,6 +43,8 @@ config = {
     "debug": os.environ.get("DEBUG", None) == "1",
     "footer": "",
     "glide": os.environ.get("GLIDE", "glide"),
+    "dep": os.environ.get("DEP", "dep"),
+    "mode": os.environ.get("LICENSE_RANGER_MODE", "dep"),
     "header": "",
     "licenseFilenames": [
         'LICENSE',
@@ -63,7 +65,13 @@ config = {
 
 def main():
     loadConfigFromFile()
-    dependencyFolders = getDependenciesWithGlide(config["glide"])
+    if config.get("mode", None) == "dep":
+        dependencyFolders = getDependenciesWithDep(config["dep"])
+    elif config.get("mode", None) == "glide":
+        dependencyFolders = getDependenciesWithGlide(config["glide"])
+    else:
+        print("Error: Invalid mode %s", config.get("mode"))
+        sys.exit(1)
     missing = run(config["base"], dependencyFolders,
                   config["licenseFilenames"])
     if len(missing) > config["allowMissing"]:
@@ -90,6 +98,15 @@ def getDependenciesWithGlide(glide="glide"):
         raise ValueError("missing dependencies are not allowed: %s" %
                          data.get("missing").join(","))
     return data.get("installed", [])
+
+
+def getDependenciesWithDep(dep="dep"):
+    result = subprocess.check_output([dep, 'status', '-json'])
+    data = json.loads(result.decode('utf-8'))
+    installed = []
+    for d in data:
+        installed.append(d.get("ProjectRoot"))
+    return installed
 
 
 def run(base, relativeFolderPaths, licenseFileNames):

@@ -8,8 +8,7 @@ pipeline {
 		 }
 	}
 	environment {
-		GLIDE_VERSION = 'v0.13.1'
-		GLIDE_HOME = '/tmp/.glide'
+		DEP_RELEASE_TAG = 'v0.5.0'
 		GOBIN = '/usr/local/bin'
 		DEBIAN_FRONTEND = 'noninteractive'
 	}
@@ -17,7 +16,7 @@ pipeline {
 		stage('Bootstrap') {
 			steps {
 				echo 'Bootstrapping..'
-				sh 'curl -sSL https://github.com/Masterminds/glide/releases/download/$GLIDE_VERSION/glide-$GLIDE_VERSION-linux-amd64.tar.gz | tar -vxz -C /usr/local/bin --strip=1'
+				sh 'curl -sSL -o $GOBIN/dep https://github.com/golang/dep/releases/download/$DEP_RELEASE_TAG/dep-linux-amd64 && chmod 755 $GOBIN/dep'
 				sh 'go get -v golang.org/x/lint/golint'
 				sh 'go get -v github.com/tebeka/go2xunit'
 				sh 'apt-get update && apt-get install -y gettext-base imagemagick python-scour'
@@ -58,6 +57,7 @@ pipeline {
 				echo 'Dist..'
 				sh '$(git diff --stat)'
 				sh 'test -z "$(git diff --shortstat 2>/dev/null |tail -n1)" && echo "Clean check passed."'
+				sh 'make check'
 				sh 'make dist'
 			}
 		}

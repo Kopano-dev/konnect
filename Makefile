@@ -5,7 +5,7 @@ PACKAGE_NAME = kopano-$(shell basename $(PACKAGE))
 
 GO      ?= go
 GOFMT   ?= gofmt
-GLIDE   ?= glide
+DEP     ?= dep
 GOLINT  ?= golint
 
 GO2XUNIT ?= go2xunit
@@ -69,6 +69,10 @@ fmt: ; $(info running gofmt ...)	@
 		$(GOFMT) -l -w $$d/*.go || ret=$$? ; \
 	done ; exit $$ret
 
+.PHONY: check
+check: ; $(info checking dependencies ...) @
+	@cd $(BASE) && $(DEP) check -q
+
 # Tests
 
 TEST_TARGETS := test-default test-bench test-short test-race test-verbose
@@ -99,23 +103,22 @@ test-xml: vendor | $(BASE) ; $(info running $(NAME:%=% )tests ...)	@
 	cd $(BASE) && 2>&1 CGO_ENABLED=$(CGO_ENABLED) $(GO) test -timeout $(TIMEOUT)s $(ARGS) -v $(TESTPKGS) | tee test/tests.output
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
 
-# Glide
+# Dep
 
-glide.lock: glide.yaml | $(BASE) ; $(info updating dependencies ...)
-	@cd $(BASE) && $(GLIDE) update
+Gopkg.lock: Gopkg.toml | $(BASE) ; $(info updating dependencies ...)
+	@cd $(BASE) && $(DEP) ensure -update
 	@touch $@
 
-vendor: glide.lock | $(BASE) ; $(info retrieving dependencies ...)
-	@cd $(BASE) && $(GLIDE) --quiet install
-	@ln -nsf . vendor/src
+vendor: Gopkg.lock | $(BASE) ; $(info retrieving dependencies ...)
+	@cd $(BASE) && $(DEP) ensure -vendor-only
 	@touch $@
 
 # Dist
 
 .PHONY: licenses
 licenses: ; $(info building licenses files ...)
-	scripts/go-license-ranger.py > 3rdparty-LICENSES.md
-	make -s -C identifier licenses >> 3rdparty-LICENSES.md
+	cd $(BASE) && $(CURDIR)/scripts/go-license-ranger.py > $(CURDIR)/3rdparty-LICENSES.md
+	make -s -C identifier licenses >> $(CURDIR)/3rdparty-LICENSES.md
 
 3rdparty-LICENSES.md: licenses
 
