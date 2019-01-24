@@ -200,12 +200,12 @@ func (im *DummyIdentityManager) Name() string {
 }
 
 // ScopesSupported implements the identity.Manager interface.
-func (im *DummyIdentityManager) ScopesSupported() []string {
+func (im *DummyIdentityManager) ScopesSupported(scopes map[string]bool) []string {
 	return im.scopesSupported
 }
 
 // ClaimsSupported implements the identity.Manager interface.
-func (im *DummyIdentityManager) ClaimsSupported() []string {
+func (im *DummyIdentityManager) ClaimsSupported(claims []string) []string {
 	return []string{
 		oidc.NameClaim,
 		oidc.EmailClaim,

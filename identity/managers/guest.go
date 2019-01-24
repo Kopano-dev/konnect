@@ -24,6 +24,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
@@ -40,6 +41,8 @@ type GuestIdentityManager struct {
 	scopesSupported []string
 	claimsSupported []string
 
+	logger logrus.FieldLogger
+
 	onSetLogonCallbacks   []func(ctx context.Context, rw http.ResponseWriter, user identity.User) error
 	onUnsetLogonCallbacks []func(ctx context.Context, rw http.ResponseWriter) error
 }
@@ -48,9 +51,7 @@ type GuestIdentityManager struct {
 // provided parameters.
 func NewGuestIdentityManager(c *identity.Config) *GuestIdentityManager {
 	im := &GuestIdentityManager{
-		scopesSupported: setupSupportedScopes([]string{
-			konnect.ScopeGuestOK,
-		}, []string{
+		scopesSupported: setupSupportedScopes([]string{}, []string{
 			konnect.ScopeID,
 			oidc.ScopeProfile,
 			oidc.ScopeEmail,
@@ -62,6 +63,8 @@ func NewGuestIdentityManager(c *identity.Config) *GuestIdentityManager {
 			oidc.EmailClaim,
 			oidc.EmailVerifiedClaim,
 		},
+
+		logger: c.Logger,
 
 		onSetLogonCallbacks:   make([]func(ctx context.Context, rw http.ResponseWriter, user identity.User) error, 0),
 		onUnsetLogonCallbacks: make([]func(ctx context.Context, rw http.ResponseWriter) error, 0),
@@ -262,7 +265,6 @@ func (im *GuestIdentityManager) Authenticate(ctx context.Context, rw http.Respon
 // Authorize implements the identity.Manager interface.
 func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (identity.AuthRecord, error) {
 	promptConsent := false
-	var approvedScopes map[string]bool
 
 	// Check prompt value.
 	switch {
@@ -271,10 +273,6 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 	default:
 		// Let all other prompt values pass.
 	}
-
-	// TODO(longsleep): Move the code below to general function.
-	// TODO(longsleep): Validate scopes and force prompt.
-	approvedScopes = ar.Scopes
 
 	// Offline access validation.
 	// http://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess
@@ -288,6 +286,52 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 			delete(ar.Scopes, oidc.ScopeOfflineAccess)
 		}
 	}
+
+	// Authenticate with signed client request object, so that must be there.
+	if ar.Request == nil {
+		return nil, ar.NewError(oidc.ErrorOIDCInvalidRequestObject, "GuestIdentityManager: authorize without request object")
+	}
+
+	// Further checks of signed claims.
+	roc, ok := ar.Request.Claims.(*payload.RequestObjectClaims)
+	if !ok {
+		return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: authorize with invalid claims request")
+	}
+
+	client := roc.Secure()
+	if client == nil {
+		return nil, ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "GuestIdentityManager: authorize without secure client")
+	}
+
+	supportedScopes := make(map[string]bool)
+	for _, scope := range im.ScopesSupported(nil) {
+		supportedScopes[scope] = true
+	}
+
+	// Auto approve all supported scopes.
+	approvedScopes := make(map[string]bool)
+	for scope := range ar.Scopes {
+		if _, ok := supportedScopes[scope]; ok {
+			approvedScopes[scope] = true
+		}
+	}
+	// Approve all scopes which are allowed by the trusted client.
+	for _, scope := range client.TrustedScopes {
+		if _, ok := ar.Scopes[scope]; ok {
+			approvedScopes[scope] = true
+		}
+	}
+	// Always approve openid scope.
+	if _, ok := ar.Scopes[oidc.ScopeOpenID]; ok {
+		approvedScopes[oidc.ScopeOpenID] = true
+	}
+
+	// Ensure that guest scope was approved.
+	if ok, _ := approvedScopes[konnect.ScopeGuestOK]; !ok {
+		return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: client does not authorize "+konnect.ScopeGuestOK+" scope")
+	}
+
+	// TODO(longsleep): Validate scopes and force prompt.
 
 	if promptConsent {
 		if ar.Prompts[oidc.PromptNone] == true {
@@ -385,12 +429,24 @@ func (im *GuestIdentityManager) Name() string {
 }
 
 // ScopesSupported implements the identity.Manager interface.
-func (im *GuestIdentityManager) ScopesSupported() []string {
+func (im *GuestIdentityManager) ScopesSupported(scopes map[string]bool) []string {
+	if scopes != nil {
+		// NOTE(longsleep): Allow scopes as we get them, since we already validated
+		// them in authorize.
+		supported := make([]string, 0)
+		for scope, ok := range scopes {
+			if ok {
+				supported = append(supported, scope)
+			}
+		}
+		return supported
+	}
+
 	return im.scopesSupported
 }
 
 // ClaimsSupported implements the identity.Manager interface.
-func (im *GuestIdentityManager) ClaimsSupported() []string {
+func (im *GuestIdentityManager) ClaimsSupported(claims []string) []string {
 	return im.claimsSupported
 }
 

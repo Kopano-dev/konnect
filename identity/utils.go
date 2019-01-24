@@ -36,7 +36,7 @@ func AuthorizeScopes(manager Manager, user User, scopes map[string]bool) (map[st
 	authorizedScopes := make(map[string]bool)
 	unauthorizedScopes := make(map[string]bool)
 	supportedScopes := make(map[string]bool)
-	for _, scope := range manager.ScopesSupported() {
+	for _, scope := range manager.ScopesSupported(scopes) {
 		supportedScopes[scope] = true
 	}
 

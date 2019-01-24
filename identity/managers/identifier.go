@@ -127,8 +127,8 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 				case *identity.IsHandledError:
 					// breaks, breaks
 				default:
-					im.logger.WithFields(utils.ErrorAsFields(err)).Errorln("inner authorize request failed")
 				}
+				im.logger.WithFields(utils.ErrorAsFields(err)).Errorln("inner authorize request failed")
 			}
 		}
 		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
@@ -414,12 +414,12 @@ func (im *IdentifierIdentityManager) Name() string {
 }
 
 // ScopesSupported implements the identity.Manager interface.
-func (im *IdentifierIdentityManager) ScopesSupported() []string {
+func (im *IdentifierIdentityManager) ScopesSupported(scopes map[string]bool) []string {
 	return im.scopesSupported
 }
 
 // ClaimsSupported implements the identity.Manager interface.
-func (im *IdentifierIdentityManager) ClaimsSupported() []string {
+func (im *IdentifierIdentityManager) ClaimsSupported(claims []string) []string {
 	return im.claimsSupported
 }
 

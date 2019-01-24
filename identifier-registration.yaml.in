@@ -26,6 +26,9 @@ clients:
 #    application_type: native
 #    redirect_uris:
 #      - http://localhost
+#    trusted_scopes:
+#      - konnect/guestok
+#      - kopano/kwm
 #    jwks:
 #      keys:
 #        - kty: EC

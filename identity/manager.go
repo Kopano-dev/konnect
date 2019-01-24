@@ -39,8 +39,8 @@ type Manager interface {
 	Fetch(ctx context.Context, userID string, sessionRef *string, scopes map[string]bool, requestedClaimsMaps []*payload.ClaimsRequestMap) (AuthRecord, bool, error)
 
 	Name() string
-	ScopesSupported() []string
-	ClaimsSupported() []string
+	ScopesSupported(scopes map[string]bool) []string
+	ClaimsSupported(claims []string) []string
 
 	AddRoutes(ctx context.Context, router *mux.Router)
 

@@ -441,12 +441,12 @@ func (im *CookieIdentityManager) Name() string {
 }
 
 // ScopesSupported implements the identity.Manager interface.
-func (im *CookieIdentityManager) ScopesSupported() []string {
+func (im *CookieIdentityManager) ScopesSupported(scopes map[string]bool) []string {
 	return im.scopesSupported
 }
 
 // ClaimsSupported implements the identity.Manager interface.
-func (im *CookieIdentityManager) ClaimsSupported() []string {
+func (im *CookieIdentityManager) ClaimsSupported(claims []string) []string {
 	return []string{
 		oidc.NameClaim,
 		oidc.EmailClaim,

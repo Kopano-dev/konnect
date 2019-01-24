@@ -364,8 +364,8 @@ func (bs *bootstrap) setupIdentity(ctx context.Context) (identity.Manager, error
 	}
 	logger.WithFields(logrus.Fields{
 		"name":   identityManagerName,
-		"scopes": identityManager.ScopesSupported(),
-		"claims": identityManager.ClaimsSupported(),
+		"scopes": identityManager.ScopesSupported(nil),
+		"claims": identityManager.ClaimsSupported(nil),
 	}).Infoln("identity manager set up")
 
 	return identityManager, nil

@@ -210,7 +210,7 @@ func (p *Provider) InitializeMetadata() error {
 		JwksURI:               p.makeIssURL(p.jwksPath),
 		ScopesSupported: uniqueStrings(append([]string{
 			oidc.ScopeOpenID,
-		}, p.identityManager.ScopesSupported()...)),
+		}, p.identityManager.ScopesSupported(nil)...)),
 		ResponseTypesSupported: []string{
 			oidc.ResponseTypeIDTokenToken,
 			oidc.ResponseTypeIDToken,
@@ -226,7 +226,7 @@ func (p *Provider) InitializeMetadata() error {
 			oidc.AudienceClaim,
 			oidc.ExpirationClaim,
 			oidc.IssuedAtClaim,
-		}, p.identityManager.ClaimsSupported()...)),
+		}, p.identityManager.ClaimsSupported(nil)...)),
 		RequestParameterSupported:    true,
 		RequestURIParameterSupported: false,
 	}

@@ -101,7 +101,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 			if registration != nil {
 				if registration.RawRequestObjectSigningAlg != "" {
 					if token.Method.Alg() != registration.RawRequestObjectSigningAlg {
-						return nil, fmt.Errorf("Token alg does not match client registration")
+						return nil, fmt.Errorf("token alg does not match client registration")
 					}
 				}
 				if token.Method == jwt.SigningMethodNone {
@@ -109,30 +109,18 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 					// none is allowed in this special case.
 					return jwt.UnsafeAllowNoneSignatureType, nil
 				}
-				// Validate signature via JWKS.
+				// Get secure client.
 				if registration.JWKS != nil {
-					switch len(registration.JWKS.Keys) {
-					case 0:
-						// breaks
-					case 1:
-						// Use the one and only, no matter what kid says.
-						return registration.JWKS.Keys[0].DecodePublicKey()
-					default:
-						// Find by kid.
-						rawKid, _ := token.Header[oidc.JWTHeaderKeyID]
-						kid, _ := rawKid.(string)
-						if kid == "" {
-							kid = "default"
-						}
-						for _, k := range registration.JWKS.Keys {
-							if kid == k.Kid {
-								return k.DecodePublicKey()
-							}
-						}
-						return nil, fmt.Errorf("Unknown kid")
+					secureClient, err := registration.Secure(token.Header[oidc.JWTHeaderKeyID])
+					if err != nil {
+						return nil, err
 					}
+					if err := claims.SetSecure(secureClient); err != nil {
+						return nil, err
+					}
+					return secureClient.PublicKey, err
 				}
-				return nil, fmt.Errorf("No client keys registered")
+				return nil, fmt.Errorf("no client keys registered")
 			} else {
 				// Also allow, when client is not registered and the token is unsigned.
 				if token.Method == jwt.SigningMethodNone {
@@ -143,7 +131,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		return nil, fmt.Errorf("Not validated")
+		return nil, fmt.Errorf("not validated")
 	})
 	if err != nil {
 		p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("authorize request invalid request data")

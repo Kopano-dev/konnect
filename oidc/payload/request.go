@@ -18,7 +18,11 @@
 package payload
 
 import (
+	"errors"
+
 	"github.com/dgrijalva/jwt-go"
+
+	"stash.kopano.io/kc/konnect/identity/clients"
 )
 
 // RequestObjectClaims holds the incoming request object claims provided as
@@ -41,4 +45,22 @@ type RequestObjectClaims struct {
 	RawMaxAge       string         `json:"max_age"`
 
 	RawRegistration string `schema:"registration"`
+
+	client *clients.SecuredClient
+}
+
+// SetSecure sets the provided client as owner of the accociated claims.
+func (roc *RequestObjectClaims) SetSecure(client *clients.SecuredClient) error {
+	if roc.ClientID != client.ID {
+		return errors.New("client ID mismatch")
+	}
+
+	roc.client = client
+
+	return nil
+}
+
+// Secure returns the accociated secure client or nil if not secure.
+func (roc *RequestObjectClaims) Secure() *clients.SecuredClient {
+	return roc.client
 }
