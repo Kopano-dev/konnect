@@ -17,10 +17,26 @@
 
 package clients
 
+import (
+	"crypto"
+)
+
 // Details hold detail information about clients identified by ID.
 type Details struct {
 	ID          string `json:"id"`
 	DisplayName string `json:"display_name"`
 	RedirectURI string `json:"redirect_uri"`
 	Trusted     bool   `json:"trusted"`
+}
+
+// A Secured is a client records public key identified by ID.
+type Secured struct {
+	ID              string
+	DisplayName     string
+	ApplicationType string
+
+	Kid       string
+	PublicKey crypto.PublicKey
+
+	TrustedScopes []string
 }

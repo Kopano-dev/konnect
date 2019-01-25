@@ -50,7 +50,7 @@ type ClientRegistration struct {
 
 // Secure looks up the a matching key from the accociated client registration
 // and returns its public key part as a secured client.
-func (cr *ClientRegistration) Secure(rawKid interface{}) (*SecuredClient, error) {
+func (cr *ClientRegistration) Secure(rawKid interface{}) (*Secured, error) {
 	var kid string
 	var key crypto.PublicKey
 	var err error
@@ -86,9 +86,9 @@ func (cr *ClientRegistration) Secure(rawKid interface{}) (*SecuredClient, error)
 		return nil, fmt.Errorf("unknown kid")
 	}
 
-	return &SecuredClient{
+	return &Secured{
 		ID:              cr.ID,
-		Name:            cr.Name,
+		DisplayName:     cr.Name,
 		ApplicationType: cr.ApplicationType,
 
 		Kid:       kid,
@@ -96,16 +96,4 @@ func (cr *ClientRegistration) Secure(rawKid interface{}) (*SecuredClient, error)
 
 		TrustedScopes: cr.TrustedScopes,
 	}, nil
-}
-
-// A SecuredClient is a client records public key with client information.
-type SecuredClient struct {
-	ID              string
-	Name            string
-	ApplicationType string
-
-	Kid       string
-	PublicKey crypto.PublicKey
-
-	TrustedScopes []string
 }

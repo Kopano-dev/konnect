@@ -46,11 +46,11 @@ type RequestObjectClaims struct {
 
 	RawRegistration string `schema:"registration"`
 
-	client *clients.SecuredClient
+	client *clients.Secured
 }
 
 // SetSecure sets the provided client as owner of the accociated claims.
-func (roc *RequestObjectClaims) SetSecure(client *clients.SecuredClient) error {
+func (roc *RequestObjectClaims) SetSecure(client *clients.Secured) error {
 	if roc.ClientID != client.ID {
 		return errors.New("client ID mismatch")
 	}
@@ -61,6 +61,6 @@ func (roc *RequestObjectClaims) SetSecure(client *clients.SecuredClient) error {
 }
 
 // Secure returns the accociated secure client or nil if not secure.
-func (roc *RequestObjectClaims) Secure() *clients.SecuredClient {
+func (roc *RequestObjectClaims) Secure() *clients.Secured {
 	return roc.client
 }

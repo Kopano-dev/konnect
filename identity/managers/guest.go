@@ -30,8 +30,10 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/identity/clients"
+	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 const guestIdentitityManagerName = "guest"
@@ -41,7 +43,8 @@ type GuestIdentityManager struct {
 	scopesSupported []string
 	claimsSupported []string
 
-	logger logrus.FieldLogger
+	logger  logrus.FieldLogger
+	clients *clients.Registry
 
 	onSetLogonCallbacks   []func(ctx context.Context, rw http.ResponseWriter, user identity.User) error
 	onUnsetLogonCallbacks []func(ctx context.Context, rw http.ResponseWriter) error
@@ -182,6 +185,13 @@ func (u *guestUser) Claims() jwt.MapClaims {
 	return claims
 }
 
+// RegisterManagers registers the provided managers,
+func (im *GuestIdentityManager) RegisterManagers(mgrs *managers.Managers) error {
+	im.clients = mgrs.Must("clients").(*clients.Registry)
+
+	return nil
+}
+
 // Authenticate implements the identity.Manager interface.
 func (im *GuestIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, next identity.Manager) (identity.AuthRecord, error) {
 	// Check if required scopes are there.
@@ -265,6 +275,7 @@ func (im *GuestIdentityManager) Authenticate(ctx context.Context, rw http.Respon
 // Authorize implements the identity.Manager interface.
 func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (identity.AuthRecord, error) {
 	promptConsent := false
+	var approvedScopes map[string]bool
 
 	// Check prompt value.
 	switch {
@@ -298,37 +309,9 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 		return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: authorize with invalid claims request")
 	}
 
-	client := roc.Secure()
-	if client == nil {
+	securedDetails := roc.Secure()
+	if securedDetails == nil {
 		return nil, ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "GuestIdentityManager: authorize without secure client")
-	}
-
-	supportedScopes := make(map[string]bool)
-	for _, scope := range im.ScopesSupported(nil) {
-		supportedScopes[scope] = true
-	}
-
-	// Auto approve all supported scopes.
-	approvedScopes := make(map[string]bool)
-	for scope := range ar.Scopes {
-		if _, ok := supportedScopes[scope]; ok {
-			approvedScopes[scope] = true
-		}
-	}
-	// Approve all scopes which are allowed by the trusted client.
-	for _, scope := range client.TrustedScopes {
-		if _, ok := ar.Scopes[scope]; ok {
-			approvedScopes[scope] = true
-		}
-	}
-	// Always approve openid scope.
-	if _, ok := ar.Scopes[oidc.ScopeOpenID]; ok {
-		approvedScopes[oidc.ScopeOpenID] = true
-	}
-
-	// Ensure that guest scope was approved.
-	if ok, _ := approvedScopes[konnect.ScopeGuestOK]; !ok {
-		return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: client does not authorize "+konnect.ScopeGuestOK+" scope")
 	}
 
 	// TODO(longsleep): Validate scopes and force prompt.
@@ -340,6 +323,60 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 		// TODO(longsleep): Implement consent page.
 		return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required, but not supported for guests")
+	}
+
+	origin := ""
+	if false {
+		// TODO(longsleep): find a condition when this can be enabled.
+		origin = utils.OriginFromRequestHeaders(req.Header)
+	}
+
+	// TODO(longsleep): Get client secret from request.
+	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin, true)
+	if err != nil {
+		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, err.Error())
+	}
+
+	if clientDetails.ID != securedDetails.ID {
+		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, "client mismatch")
+	}
+
+	// If not trusted we need to check request scopes.
+	if clientDetails.Trusted && securedDetails.TrustedScopes == nil {
+		// NOTE(longsleep):  Guest scope validation takes all client provided
+		// scopes when the trusted client configuration has no trusted scopes
+		// configured. This can be used for fine grained access control using
+		// the trusted client configuration.
+		approvedScopes = ar.Scopes
+	} else {
+		supportedScopes := make(map[string]bool)
+		for _, scope := range im.ScopesSupported(nil) {
+			supportedScopes[scope] = true
+		}
+
+		// Auto approve all supported scopes.
+		approvedScopes = make(map[string]bool)
+		for scope := range ar.Scopes {
+			if _, ok := supportedScopes[scope]; ok {
+				approvedScopes[scope] = true
+			}
+		}
+		// Approve all additional scopes which are allowed by the trusted
+		// client.
+		for _, scope := range securedDetails.TrustedScopes {
+			if _, ok := ar.Scopes[scope]; ok {
+				approvedScopes[scope] = true
+			}
+		}
+		// Always approve openid scope.
+		if _, ok := ar.Scopes[oidc.ScopeOpenID]; ok {
+			approvedScopes[oidc.ScopeOpenID] = true
+		}
+
+		// Ensure that guest scope was approved.
+		if ok, _ := approvedScopes[konnect.ScopeGuestOK]; !ok {
+			return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: client does not authorize "+konnect.ScopeGuestOK+" scope")
+		}
 	}
 
 	auth.AuthorizeScopes(approvedScopes)
