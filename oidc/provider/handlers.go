@@ -146,6 +146,12 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 		goto done
 	}
 
+	// Find session if any, ignoring errors.
+	ar.Session, err = p.getSession(req)
+	if err != nil {
+		p.logger.WithError(err).Debugln("failed to decode client session")
+	}
+
 	// Authorization Server Authenticates End-User
 	// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthenticates
 	auth, err = p.identityManager.Authenticate(req.Context(), rw, req, ar, p.guestManager)
@@ -193,7 +199,7 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 	ctx = identity.NewContext(req.Context(), auth)
 
 	// Create session.
-	session, err = p.getOrCreateSession(rw, req, ar, auth)
+	session, err = p.updateOrCreateSession(rw, req, ar, auth)
 	if err != nil {
 		goto done
 	}

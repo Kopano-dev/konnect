@@ -47,11 +47,8 @@ func (p *Provider) getSession(req *http.Request) (*payload.Session, error) {
 	return p.unserializeSession(serialized)
 }
 
-func (p *Provider) getOrCreateSession(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (*payload.Session, error) {
-	session, err := p.getSession(req)
-	if err != nil {
-		p.logger.WithError(err).Debugln("failed to decode client session")
-	}
+func (p *Provider) updateOrCreateSession(rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, auth identity.AuthRecord) (*payload.Session, error) {
+	session := ar.Session
 	if session != nil && session.Version == sessionVersion && session.Sub == auth.Subject() {
 		// Existing session with same sub.
 		return session, nil

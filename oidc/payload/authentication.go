@@ -63,6 +63,8 @@ type AuthenticationRequest struct {
 
 	UseFragment bool   `schema:"-"`
 	Flow        string `schema:"-"`
+
+	Session *Session `schema:"-"`
 }
 
 // DecodeAuthenticationRequest returns a AuthenticationRequest holding the
