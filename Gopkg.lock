@@ -26,6 +26,14 @@
   revision = "c70df2d0cd68bfc27074d632653aed73cdb2b078"
 
 [[projects]]
+  digest = "1:2cd7915ab26ede7d95b8749e6b1f933f1c6d5398030684e6505940a10f31cfda"
+  name = "github.com/ghodss/yaml"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:a63cff6b5d8b95638bfe300385d93b2a6d9d687734b863da8e09dc834510a690"
   name = "github.com/google/go-querystring"
   packages = ["query"]
@@ -34,20 +42,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
-  name = "github.com/gorilla/context"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
-  version = "v1.1.1"
-
-[[projects]]
-  digest = "1:e73f5b0152105f18bc131fba127d9949305c8693f8a762588a82a48f61756f5f"
+  digest = "1:ca59b1175189b3f0e9f1793d2c350114be36eaabbe5b9f554b35edee1de50aea"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
-  version = "v1.6.2"
+  revision = "a7962380ca08b5a188038c69871b8d3fbdf31e89"
+  version = "v1.7.0"
 
 [[projects]]
   digest = "1:f7463b67871bf7fe475e2c69fb0d21ead07de5188b8d7f8abf8fc961965ed841"
@@ -142,7 +142,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:376faac1e8323cd3c4fd5db679aa9b165e4ab3354e6aebb82b91faf4db361130"
+  digest = "1:19aa7a317cabf2ad854e9e9b899a70d910feec9833561193b347ffb9f9824de4"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -156,11 +156,11 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "64072686203f69e3fd20143576b27200f18ab0fa"
+  revision = "b8fe1690c61389d7d2a8074a507d1d40c5d30448"
 
 [[projects]]
   branch = "master"
-  digest = "1:535b70ff2423b910383d79c5be670505c5e1a9ac01a7008aee5fad0211e313af"
+  digest = "1:8b38d0f580ac12385b9b7dc1a242441ff4d59a4889f20044f5c23cc47c2004bb"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -168,7 +168,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "054c452bb702e465e95ce8e7a3d9a6cf0cd1188d"
+  revision = "41f3e6584952bb034a481797859f6ab34b6803bd"
 
 [[projects]]
   branch = "master"
@@ -237,6 +237,7 @@
   input-imports = [
     "github.com/deckarep/golang-set",
     "github.com/dgrijalva/jwt-go",
+    "github.com/ghodss/yaml",
     "github.com/google/go-querystring/query",
     "github.com/gorilla/mux",
     "github.com/gorilla/schema",

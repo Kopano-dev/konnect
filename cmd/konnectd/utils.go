@@ -32,7 +32,23 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/spf13/cobra"
 )
+
+func commandUtils() *cobra.Command {
+	jwkCmd := &cobra.Command{
+		Use:   "utils",
+		Short: "Konnect related utilities",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+			os.Exit(2)
+		},
+	}
+
+	jwkCmd.AddCommand(commandJwkFromPem())
+
+	return jwkCmd
+}
 
 func loadSignerFromFile(fn string) (crypto.Signer, error) {
 	pemBytes, errRead := ioutil.ReadFile(fn)
@@ -86,6 +102,12 @@ func loadValidatorFromFile(fn string) (crypto.PublicKey, error) {
 
 	var validator crypto.PublicKey
 	for {
+		pkixPubKey, errParse0 := x509.ParsePKIXPublicKey(block.Bytes)
+		if errParse0 == nil {
+			validator = pkixPubKey
+			break
+		}
+
 		pkcs1PubKey, errParse1 := x509.ParsePKCS1PublicKey(block.Bytes)
 		if errParse1 == nil {
 			validator = pkcs1PubKey
@@ -114,7 +136,7 @@ func loadValidatorFromFile(fn string) (crypto.PublicKey, error) {
 			break
 		}
 
-		return nil, fmt.Errorf("failed to parse validator key - valid PKCS#1, PKCS#8 ...? %v, %v, %v, %v", errParse1, errParse2, errParse3, errParse4)
+		return nil, fmt.Errorf("failed to parse validator key - valid PKCS#1, PKCS#8 ...? %v, %v, %v, %v, %v", errParse0, errParse1, errParse2, errParse3, errParse4)
 	}
 
 	return validator, nil
