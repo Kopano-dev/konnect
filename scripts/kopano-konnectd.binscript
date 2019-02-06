@@ -147,6 +147,10 @@ case "${1}" in
 			done
 		fi
 
+		if [ "$allow_client_guests" = "yes" ]; then
+			set -- "$@" "--allow-client-guests"
+		fi
+
 		# kc identity manager
 
 		if [ "$identity_manager" = "kc" ]; then
