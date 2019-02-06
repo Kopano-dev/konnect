@@ -71,7 +71,7 @@ fmt: ; $(info running gofmt ...)	@
 
 .PHONY: check
 check: ; $(info checking dependencies ...) @
-	@cd $(BASE) && $(DEP) check -q
+	@cd $(BASE) && $(DEP) check && echo OK
 
 # Tests
 
