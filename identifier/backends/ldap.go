@@ -60,6 +60,7 @@ type LDAPIdentifierBackend struct {
 	searchFilter string
 	getFilter    string
 
+	entryIDMapping   []string
 	attributeMapping ldapAttributeMapping
 
 	logger    logrus.FieldLogger
@@ -95,11 +96,11 @@ func (m ldapAttributeMapping) attributes() []string {
 }
 
 type ldapUser struct {
-	sub  string
-	data ldapAttributeMapping
+	entryID string
+	data    ldapAttributeMapping
 }
 
-func newLdapUser(sub string, mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
+func newLdapUser(entryID string, mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
 	// Go through all returned attributes, add them to the local data set if
 	// we know them in the mapping.
 	data := make(ldapAttributeMapping)
@@ -130,8 +131,8 @@ func newLdapUser(sub string, mapping ldapAttributeMapping, entry *ldap.Entry) *l
 	}
 
 	return &ldapUser{
-		sub:  sub,
-		data: data,
+		entryID: entryID,
+		data:    data,
 	}
 }
 
@@ -144,7 +145,7 @@ func (u *ldapUser) getAttributeValue(n string) string {
 }
 
 func (u *ldapUser) Subject() string {
-	return u.sub
+	return u.entryID
 }
 
 func (u *ldapUser) Email() string {
@@ -177,7 +178,7 @@ func (u *ldapUser) UniqueID() string {
 
 func (u *ldapUser) BackendClaims() map[string]interface{} {
 	claims := make(map[string]interface{})
-	claims[konnect.IdentifiedUserIDClaim] = u.getAttributeValue(ldapDefinitions.AttributeDN)
+	claims[konnect.IdentifiedUserIDClaim] = u.entryID
 
 	return claims
 }
@@ -193,6 +194,7 @@ func NewLDAPIdentifierBackend(
 	baseDN,
 	scopeString,
 	filter string,
+	subAttributes []string,
 	mappedAttributes map[string]string,
 ) (*LDAPIdentifierBackend, error) {
 	var err error
@@ -277,6 +279,12 @@ func NewLDAPIdentifierBackend(
 		return nil, fmt.Errorf("ldap identifier backend %v", err)
 	}
 
+	var entryIDMapping []string
+	if len(subAttributes) > 0 {
+		entryIDMapping = subAttributes
+		c.Logger.WithField("mapping", entryIDMapping).Debugln("ldap identifier sub is mapped")
+	}
+
 	b := &LDAPIdentifierBackend{
 		addr:         addr,
 		isTLS:        isTLS,
@@ -287,6 +295,7 @@ func NewLDAPIdentifierBackend(
 		searchFilter: fmt.Sprintf("(&(%s)(%s=%%s))", filter, loginAttribute),
 		getFilter:    filter,
 
+		entryIDMapping:   entryIDMapping,
 		attributeMapping: attributeMapping,
 
 		logger: c.Logger,
@@ -337,10 +346,8 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon search returned wrong user")
 	}
 
-	userDN := entry.DN
-
 	// Bind as the user to verify the password.
-	err = l.Bind(userDN, password)
+	err = l.Bind(entry.DN, password)
 	switch {
 	case ldap.IsErrorWithCode(err, ldap.LDAPResultInvalidCredentials):
 		return false, nil, nil, nil, nil
@@ -350,13 +357,18 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon error: %v", err)
 	}
 
-	user := newLdapUser(userDN, b.attributeMapping, entry)
+	entryID := b.entryIDFromEntry(b.attributeMapping, entry)
+	if entryID == "" {
+		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon entry without entry ID: %v", entry.DN)
+	}
+
+	user := newLdapUser(entryID, b.attributeMapping, entry)
 	b.logger.WithFields(logrus.Fields{
 		"username": username,
-		"id":       userDN,
+		"id":       entryID,
 	}).Debugln("ldap identifier backend logon")
 
-	return true, &userDN, nil, user.BackendClaims(), nil
+	return true, &entryID, nil, user.BackendClaims(), nil
 }
 
 // ResolveUserByUsername implements the Beckend interface, providing lookup for
@@ -392,27 +404,24 @@ func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, usern
 // GetUser implements the Backend interface, providing user meta data retrieval
 // for the user specified by the userID. Requests are bound to the provided
 // context.
-func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userDN string, sessionRef *string) (UserFromBackend, error) {
-	_, err := ldap.ParseDN(userDN)
-	if err != nil {
-		return nil, fmt.Errorf("ldap identifier backend get user invalid user ID: %v", err)
-	}
-
+func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, entryID string, sessionRef *string) (UserFromBackend, error) {
 	l, err := b.connect(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user connect error: %v", err)
 	}
 	defer l.Close()
 
-	entry, err := b.getUser(l, userDN, b.attributeMapping.attributes())
+	entry, err := b.getUser(l, entryID, b.attributeMapping.attributes())
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user error: %v", err)
 	}
-	if !strings.EqualFold(entry.DN, userDN) {
+
+	newEntryID := b.entryIDFromEntry(b.attributeMapping, entry)
+	if !strings.EqualFold(newEntryID, entryID) {
 		return nil, fmt.Errorf("ldap identifier backend get user returned wrong user")
 	}
 
-	return newLdapUser(entry.DN, b.attributeMapping, entry), nil
+	return newLdapUser(newEntryID, b.attributeMapping, entry), nil
 }
 
 // RefreshSession implements the Backend interface.
@@ -493,11 +502,12 @@ func (b *LDAPIdentifierBackend) connect(parentCtx context.Context) (*ldap.Conn, 
 }
 
 func (b *LDAPIdentifierBackend) searchUsername(l *ldap.Conn, username string, attributes []string) (*ldap.Entry, error) {
+	base, filter := b.baseAndSearchFilterFromUsername(username)
 	// Search for the given username.
 	searchRequest := ldap.NewSearchRequest(
-		b.baseDN,
+		base,
 		b.scope, ldap.NeverDerefAliases, 1, b.timeout, false,
-		fmt.Sprintf(b.searchFilter, username),
+		filter,
 		attributes,
 		nil,
 	)
@@ -519,12 +529,23 @@ func (b *LDAPIdentifierBackend) searchUsername(l *ldap.Conn, username string, at
 	}
 }
 
-func (b *LDAPIdentifierBackend) getUser(l *ldap.Conn, userDN string, attributes []string) (*ldap.Entry, error) {
+func (b *LDAPIdentifierBackend) getUser(l *ldap.Conn, entryID string, attributes []string) (*ldap.Entry, error) {
+	base, filter := b.baseAndGetFilterFromEntryID(entryID)
+	if base == "" || filter == "" || entryID == "" {
+		return nil, fmt.Errorf("ldap identifier backend get user invalid user ID: %v", entryID)
+	}
+
+	scope := b.scope
+	if base == entryID {
+		// Ensure that scope is limited, when directly requesting an entry.
+		scope = ldap.ScopeBaseObject
+	}
+
 	// search for the given DN.
 	searchRequest := ldap.NewSearchRequest(
-		userDN,
-		ldap.ScopeBaseObject, ldap.NeverDerefAliases, 1, b.timeout, false,
-		b.getFilter,
+		base,
+		scope, ldap.NeverDerefAliases, 1, b.timeout, false,
+		filter,
 		attributes,
 		nil,
 	)
@@ -537,4 +558,53 @@ func (b *LDAPIdentifierBackend) getUser(l *ldap.Conn, userDN string, attributes 
 	}
 
 	return sr.Entries[0], nil
+}
+
+func (b *LDAPIdentifierBackend) entryIDFromEntry(mapping ldapAttributeMapping, entry *ldap.Entry) string {
+	if b.entryIDMapping != nil {
+		// Encode as URL query.
+		values := url.Values{}
+		for _, k := range b.entryIDMapping {
+			v := entry.GetAttributeValues(k)
+			if len(v) > 0 {
+				values[k] = v
+			}
+		}
+		// URL encode values to string.
+		return values.Encode()
+	}
+
+	// Use DN by default is no mapping is set.
+	return entry.DN
+}
+
+func (b *LDAPIdentifierBackend) baseAndGetFilterFromEntryID(entryID string) (string, string) {
+	if b.entryIDMapping != nil {
+		// Parse entryID as URL encoded query values, and build & filter to search for them all.
+		if values, err := url.ParseQuery(entryID); err == nil {
+			filter := ""
+			for k, values := range values {
+				for _, value := range values {
+					filter = fmt.Sprintf("%s(%s=%s)", filter, k, value)
+				}
+			}
+			if filter != "" {
+				return b.baseDN, fmt.Sprintf("(&%s%s)", b.getFilter, filter)
+			}
+		}
+		// Failed to parse entry ID.
+		return "", ""
+	}
+
+	// Map DN to entryID.
+	_, err := ldap.ParseDN(entryID)
+	if err != nil {
+		return "", ""
+	}
+	return entryID, b.getFilter
+}
+
+func (b *LDAPIdentifierBackend) baseAndSearchFilterFromUsername(username string) (string, string) {
+	// Build search filter with username.
+	return b.baseDN, fmt.Sprintf(b.searchFilter, username)
 }

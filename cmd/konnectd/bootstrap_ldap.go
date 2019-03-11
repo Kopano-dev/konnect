@@ -20,6 +20,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"stash.kopano.io/kc/konnect/identifier"
 	identifierBackends "stash.kopano.io/kc/konnect/identifier/backends"
@@ -59,6 +60,11 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		fmt.Sprintf("%s_type", ldapDefinitions.AttributeUUID): os.Getenv("LDAP_UUID_ATTRIBUTE_TYPE"),
 	}
 
+	var subMapping []string
+	if subMappingString := os.Getenv("LDAP_SUB_ATTRIBUTES"); subMappingString != "" {
+		subMapping = strings.Split(subMappingString, " ")
+	}
+
 	identifierBackend, identifierErr := identifierBackends.NewLDAPIdentifierBackend(
 		bs.cfg,
 		bs.tlsClientConfig,
@@ -68,6 +74,7 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		os.Getenv("LDAP_BASEDN"),
 		os.Getenv("LDAP_SCOPE"),
 		os.Getenv("LDAP_FILTER"),
+		subMapping,
 		attributeMapping,
 	)
 	if identifierErr != nil {
