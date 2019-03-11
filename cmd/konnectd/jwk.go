@@ -56,7 +56,7 @@ func jwkFromPem(cmd *cobra.Command, args []string) error {
 	}
 
 	kid, _ := cmd.Flags().GetString("kid")
-	use, _ := cmd.Flags().GetString("sig")
+	use, _ := cmd.Flags().GetString("use")
 	asYaml, _ := cmd.Flags().GetBool("yaml")
 	fn := args[0]
 
