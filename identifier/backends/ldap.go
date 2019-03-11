@@ -95,15 +95,14 @@ func (m ldapAttributeMapping) attributes() []string {
 }
 
 type ldapUser struct {
+	sub  string
 	data ldapAttributeMapping
 }
 
-func newLdapUser(mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
-	// NOTE(longsleep): Copy all mapped results to a local data set.
-	data := make(ldapAttributeMapping)
-	data[ldapDefinitions.AttributeDN] = entry.DN
+func newLdapUser(sub string, mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
 	// Go through all returned attributes, add them to the local data set if
 	// we know them in the mapping.
+	data := make(ldapAttributeMapping)
 	for _, attribute := range entry.Attributes {
 		if len(attribute.Values) == 0 {
 			continue
@@ -131,6 +130,7 @@ func newLdapUser(mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
 	}
 
 	return &ldapUser{
+		sub:  sub,
 		data: data,
 	}
 }
@@ -144,7 +144,7 @@ func (u *ldapUser) getAttributeValue(n string) string {
 }
 
 func (u *ldapUser) Subject() string {
-	return u.getAttributeValue(ldapDefinitions.AttributeDN)
+	return u.sub
 }
 
 func (u *ldapUser) Email() string {
@@ -350,7 +350,7 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon error: %v", err)
 	}
 
-	user := newLdapUser(b.attributeMapping, entry)
+	user := newLdapUser(userDN, b.attributeMapping, entry)
 	b.logger.WithFields(logrus.Fields{
 		"username": username,
 		"id":       userDN,
@@ -386,14 +386,14 @@ func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, usern
 		return nil, fmt.Errorf("ldap identifier backend resolve search returned wrong user")
 	}
 
-	return newLdapUser(b.attributeMapping, entry), nil
+	return newLdapUser(entry.DN, b.attributeMapping, entry), nil
 }
 
 // GetUser implements the Backend interface, providing user meta data retrieval
-// for the user specified by the useID. Requests are bound to the provided
+// for the user specified by the userID. Requests are bound to the provided
 // context.
-func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string, sessionRef *string) (UserFromBackend, error) {
-	_, err := ldap.ParseDN(userID)
+func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userDN string, sessionRef *string) (UserFromBackend, error) {
+	_, err := ldap.ParseDN(userDN)
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user invalid user ID: %v", err)
 	}
@@ -404,15 +404,15 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, userID string, sess
 	}
 	defer l.Close()
 
-	entry, err := b.getUser(l, userID, b.attributeMapping.attributes())
+	entry, err := b.getUser(l, userDN, b.attributeMapping.attributes())
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend get user error: %v", err)
 	}
-	if !strings.EqualFold(entry.DN, userID) {
+	if !strings.EqualFold(entry.DN, userDN) {
 		return nil, fmt.Errorf("ldap identifier backend get user returned wrong user")
 	}
 
-	return newLdapUser(b.attributeMapping, entry), nil
+	return newLdapUser(entry.DN, b.attributeMapping, entry), nil
 }
 
 // RefreshSession implements the Backend interface.
