@@ -44,7 +44,10 @@ type RequestObjectClaims struct {
 	RawIDTokenHint  string         `json:"id_token_hint"`
 	RawMaxAge       string         `json:"max_age"`
 
-	RawRegistration string `schema:"registration"`
+	RawRegistration string `json:"registration"`
+
+	CodeChallenge       string `json:"code_challenge"`
+	CodeChallengeMethod string `json:"code_challenge_method"`
 
 	client *clients.Secured
 }

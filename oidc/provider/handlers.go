@@ -376,6 +376,14 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 			goto done
 		}
 
+		// Validate code challenge according to https://tools.ietf.org/html/rfc7636#section-4.6
+		if tr.CodeVerifier != "" || ar.CodeChallenge != "" {
+			if codeVerifierErr := oidc.ValidateCodeChallenge(ar.CodeChallenge, ar.CodeChallengeMethod, tr.CodeVerifier); codeVerifierErr != nil {
+				err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, codeVerifierErr.Error())
+				goto done
+			}
+		}
+
 	case oidc.GrantTypeRefreshToken:
 		if tr.RefreshToken == nil {
 			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "missing refresh_token")

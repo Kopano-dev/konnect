@@ -44,6 +44,8 @@ type TokenRequest struct {
 	ClientID     string `schema:"client_id"`
 	ClientSecret string `schema:"client_secret"`
 
+	CodeVerifier string `schema:"code_verifier"`
+
 	RedirectURI  *url.URL        `schema:"-"`
 	RefreshToken *jwt.Token      `schema:"-"`
 	Scopes       map[string]bool `schema:"-"`

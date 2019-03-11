@@ -53,6 +53,9 @@ type AuthenticationRequest struct {
 	RawRequestURI   string `schema:"request_uri"`
 	RawRegistration string `schema:"registration"`
 
+	CodeChallenge       string `schema:"code_challenge"`
+	CodeChallengeMethod string `schema:"code_challenge_method"`
+
 	Scopes        map[string]bool `schema:"-"`
 	ResponseTypes map[string]bool `schema:"-"`
 	Prompts       map[string]bool `schema:"-"`
@@ -249,6 +252,12 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, me
 	if roc.RawRegistration != "" {
 		ar.RawRegistration = roc.RawRegistration
 	}
+	if roc.CodeChallengeMethod != "" {
+		ar.CodeChallengeMethod = roc.CodeChallengeMethod
+	}
+	if roc.CodeChallenge != "" {
+		ar.CodeChallenge = roc.CodeChallenge
+	}
 
 	return nil
 }
@@ -285,6 +294,21 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 		// breaks
 	default:
 		return ar.NewError(oidc.ErrorOAuth2UnsupportedResponseType, "")
+	}
+
+	// Additional checks for flows with code.
+	if ar.Flow == oidc.FlowCode || ar.Flow == oidc.FlowHybrid {
+		switch ar.CodeChallengeMethod {
+		case "":
+			// breaks
+		case oidc.S256CodeChallengeMethod:
+			// breaks
+		case oidc.PlainCodeChallengeMethod:
+			// Plain is discouraged, and thus not supported.
+			fallthrough
+		default:
+			return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "transform algorithm not supported")
+		}
 	}
 
 	if _, hasNonePrompt := ar.Prompts[oidc.PromptNone]; hasNonePrompt {
