@@ -28,6 +28,11 @@ const (
 	AttributeUUID       = "uuid"
 )
 
+// Additional mappable virtual attributes.
+const (
+	AttributeNumericUID = "konnectNumericID"
+)
+
 // Define our known LDAP attribute value types.
 const (
 	AttributeValueTypeText   = "text"

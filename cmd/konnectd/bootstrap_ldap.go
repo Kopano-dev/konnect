@@ -50,6 +50,7 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		bs.signedOutURI.Path = "/signin/v1/goodbye"
 	}
 
+	// Default LDAP attribute mappings.
 	attributeMapping := map[string]string{
 		ldapDefinitions.AttributeLogin:                        os.Getenv("LDAP_LOGIN_ATTRIBUTE"),
 		ldapDefinitions.AttributeEmail:                        os.Getenv("LDAP_EMAIL_ATTRIBUTE"),
@@ -59,7 +60,11 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		ldapDefinitions.AttributeUUID:                         os.Getenv("LDAP_UUID_ATTRIBUTE"),
 		fmt.Sprintf("%s_type", ldapDefinitions.AttributeUUID): os.Getenv("LDAP_UUID_ATTRIBUTE_TYPE"),
 	}
-
+	// Add optional LDAP attribute mappings.
+	if numericUIDAttribute := os.Getenv("LDAP_UIDNUMBER_ATTRIBUTE"); numericUIDAttribute != "" {
+		attributeMapping[ldapDefinitions.AttributeNumericUID] = numericUIDAttribute
+	}
+	// Sub from LDAP attribute mappings.
 	var subMapping []string
 	if subMappingString := os.Getenv("LDAP_SUB_ATTRIBUTES"); subMappingString != "" {
 		subMapping = strings.Split(subMappingString, " ")

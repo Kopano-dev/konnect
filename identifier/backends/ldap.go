@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,6 +63,7 @@ type LDAPIdentifierBackend struct {
 
 	entryIDMapping   []string
 	attributeMapping ldapAttributeMapping
+	supportedScopes  []string
 
 	logger    logrus.FieldLogger
 	dialer    *net.Dialer
@@ -97,12 +99,14 @@ func (m ldapAttributeMapping) attributes() []string {
 
 type ldapUser struct {
 	entryID string
+	id      int64
 	data    ldapAttributeMapping
 }
 
-func newLdapUser(entryID string, mapping ldapAttributeMapping, entry *ldap.Entry) *ldapUser {
+func newLdapUser(entryID string, mapping ldapAttributeMapping, entry *ldap.Entry) (*ldapUser, error) {
 	// Go through all returned attributes, add them to the local data set if
 	// we know them in the mapping.
+	var id int64
 	data := make(ldapAttributeMapping)
 	for _, attribute := range entry.Attributes {
 		if len(attribute.Values) == 0 {
@@ -126,14 +130,23 @@ func newLdapUser(entryID string, mapping ldapAttributeMapping, entry *ldap.Entry
 				default:
 					data[n] = attribute.Values[0]
 				}
+
+				if n == ldapDefinitions.AttributeNumericUID {
+					numericID, err := strconv.ParseInt(data[n], 10, 64)
+					if err != nil {
+						return nil, fmt.Errorf("invalid numeric ID %v in record", err)
+					}
+					id = numericID
+				}
 			}
 		}
 	}
 
 	return &ldapUser{
 		entryID: entryID,
+		id:      id,
 		data:    data,
-	}
+	}, nil
 }
 
 func (u *ldapUser) getAttributeValue(n string) string {
@@ -170,6 +183,10 @@ func (u *ldapUser) GivenName() string {
 
 func (u *ldapUser) Username() string {
 	return u.getAttributeValue(ldapDefinitions.AttributeLogin)
+}
+
+func (u *ldapUser) ID() int64 {
+	return u.id
 }
 
 func (u *ldapUser) UniqueID() string {
@@ -249,6 +266,15 @@ func NewLDAPIdentifierBackend(
 		c.Logger.WithField("attribute", fmt.Sprintf("%v:%v", k, v)).Debugln("ldap identifier backend set attribute")
 	}
 
+	// Build supported scopes based on default scopes and scope mapping.
+	supportedScopes := make([]string, len(ldapSupportedScopes))
+	copy(supportedScopes, ldapSupportedScopes)
+	if numericUIDAttribute := mappedAttributes[ldapDefinitions.AttributeNumericUID]; numericUIDAttribute != "" {
+		supportedScopes = append(supportedScopes, konnect.ScopeID)
+		attributeMapping[ldapDefinitions.AttributeNumericUID] = numericUIDAttribute
+		c.Logger.WithField("attribute", fmt.Sprintf("%v:%v", ldapDefinitions.AttributeNumericUID, numericUIDAttribute)).Debugln("ldap identifier backend use attribute")
+	}
+
 	if filter == "" {
 		filter = "(objectClass=inetOrgPerson)"
 	}
@@ -297,6 +323,7 @@ func NewLDAPIdentifierBackend(
 
 		entryIDMapping:   entryIDMapping,
 		attributeMapping: attributeMapping,
+		supportedScopes:  supportedScopes,
 
 		logger: c.Logger,
 		dialer: &net.Dialer{
@@ -362,7 +389,11 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon entry without entry ID: %v", entry.DN)
 	}
 
-	user := newLdapUser(entryID, b.attributeMapping, entry)
+	user, err := newLdapUser(entryID, b.attributeMapping, entry)
+	if err != nil {
+		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon entry data error: %v", err)
+	}
+
 	b.logger.WithFields(logrus.Fields{
 		"username": username,
 		"id":       entryID,
@@ -398,7 +429,12 @@ func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, usern
 		return nil, fmt.Errorf("ldap identifier backend resolve search returned wrong user")
 	}
 
-	return newLdapUser(entry.DN, b.attributeMapping, entry), nil
+	user, err := newLdapUser(entry.DN, b.attributeMapping, entry)
+	if err != nil {
+		return nil, fmt.Errorf("ldap identifier backend resolve entry data error: %v", err)
+	}
+
+	return user, nil
 }
 
 // GetUser implements the Backend interface, providing user meta data retrieval
@@ -421,7 +457,12 @@ func (b *LDAPIdentifierBackend) GetUser(ctx context.Context, entryID string, ses
 		return nil, fmt.Errorf("ldap identifier backend get user returned wrong user")
 	}
 
-	return newLdapUser(newEntryID, b.attributeMapping, entry), nil
+	user, err := newLdapUser(newEntryID, b.attributeMapping, entry)
+	if err != nil {
+		return nil, fmt.Errorf("ldap identifier backend get user entry data error: %v", err)
+	}
+
+	return user, err
 }
 
 // RefreshSession implements the Backend interface.
@@ -443,7 +484,7 @@ func (b *LDAPIdentifierBackend) UserClaims(userID string, authorizedScopes map[s
 // ScopesSupported implements the Backend interface, providing supported scopes
 // when running this backend.
 func (b *LDAPIdentifierBackend) ScopesSupported() []string {
-	return ldapSupportedScopes
+	return b.supportedScopes
 }
 
 // ScopesMeta implements the Backend interface, providing meta data for
