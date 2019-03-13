@@ -86,12 +86,25 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 		}
 	}
 	if authorizedScope, _ := scopes[oidc.ScopeProfile]; authorizedScope {
+		var profileClaims *oidc.ProfileClaims
 		if userWithProfile, ok := user.(UserWithProfile); ok {
-			claims[oidc.ScopeProfile] = &oidc.ProfileClaims{
+			profileClaims = &oidc.ProfileClaims{
 				Name:       userWithProfile.Name(),
 				FamilyName: userWithProfile.FamilyName(),
 				GivenName:  userWithProfile.GivenName(),
 			}
+		}
+		if userWithUsername, ok := user.(UserWithUsername); ok {
+			if profileClaims == nil {
+				profileClaims = &oidc.ProfileClaims{
+					PreferredUsername: userWithUsername.Username(),
+				}
+			} else {
+				profileClaims.PreferredUsername = userWithUsername.Username()
+			}
+		}
+		if profileClaims != nil {
+			claims[oidc.ScopeProfile] = profileClaims
 		}
 	}
 

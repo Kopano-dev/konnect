@@ -81,9 +81,10 @@ func (c IDTokenClaims) Valid() (err error) {
 // ProfileClaims define the claims for the OIDC profile scope.
 // https://openid.net/specs/openid-connect-basic-1_0.html#Scopes
 type ProfileClaims struct {
-	Name       string `json:"name,omitempty"`
-	FamilyName string `json:"family_name,omitempty"`
-	GivenName  string `json:"given_name,omitempty"`
+	Name              string `json:"name,omitempty"`
+	FamilyName        string `json:"family_name,omitempty"`
+	GivenName         string `json:"given_name,omitempty"`
+	PreferredUsername string `json:"preferred_username,omitempty"`
 }
 
 // NewProfileClaims return a new ProfileClaims set from the provided
