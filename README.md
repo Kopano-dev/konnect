@@ -9,6 +9,30 @@ Either download a Konnect binary release from https://download.kopano.io/communi
 or use the Docker image from https://hub.docker.com/r/kopano/konnectd/ to run
 Konnect. For details how to run Konnect see below.
 
+## Standards supported by Konnect
+
+Konnect provides services based on open standards. To get you an idea what
+Konnect can do and how you could use it, this section lists the
+[OpenID Connect](https://openid.net/connect/) standards which are implemented.
+
+- https://openid.net/specs/openid-connect-core-1_0.html
+- https://openid.net/specs/openid-connect-discovery-1_0.html
+- https://openid.net/specs/openid-connect-frontchannel-1_0.html
+- https://openid.net/specs/openid-connect-session-1_0.html
+
+Furthermore the following extensions/base specifications extend, define and
+combine the implementation details.
+
+- https://tools.ietf.org/html/rfc6749
+- https://tools.ietf.org/html/rfc7517
+- https://tools.ietf.org/html/rfc7519
+- https://tools.ietf.org/html/rfc7636
+- https://tools.ietf.org/html/rfc7693
+- https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
+- https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html
+- https://www.iana.org/assignments/jose/jose.xhtml
+- https://nacl.cr.yp.to/secretbox.html
+
 ## Build dependencies
 
 Make sure you have Go 1.10 or later installed. This assumes your GOPATH is `~/go` and
