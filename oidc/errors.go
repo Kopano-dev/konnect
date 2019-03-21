@@ -44,6 +44,9 @@ const (
 	ErrorOIDCInvalidRequestObject     = "invalid_request_object"
 	ErrorOIDCRequestURINotSupported   = "request_uri_not_supported"
 	ErrorOIDCRegistrationNotSupported = "registration_not_supported"
+
+	ErrorOIDCInvalidRedirectURI    = "invalid_redirect_uri"
+	ErrorOIDCInvalidClientMetadata = "invalid_client_metadata"
 )
 
 // OAuth2Error defines a general OAuth2 error with id and decription.

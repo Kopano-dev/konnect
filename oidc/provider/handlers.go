@@ -25,10 +25,12 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	jwk "github.com/mendsley/gojwk"
+	"github.com/sirupsen/logrus"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
@@ -53,10 +55,11 @@ func (p *Provider) JwksHandler(rw http.ResponseWriter, req *http.Request) {
 	// TODO(longsleep): Use better library, or self implemented jwks struct.
 	addResponseHeaders(rw.Header())
 
+	validationKeys := p.validationKeys
 	jwks := &jwk.Key{
-		Keys: make([]*jwk.Key, 0, len(p.validationKeys)-1),
+		Keys: make([]*jwk.Key, 0, len(validationKeys)-1),
 	}
-	for kid, key := range p.validationKeys {
+	for kid, key := range validationKeys {
 		keyJwk, err := jwk.PublicKey(key)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -97,7 +100,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 		if claims, ok := token.Claims.(*payload.RequestObjectClaims); ok {
 			// Validate signed request tokens according to spec defined at
 			// https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
-			registration, _ := p.identityManager.GetClientRegistration(req.Context(), claims.ClientID)
+			registration, _ := p.clients.Get(req.Context(), claims.ClientID)
 			if registration != nil {
 				if registration.RawRequestObjectSigningAlg != "" {
 					if token.Method.Alg() != registration.RawRequestObjectSigningAlg {
@@ -220,7 +223,7 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 
 	// Create access token when requested.
 	if _, ok := ar.ResponseTypes[oidc.ResponseTypeToken]; ok {
-		accessTokenString, err = p.makeAccessToken(ctx, ar.ClientID, auth)
+		accessTokenString, err = p.makeAccessToken(ctx, ar.ClientID, auth, nil)
 		if err != nil {
 			goto done
 		}
@@ -229,7 +232,7 @@ func (p *Provider) AuthorizeResponse(rw http.ResponseWriter, req *http.Request, 
 	// Create ID token when requested and granted.
 	if authorizedScopes[oidc.ScopeOpenID] {
 		if _, ok := ar.ResponseTypes[oidc.ResponseTypeIDToken]; ok {
-			idTokenString, err = p.makeIDToken(ctx, ar, auth, session, accessTokenString, codeString)
+			idTokenString, err = p.makeIDToken(ctx, ar, auth, session, accessTokenString, codeString, nil)
 			if err != nil {
 				goto done
 			}
@@ -313,6 +316,8 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	var refreshTokenString string
 	var approvedScopes map[string]bool
 	var authorizedScopes map[string]bool
+	var clientDetails *clients.Details
+	signinMethod := p.signingMethodDefault
 
 	rw.Header().Set("Cache-Control", "no-store")
 	rw.Header().Set("Pragma", "no-cache")
@@ -347,6 +352,13 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		goto done
 	}
 
+	// Additional validations according to https://tools.ietf.org/html/rfc6749#section-4.1.3
+	clientDetails, err = p.clients.Lookup(req.Context(), tr.ClientID, tr.ClientSecret, tr.RedirectURI, "", true)
+	if err != nil {
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2AccessDenied, err.Error())
+		goto done
+	}
+
 	switch tr.GrantType {
 	case oidc.GrantTypeAuthorizationCode:
 		codeRecord, codeRecordFound := p.codeManager.Pop(tr.Code)
@@ -360,9 +372,6 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		session = codeRecord.Session
 
 		authorizedScopes = auth.AuthorizedScopes()
-
-		// Additional validations according to https://tools.ietf.org/html/rfc6749#section-4.1.3
-		// TODO(longsleep): Authenticate the client if client authentication is included.
 
 		// Ensure that the authorization code was issued to the client id.
 		if ar.ClientID != tr.ClientID {
@@ -399,8 +408,6 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 			goto done
 		}
 
-		// Additional validations according to https://tools.ietf.org/html/rfc6749#section-4.1.3
-		// TODO(longsleep): Authenticate the client if client authentication is included.
 		// TODO(longsleep): Compare standard claims issuer.
 
 		userID, sessionRef := p.getUserIDAndSessionRefFromClaims(&claims.StandardClaims, claims.IdentityClaims)
@@ -471,7 +478,10 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create access token.
-	accessTokenString, err = p.makeAccessToken(req.Context(), ar.ClientID, auth)
+	if clientDetails != nil && clientDetails.Registration != nil {
+		signinMethod = jwt.GetSigningMethod(clientDetails.Registration.RawIDTokenSignedResponseAlg)
+	}
+	accessTokenString, err = p.makeAccessToken(req.Context(), ar.ClientID, auth, signinMethod)
 	if err != nil {
 		goto done
 	}
@@ -480,7 +490,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	case oidc.GrantTypeAuthorizationCode:
 		// Create ID token when not previously requested.
 		if !ar.ResponseTypes[oidc.ResponseTypeIDToken] {
-			idTokenString, err = p.makeIDToken(req.Context(), ar, auth, session, accessTokenString, "")
+			idTokenString, err = p.makeIDToken(req.Context(), ar, auth, session, accessTokenString, "", signinMethod)
 			if err != nil {
 				goto done
 			}
@@ -488,7 +498,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 
 		// Create refresh token when granted.
 		if authorizedScopes[oidc.ScopeOfflineAccess] {
-			refreshTokenString, err = p.makeRefreshToken(req.Context(), ar.ClientID, auth)
+			refreshTokenString, err = p.makeRefreshToken(req.Context(), ar.ClientID, auth, nil)
 			if err != nil {
 				goto done
 			}
@@ -678,6 +688,30 @@ done:
 		}
 	}
 
+	// Support returning signed user info if the registered client requested it
+	// as specified in https://openid.net/specs/openid-connect-core-1_0.html#UserInfoResponse and
+	// https://openid.net/specs/openid-connect-registration-1_0.html#ClientMetadata
+	registration, _ := p.clients.Get(req.Context(), claims.Audience)
+	if registration != nil {
+		if registration.RawUserInfoSignedResponseAlg != "" {
+			// Get alg.
+			alg := jwt.GetSigningMethod(registration.RawUserInfoSignedResponseAlg)
+			// Set extra claims.
+			responseAsMap[oidc.IssuerIdentifierClaim] = p.issuerIdentifier
+			responseAsMap[oidc.AudienceClaim] = registration.ID
+			tokenString, err := p.makeJWT(req.Context(), alg, responseAsMap)
+			if err != nil {
+				p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request failed to encode jwt")
+				p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
+				return
+			}
+
+			rw.Header().Set("Content-Type", "application/jwt")
+			rw.Write([]byte(tokenString))
+			return
+		}
+	}
+
 	err = utils.WriteJSON(rw, http.StatusOK, responseAsMap, "")
 	if err != nil {
 		p.logger.WithError(err).Errorln("userinfo request failed writing response")
@@ -792,4 +826,71 @@ func (p *Provider) CheckSessionIframeHandler(rw http.ResponseWriter, req *http.R
 		Nonce:      nonce,
 	}
 	checkSessionIframeTemplate.Execute(rw, data)
+}
+
+// RegistrationHandler implements the HTTP endpoint for client self registration
+// with OpenID Connect Registration 1.0 as specified at
+// https://openid.net/specs/openid-connect-registration-1_0.html#ClientRegistration
+func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request) {
+	addResponseHeaders(rw.Header())
+
+	crr, err := payload.DecodeClientRegistrationRequest(req)
+	if err != nil {
+		p.logger.WithError(err).Errorln("client registration request failed to decode request data")
+
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+	}
+
+	var cr *clients.ClientRegistration
+
+	// Validate request.
+	err = crr.Validate()
+	if err != nil {
+		goto done
+	}
+
+	// Get registration record.
+	cr, err = crr.ClientRegistration()
+	if err != nil {
+		goto done
+	}
+
+done:
+	if err != nil {
+		switch err.(type) {
+		case *oidc.OAuth2Error:
+			err = utils.WriteJSON(rw, http.StatusBadRequest, err, "")
+			if err != nil {
+				p.logger.WithError(err).Errorln("client registration request failed writing response")
+				return
+			}
+		default:
+			p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("client registration request failed")
+			p.ErrorPage(rw, http.StatusInternalServerError, err.Error(), "well sorry, but there was a problem")
+		}
+
+		return
+	}
+
+	p.logger.WithFields(logrus.Fields{
+		"client_id":        cr.ID,
+		"name":             cr.Name,
+		"application_type": cr.ApplicationType,
+		"redirect_uris":    cr.RedirectURIs,
+	}).Debugln("registered dynamic client")
+
+	response := &payload.ClientRegistrationResponse{
+		ClientID:     cr.ID,
+		ClientSecret: cr.Secret,
+
+		ClientIDIssuedAt:      cr.IDIssuedAt,
+		ClientSecretExpiresAt: cr.SecretExpiresAt,
+
+		ClientRegistrationRequest: *crr,
+	}
+
+	err = utils.WriteJSON(rw, http.StatusCreated, response, "")
+	if err != nil {
+		p.logger.WithError(err).Errorln("client registration request failed writing response")
+	}
 }

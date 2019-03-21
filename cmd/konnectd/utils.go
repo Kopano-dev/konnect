@@ -160,31 +160,6 @@ func addSignerWithIDFromFile(fn string, id string, bs *bootstrap) error {
 		return err
 	}
 
-	// Validate signing method
-	switch bs.signingMethod.(type) {
-	case *jwt.SigningMethodRSA:
-		rsaPrivateKey, ok := signer.(*rsa.PrivateKey)
-		if !ok {
-			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
-		}
-		// Ensure the private key is not vulnerable with PKCS-1.5 signatures. See
-		// https://paragonie.com/blog/2018/04/protecting-rsa-based-protocols-against-adaptive-chosen-ciphertext-attacks#rsa-anti-bb98
-		// for details.
-		if rsaPrivateKey.PublicKey.E < 65537 {
-			return fmt.Errorf("RSA signing key with public exponent < 65537")
-		}
-	case *jwt.SigningMethodRSAPSS:
-		if _, ok := signer.(*rsa.PrivateKey); !ok {
-			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
-		}
-	case *jwt.SigningMethodECDSA:
-		if _, ok := signer.(*ecdsa.PrivateKey); !ok {
-			return fmt.Errorf("wrong signing method for signing key (signing method is %s)", bs.signingMethod.Alg())
-		}
-	default:
-		return fmt.Errorf("unsupported signing method: %s", bs.signingMethod.Alg())
-	}
-
 	if id == "" {
 		// Get ID from file, following symbolic link.
 		var real string
@@ -205,6 +180,51 @@ func addSignerWithIDFromFile(fn string, id string, bs *bootstrap) error {
 	if bs.signingKeyID == "" {
 		// Set as default if none is set.
 		bs.signingKeyID = id
+	}
+
+	return nil
+}
+
+func validateSigners(bs *bootstrap) error {
+	haveRSA := false
+	haveECDSA := false
+	for _, signer := range bs.signers {
+		switch s := signer.(type) {
+		case *rsa.PrivateKey:
+			// Ensure the private key is not vulnerable with PKCS-1.5 signatures. See
+			// https://paragonie.com/blog/2018/04/protecting-rsa-based-protocols-against-adaptive-chosen-ciphertext-attacks#rsa-anti-bb98
+			// for details.
+			if s.PublicKey.E < 65537 {
+				return fmt.Errorf("RSA signing key with public exponent < 65537")
+			}
+			haveRSA = true
+		case *ecdsa.PrivateKey:
+			haveECDSA = true
+		default:
+			return fmt.Errorf("unsupported signer type: %v", s)
+		}
+	}
+
+	// Validate signing method
+	switch bs.signingMethod.(type) {
+	case *jwt.SigningMethodRSA:
+		if !haveRSA {
+			return fmt.Errorf("no private key for signing method: %s", bs.signingMethod.Alg())
+		}
+	case *jwt.SigningMethodRSAPSS:
+		if !haveRSA {
+			return fmt.Errorf("no private key for signing method: %s", bs.signingMethod.Alg())
+		}
+	case *jwt.SigningMethodECDSA:
+		if !haveECDSA {
+			return fmt.Errorf("no private key for signing method: %s", bs.signingMethod.Alg())
+		}
+	default:
+		return fmt.Errorf("unsupported signing method: %s", bs.signingMethod.Alg())
+	}
+
+	if !haveRSA {
+		bs.cfg.Logger.Warnln("no RSA signing private key, some clients might not be compatible")
 	}
 
 	return nil

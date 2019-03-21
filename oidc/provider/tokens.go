@@ -34,10 +34,15 @@ import (
 
 // MakeAccessToken implements the oidc.AccessTokenProvider interface.
 func (p *Provider) MakeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {
-	return p.makeAccessToken(ctx, audience, auth)
+	return p.makeAccessToken(ctx, audience, auth, nil)
 }
 
-func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {
+func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth identity.AuthRecord, signingMethod jwt.SigningMethod) (string, error) {
+	sk, ok := p.getSigningKey(signingMethod)
+	if !ok {
+		return "", fmt.Errorf("no signing key")
+	}
+
 	authorizedScopes := auth.AuthorizedScopes()
 	authorizedScopesList := makeArrayFromBoolMap(authorizedScopes)
 
@@ -63,13 +68,18 @@ func (p *Provider) makeAccessToken(ctx context.Context, audience string, auth id
 		accessTokenClaims.IdentityProvider = auth.Manager().Name()
 	}
 
-	accessToken := jwt.NewWithClaims(p.signingMethod, accessTokenClaims)
-	accessToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID
+	accessToken := jwt.NewWithClaims(sk.SigningMethod, accessTokenClaims)
+	accessToken.Header[oidc.JWTHeaderKeyID] = sk.ID
 
-	return accessToken.SignedString(p.signingKey)
+	return accessToken.SignedString(sk.PrivateKey)
 }
 
-func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRequest, auth identity.AuthRecord, session *payload.Session, accessTokenString string, codeString string) (string, error) {
+func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRequest, auth identity.AuthRecord, session *payload.Session, accessTokenString string, codeString string, signingMethod jwt.SigningMethod) (string, error) {
+	sk, ok := p.getSigningKey(signingMethod)
+	if !ok {
+		return "", fmt.Errorf("no signing key")
+	}
+
 	publicSubject, err := p.PublicSubjectFromAuth(auth)
 	if err != nil {
 		return "", err
@@ -160,7 +170,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 	if withAccessToken {
 		// Add left-most hash of access token.
 		// http://openid.net/specs/openid-connect-core-1_0.html#ImplicitIDToken
-		hash, hashErr := oidc.HashFromSigningMethod(p.signingMethod.Alg())
+		hash, hashErr := oidc.HashFromSigningMethod(sk.SigningMethod.Alg())
 		if hashErr != nil {
 			return "", hashErr
 		}
@@ -170,7 +180,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 	if withCode {
 		// Add left-most hash of code.
 		// http://openid.net/specs/openid-connect-core-1_0.html#HybridIDToken
-		hash, hashErr := oidc.HashFromSigningMethod(p.signingMethod.Alg())
+		hash, hashErr := oidc.HashFromSigningMethod(sk.SigningMethod.Alg())
 		if hashErr != nil {
 			return "", hashErr
 		}
@@ -211,13 +221,18 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 	}
 
 	// Create signed token.
-	idToken := jwt.NewWithClaims(p.signingMethod, finalIDTokenClaims)
-	idToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID
+	idToken := jwt.NewWithClaims(sk.SigningMethod, finalIDTokenClaims)
+	idToken.Header[oidc.JWTHeaderKeyID] = sk.ID
 
-	return idToken.SignedString(p.signingKey)
+	return idToken.SignedString(sk.PrivateKey)
 }
 
-func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth identity.AuthRecord) (string, error) {
+func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth identity.AuthRecord, signingMethod jwt.SigningMethod) (string, error) {
+	sk, ok := p.getSigningKey(signingMethod)
+	if !ok {
+		return "", fmt.Errorf("no signing key")
+	}
+
 	approvedScopesList := []string{}
 	approvedScopes := make(map[string]bool)
 	for scope, granted := range auth.AuthorizedScopes() {
@@ -255,10 +270,22 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 		refreshTokenClaims.IdentityProvider = auth.Manager().Name()
 	}
 
-	refreshToken := jwt.NewWithClaims(p.signingMethod, refreshTokenClaims)
-	refreshToken.Header[oidc.JWTHeaderKeyID] = p.signingKeyID
+	refreshToken := jwt.NewWithClaims(sk.SigningMethod, refreshTokenClaims)
+	refreshToken.Header[oidc.JWTHeaderKeyID] = sk.ID
 
-	return refreshToken.SignedString(p.signingKey)
+	return refreshToken.SignedString(sk.PrivateKey)
+}
+
+func (p *Provider) makeJWT(ctx context.Context, signingMethod jwt.SigningMethod, claims jwt.MapClaims) (string, error) {
+	sk, ok := p.getSigningKey(signingMethod)
+	if !ok {
+		return "", fmt.Errorf("no signing key")
+	}
+
+	token := jwt.NewWithClaims(sk.SigningMethod, claims)
+	token.Header[oidc.JWTHeaderKeyID] = sk.ID
+
+	return token.SignedString(sk.PrivateKey)
 }
 
 func (p *Provider) validateJWT(token *jwt.Token) (interface{}, error) {
@@ -285,7 +312,7 @@ func (p *Provider) validateJWT(token *jwt.Token) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("Invalid kid value")
 	}
-	key, ok := p.validationKeys[kid]
+	key, ok := p.getValidationKey(kid)
 	if !ok {
 		return nil, fmt.Errorf("Unknown kid")
 	}

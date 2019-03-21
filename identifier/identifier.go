@@ -519,9 +519,3 @@ func (i *Identifier) OnUnsetLogon(cb func(ctx context.Context, rw http.ResponseW
 	i.onUnsetLogonCallbacks = append(i.onUnsetLogonCallbacks, cb)
 	return nil
 }
-
-// GetClientRegistration implements the support to fetch client registration
-// data from the accoicated identifiers client registration.
-func (i *Identifier) GetClientRegistration(ctx context.Context, clientID string) (*clients.ClientRegistration, bool) {
-	return i.clients.Get(ctx, clientID)
-}

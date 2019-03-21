@@ -331,7 +331,6 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 		origin = utils.OriginFromRequestHeaders(req.Header)
 	}
 
-	// TODO(longsleep): Get client secret from request.
 	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin, true)
 	if err != nil {
 		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, err.Error())
@@ -501,9 +500,4 @@ func (im *GuestIdentityManager) OnSetLogon(cb func(ctx context.Context, rw http.
 func (im *GuestIdentityManager) OnUnsetLogon(cb func(ctx context.Context, rw http.ResponseWriter) error) error {
 	im.onUnsetLogonCallbacks = append(im.onUnsetLogonCallbacks, cb)
 	return nil
-}
-
-// GetClientRegistration implements the identity.Manager interface.
-func (im *GuestIdentityManager) GetClientRegistration(ctx context.Context, clientID string) (*clients.ClientRegistration, bool) {
-	return nil, false
 }

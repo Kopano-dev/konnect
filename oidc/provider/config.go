@@ -35,6 +35,7 @@ type Config struct {
 	UserInfoPath           string
 	EndSessionPath         string
 	CheckSessionIframePath string
+	RegistrationPath       string
 
 	BrowserStateCookiePath string
 	BrowserStateCookieName string

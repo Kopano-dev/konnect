@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2019 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -15,32 +15,16 @@
  *
  */
 
-package clients
+package provider
 
 import (
 	"crypto"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
-// Details hold detail information about clients identified by ID.
-type Details struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"display_name"`
-	RedirectURI string `json:"redirect_uri"`
-	Trusted     bool   `json:"trusted"`
-
-	Registration *ClientRegistration `json:"-"`
-}
-
-// A Secured is a client records public key identified by ID.
-type Secured struct {
-	ID              string
-	DisplayName     string
-	ApplicationType string
-
-	Kid       string
-	PublicKey crypto.PublicKey
-
-	TrustedScopes []string
-
-	Registration *ClientRegistration
+type signingKey struct {
+	ID            string
+	PrivateKey    crypto.PrivateKey
+	SigningMethod jwt.SigningMethod
 }

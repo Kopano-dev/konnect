@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
@@ -222,6 +223,11 @@ func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret str
 	registration, _ := r.clients[clientID]
 	r.mutex.RUnlock()
 
+	// Lookup dynamic clients when it makes sense.
+	if !trusted && registration == nil {
+		registration, _ = r.getDynamicClient(clientID)
+	}
+
 	if registration != nil {
 		redirectURIBase := &url.URL{
 			Scheme: redirectURI.Scheme,
@@ -258,6 +264,8 @@ func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret str
 		RedirectURI: redirecURIString,
 		DisplayName: displayName,
 		Trusted:     trusted,
+
+		Registration: registration,
 	}, nil
 }
 
@@ -267,6 +275,26 @@ func (r *Registry) Get(ctx context.Context, clientID string) (*ClientRegistratio
 	r.mutex.RLock()
 	registration, ok := r.clients[clientID]
 	r.mutex.RUnlock()
+	if ok {
+		return registration, true
+	}
 
-	return registration, ok
+	return r.getDynamicClient(clientID)
+}
+
+func (r *Registry) getDynamicClient(clientID string) (*ClientRegistration, bool) {
+	var registration *ClientRegistration
+
+	if token, err := jwt.ParseWithClaims(clientID, &RegistrationClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwt.UnsafeAllowNoneSignatureType, nil
+	}); err == nil {
+		if claims, ok := token.Claims.(*RegistrationClaims); ok && token.Valid {
+			// TODO(longsleep): Add secure client secret.
+			registration = claims.ClientRegistration
+			registration.ID = clientID
+			registration.Secret = claims.StandardClaims.Subject
+		}
+	}
+
+	return registration, registration != nil
 }

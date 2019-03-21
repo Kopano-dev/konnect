@@ -29,6 +29,7 @@ import (
 
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/identity/clients"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	"stash.kopano.io/kc/konnect/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
@@ -50,6 +51,7 @@ func newTestServer(ctx context.Context, t *testing.T) (*httptest.Server, *Server
 	mgrs.Set("code", codeManagers.NewMemoryMapManager(ctx))
 	encryptionManager, _ := identityManagers.NewEncryptionManager(nil)
 	mgrs.Set("encryption", encryptionManager)
+	mgrs.Set("clients", &clients.Registry{})
 
 	cfg := &config.Config{
 		Logger: logger,

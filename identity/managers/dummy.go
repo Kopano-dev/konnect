@@ -29,7 +29,6 @@ import (
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
@@ -225,9 +224,4 @@ func (im *DummyIdentityManager) OnSetLogon(func(ctx context.Context, rw http.Res
 // OnUnsetLogon implements the identity.Manager interface.
 func (im *DummyIdentityManager) OnUnsetLogon(func(ctx context.Context, rw http.ResponseWriter) error) error {
 	return nil
-}
-
-// GetClientRegistration implements the identity.Manager interface.
-func (im *DummyIdentityManager) GetClientRegistration(ctx context.Context, clientID string) (*clients.ClientRegistration, bool) {
-	return nil, false
 }

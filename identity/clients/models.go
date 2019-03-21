@@ -20,9 +20,12 @@ package clients
 import (
 	"crypto"
 	"fmt"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/mendsley/gojwk"
 	_ "gopkg.in/yaml.v2" // Make sure we have yaml.
+	"stash.kopano.io/kgol/rndm"
 )
 
 // RegistryData is the base structur of our client registry configuration file.
@@ -32,20 +35,35 @@ type RegistryData struct {
 
 // ClientRegistration defines a client with its properties.
 type ClientRegistration struct {
-	ID              string `yaml:"id"`
-	Secret          string `yaml:"secret"`
-	Name            string `yaml:"name"`
-	ApplicationType string `yaml:"application_type"`
+	ID     string `yaml:"id" json:"-"`
+	Secret string `yaml:"secret" json:"-"`
 
-	Trusted       bool     `yaml:"trusted"`
-	TrustedScopes []string `yaml:"trusted_scopes"`
-	Insecure      bool     `yaml:"insecure"`
+	Trusted       bool     `yaml:"trusted" json:"-"`
+	TrustedScopes []string `yaml:"trusted_scopes" json:"-"`
+	Insecure      bool     `yaml:"insecure" json:"-"`
 
-	RedirectURIs []string `yaml:"redirect_uris,flow"`
-	Origins      []string `yaml:"origins,flow"`
+	Dynamic         bool  `yaml:"-" json:"-"`
+	IDIssuedAt      int64 `yaml:"-" json:"-"`
+	SecretExpiresAt int64 `yaml:"-" json:"-"`
 
-	JWKS                       *gojwk.Key `yaml:"jwks"`
-	RawRequestObjectSigningAlg string     `yaml:"request_object_signing_alg"`
+	Contacts        []string `yaml:"contacts,flow" json:"contacts,omitempty"`
+	Name            string   `yaml:"name" json:"name,omitempty"`
+	URI             string   `yaml:"uri"  json:"uri,omitempty"`
+	GrantTypes      []string `yaml:"grant_types,flow" json:"grant_types,omitempty"`
+	ApplicationType string   `yaml:"application_type"  json:"application_type,omitempty"`
+
+	RedirectURIs []string `yaml:"redirect_uris,flow" json:"redirect_uris,omitempty"`
+	Origins      []string `yaml:"origins,flow" json:"-"`
+
+	JWKS *gojwk.Key `yaml:"jwks" json:"-"`
+
+	RawIDTokenSignedResponseAlg    string `yaml:"id_token_signed_response_alg" json:"id_token_signed_response_alg,omitempty"`
+	RawUserInfoSignedResponseAlg   string `yaml:"userinfo_signed_response_alg" json:"userinfo_signed_response_alg,omitempty"`
+	RawRequestObjectSigningAlg     string `yaml:"request_object_signing_alg" json:"request_object_signing_alg,omitempty"`
+	RawTokenEndpointAuthMethod     string `yaml:"token_endpoint_auth_method" json:"token_endpoint_auth_method,omitempty"`
+	RawTokenEndpointAuthSigningAlg string `yaml:"token_endpoint_auth_signing_alg"  json:"token_endpoint_auth_signing_alg,omitempty"`
+
+	PostLogoutRedirectURIs []string `yaml:"post_logout_redirect_uris,flow" json:"post_logout_redirect_uris,omitempty"`
 }
 
 // Secure looks up the a matching key from the accociated client registration
@@ -95,5 +113,46 @@ func (cr *ClientRegistration) Secure(rawKid interface{}) (*Secured, error) {
 		PublicKey: key,
 
 		TrustedScopes: cr.TrustedScopes,
+
+		Registration: cr,
 	}, nil
+}
+
+// SetDynamic modifieds the required data for the associated client registration
+// so it becomes a dynamic client.
+func (cr *ClientRegistration) SetDynamic() error {
+	if cr.ID != "" {
+		return fmt.Errorf("has ID already")
+	}
+
+	cr.IDIssuedAt = time.Now().Unix()
+	cr.SecretExpiresAt = time.Now().Add(24 * time.Hour).Unix()
+	cr.Dynamic = true
+
+	// Create random secret.
+	// TODO(longsleep): Encrypt sub with iss specific key.
+	sub := rndm.GenerateRandomString(32)
+
+	// Stateless Dynamic Client Registration encodes all relevant data in the
+	// client_id. See https://openid.net/specs/openid-connect-registration-1_0.html#StatelessRegistration
+	// for more information. We use a JWT as client_id.
+	claims := &RegistrationClaims{
+		StandardClaims: jwt.StandardClaims{
+			Subject:   sub,
+			IssuedAt:  cr.IDIssuedAt,
+			ExpiresAt: cr.SecretExpiresAt,
+		},
+		ClientRegistration: cr,
+	}
+	// TODO(longsleep): Use signed JWT.
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
+	id, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		return fmt.Errorf("failed to sign token for dynamic client_id: %v", err)
+	}
+
+	cr.ID = id
+	cr.Secret = sub
+
+	return nil
 }

@@ -30,6 +30,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -226,26 +227,42 @@ func (bs *bootstrap) initialize() error {
 	bs.signers = make(map[string]crypto.Signer)
 	bs.validators = make(map[string]crypto.PublicKey)
 
-	signingKeyFn, _ := cmd.Flags().GetString("signing-private-key")
-	if signingKeyFn == "" {
-		signingKeyFn = os.Getenv("KONNECTD_SIGNING_PRIVATE_KEY")
+	signingMethodString, _ := cmd.Flags().GetString("signing-method")
+	bs.signingMethod = jwt.GetSigningMethod(signingMethodString)
+	if bs.signingMethod == nil {
+		return fmt.Errorf("unknown signing method: %s", signingMethodString)
 	}
-	if signingKeyFn != "" {
-		signingMethodString, _ := cmd.Flags().GetString("signing-method")
-		bs.signingMethod = jwt.GetSigningMethod(signingMethodString)
-		if bs.signingMethod == nil {
-			return fmt.Errorf("unknown signing method: %s", signingMethodString)
-		}
-		if signingMethodRSAPSS, ok := bs.signingMethod.(*jwt.SigningMethodRSAPSS); ok {
-			// NOTE(longsleep): Ensure to use same salt length the hash size.
-			// See https://www.ietf.org/mail-archive/web/jose/current/msg02901.html for
-			// reference and https://github.com/dgrijalva/jwt-go/issues/285 for
-			// the issue in upstream jwt-go.
-			signingMethodRSAPSS.Options.SaltLength = rsa.PSSSaltLengthEqualsHash
-		}
+	if signingMethodRSAPSS, ok := bs.signingMethod.(*jwt.SigningMethodRSAPSS); ok {
+		// NOTE(longsleep): Ensure to use same salt length the hash size.
+		// See https://www.ietf.org/mail-archive/web/jose/current/msg02901.html for
+		// reference and https://github.com/dgrijalva/jwt-go/issues/285 for
+		// the issue in upstream jwt-go.
+		signingMethodRSAPSS.Options.SaltLength = rsa.PSSSaltLengthEqualsHash
+	}
 
-		logger.WithField("path", signingKeyFn).Infoln("loading signing key")
-		err = addSignerWithIDFromFile(signingKeyFn, bs.signingKeyID, bs)
+	signingKeyFns, _ := cmd.Flags().GetStringArray("signing-private-key")
+	if len(signingKeyFns) == 0 {
+		signingKeyFns = strings.Split(os.Getenv("KONNECTD_SIGNING_PRIVATE_KEY"), " ")
+	}
+	if len(signingKeyFns) > 0 {
+		first := true
+		for _, signingKeyFn := range signingKeyFns {
+			logger.WithField("path", signingKeyFn).Infoln("loading signing key")
+			err = addSignerWithIDFromFile(signingKeyFn, "", bs)
+			if err != nil {
+				return err
+			}
+			if first {
+				// Also add key under the provided id.
+				first = false
+				err = addSignerWithIDFromFile(signingKeyFn, bs.signingKeyID, bs)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		// Ensure we have a signer for the things we need.
+		err = validateSigners(bs)
 		if err != nil {
 			return err
 		}
@@ -410,6 +427,7 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 		UserInfoPath:           "/konnect/v1/userinfo",
 		EndSessionPath:         bs.endSessionEndpointURI.EscapedPath(),
 		CheckSessionIframePath: "/konnect/v1/session/check-session.html",
+		RegistrationPath:       "/konnect/v1/register",
 
 		BrowserStateCookiePath: "/konnect/v1/session/",
 		BrowserStateCookieName: "__Secure-KKBS", // Kopano-Konnect-Browser-State
@@ -425,6 +443,7 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 		return nil, fmt.Errorf("failed to create provider: %v", err)
 	}
 
+	// All add signers.
 	for id, signer := range bs.signers {
 		if id == bs.signingKeyID {
 			err = provider.SetSigningKey(id, signer, bs.signingMethod)
@@ -433,12 +452,14 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 				provider.SetValidationKey(defaultSigningKeyID, signer.Public(), bs.signingMethod)
 			}
 		} else {
-			err = provider.SetValidationKey(id, signer.Public(), bs.signingMethod)
+			// Set non default signers as well.
+			err = provider.SetSigningKey(id, signer, nil)
 		}
 		if err != nil {
 			return nil, err
 		}
 	}
+	// Add all validators.
 	for id, publicKey := range bs.validators {
 		err = provider.SetValidationKey(id, publicKey, bs.signingMethod)
 		if err != nil {
