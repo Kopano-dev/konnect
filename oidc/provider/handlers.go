@@ -358,6 +358,9 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2AccessDenied, err.Error())
 		goto done
 	}
+	if clientDetails != nil && clientDetails.Registration != nil {
+		signinMethod = jwt.GetSigningMethod(clientDetails.Registration.RawIDTokenSignedResponseAlg)
+	}
 
 	switch tr.GrantType {
 	case oidc.GrantTypeAuthorizationCode:
@@ -478,9 +481,6 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create access token.
-	if clientDetails != nil && clientDetails.Registration != nil {
-		signinMethod = jwt.GetSigningMethod(clientDetails.Registration.RawIDTokenSignedResponseAlg)
-	}
 	accessTokenString, err = p.makeAccessToken(req.Context(), ar.ClientID, auth, signinMethod)
 	if err != nil {
 		goto done
@@ -699,7 +699,7 @@ done:
 			// Set extra claims.
 			responseAsMap[oidc.IssuerIdentifierClaim] = p.issuerIdentifier
 			responseAsMap[oidc.AudienceClaim] = registration.ID
-			tokenString, err := p.makeJWT(req.Context(), alg, responseAsMap)
+			tokenString, err := p.makeJWT(req.Context(), alg, jwt.MapClaims(responseAsMap))
 			if err != nil {
 				p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request failed to encode jwt")
 				p.ErrorPage(rw, http.StatusInternalServerError, "", err.Error())
@@ -851,6 +851,11 @@ func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request
 
 	// Get registration record.
 	cr, err = crr.ClientRegistration()
+	if err != nil {
+		goto done
+	}
+	// Set client to dynamic. This creates the id and client secret.
+	err = cr.SetDynamic(req.Context(), p.clients.StatelessCreator)
 	if err != nil {
 		goto done
 	}

@@ -276,7 +276,7 @@ func (p *Provider) makeRefreshToken(ctx context.Context, audience string, auth i
 	return refreshToken.SignedString(sk.PrivateKey)
 }
 
-func (p *Provider) makeJWT(ctx context.Context, signingMethod jwt.SigningMethod, claims jwt.MapClaims) (string, error) {
+func (p *Provider) makeJWT(ctx context.Context, signingMethod jwt.SigningMethod, claims jwt.Claims) (string, error) {
 	sk, ok := p.getSigningKey(signingMethod)
 	if !ok {
 		return "", fmt.Errorf("no signing key")

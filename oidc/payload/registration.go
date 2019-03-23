@@ -290,10 +290,6 @@ func (crr *ClientRegistrationRequest) ClientRegistration() (*clients.ClientRegis
 
 		PostLogoutRedirectURIs: crr.PostLogoutRedirectURIs,
 	}
-	err := cr.SetDynamic()
-	if err != nil {
-		return nil, err
-	}
 
 	return cr, nil
 }

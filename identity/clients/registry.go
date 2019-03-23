@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/dgrijalva/jwt-go"
@@ -39,6 +40,9 @@ type Registry struct {
 
 	trustedURI *url.URL
 	clients    map[string]*ClientRegistration
+
+	StatelessCreator   func(ctx context.Context, signingMethod jwt.SigningMethod, claims jwt.Claims) (string, error)
+	StatelessValidator func(token *jwt.Token) (interface{}, error)
 
 	logger logrus.FieldLogger
 }
@@ -195,6 +199,7 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret string, redirectURI *url.URL, originURIString string, withoutSecret bool) (*Details, error) {
 	var err error
 	var trusted bool
+	var dynamic bool
 	var displayName string
 
 	if clientID == "" {
@@ -223,8 +228,13 @@ func (r *Registry) Lookup(ctx context.Context, clientID string, clientSecret str
 	registration, _ := r.clients[clientID]
 	r.mutex.RUnlock()
 
+	if registration == nil && strings.HasPrefix(clientID, DynamicStatelessClientIDPrefix) {
+		trusted = false
+		dynamic = true
+	}
+
 	// Lookup dynamic clients when it makes sense.
-	if !trusted && registration == nil {
+	if dynamic && registration == nil {
 		registration, _ = r.getDynamicClient(clientID)
 	}
 
@@ -285,8 +295,12 @@ func (r *Registry) Get(ctx context.Context, clientID string) (*ClientRegistratio
 func (r *Registry) getDynamicClient(clientID string) (*ClientRegistration, bool) {
 	var registration *ClientRegistration
 
-	if token, err := jwt.ParseWithClaims(clientID, &RegistrationClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwt.UnsafeAllowNoneSignatureType, nil
+	tokenString := clientID[len(DynamicStatelessClientIDPrefix):]
+	if token, err := jwt.ParseWithClaims(tokenString, &RegistrationClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if r.StatelessValidator == nil {
+			return nil, fmt.Errorf("no validator for dynamic client ids")
+		}
+		return r.StatelessValidator(token)
 	}); err == nil {
 		if claims, ok := token.Claims.(*RegistrationClaims); ok && token.Valid {
 			// TODO(longsleep): Add secure client secret.

@@ -18,6 +18,7 @@
 package clients
 
 import (
+	"context"
 	"crypto"
 	"fmt"
 	"time"
@@ -27,6 +28,10 @@ import (
 	_ "gopkg.in/yaml.v2" // Make sure we have yaml.
 	"stash.kopano.io/kgol/rndm"
 )
+
+// DynamicStatelessClientIDPrefix is the prefix used to identity dynamic
+// stateless client ids.
+const DynamicStatelessClientIDPrefix = "dyn."
 
 // RegistryData is the base structur of our client registry configuration file.
 type RegistryData struct {
@@ -120,17 +125,19 @@ func (cr *ClientRegistration) Secure(rawKid interface{}) (*Secured, error) {
 
 // SetDynamic modifieds the required data for the associated client registration
 // so it becomes a dynamic client.
-func (cr *ClientRegistration) SetDynamic() error {
+func (cr *ClientRegistration) SetDynamic(ctx context.Context, creator func(ctx context.Context, signingMethod jwt.SigningMethod, claims jwt.Claims) (string, error)) error {
 	if cr.ID != "" {
 		return fmt.Errorf("has ID already")
 	}
 
+	// Initialize basic client registration data for dynamic client.
 	cr.IDIssuedAt = time.Now().Unix()
-	cr.SecretExpiresAt = time.Now().Add(24 * time.Hour).Unix()
+	cr.SecretExpiresAt = time.Now().Add(1 * time.Hour).Unix()
 	cr.Dynamic = true
 
 	// Create random secret.
-	// TODO(longsleep): Encrypt sub with iss specific key.
+	// TODO(longsleep): Encrypt sub with iss specific key to be able to check
+	// as the client secret.
 	sub := rndm.GenerateRandomString(32)
 
 	// Stateless Dynamic Client Registration encodes all relevant data in the
@@ -144,14 +151,15 @@ func (cr *ClientRegistration) SetDynamic() error {
 		},
 		ClientRegistration: cr,
 	}
-	// TODO(longsleep): Use signed JWT.
-	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
-	id, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+
+	// Create signed stateless client ID by help of the provided creator function.
+	id, err := creator(ctx, nil, claims)
 	if err != nil {
-		return fmt.Errorf("failed to sign token for dynamic client_id: %v", err)
+		return nil
 	}
 
-	cr.ID = id
+	// Fill in id and secret.
+	cr.ID = DynamicStatelessClientIDPrefix + id
 	cr.Secret = sub
 
 	return nil
