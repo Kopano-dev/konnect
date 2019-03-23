@@ -168,8 +168,21 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 	}
 
 	if err != nil {
+		// Build login URL.
+		query, err := url.ParseQuery(req.URL.RawQuery)
+		if err != nil {
+			return nil, err
+		}
+		query.Set("flow", identifier.FlowOIDC)
+		if ar.Claims != nil {
+			// Add derived scope list from claims request.
+			claimsScopes := ar.Claims.Scopes(ar.Scopes)
+			if len(claimsScopes) > 0 {
+				query.Set("claims_scope", strings.Join(claimsScopes, " "))
+			}
+		}
 		u, _ := url.Parse(im.signInFormURI)
-		u.RawQuery = fmt.Sprintf("flow=%s&%s", identifier.FlowOIDC, req.URL.RawQuery)
+		u.RawQuery = query.Encode()
 		utils.WriteRedirect(rw, http.StatusFound, u, nil, false)
 
 		return nil, &identity.IsHandledError{}
