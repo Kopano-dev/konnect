@@ -67,6 +67,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().StringArray("trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
 	serveCmd.Flags().StringArray("allow-scope", nil, "Allow OAuth 2 scope (can be used multiple times, if not set default scopes are allowed)")
 	serveCmd.Flags().Bool("allow-client-guests", false, "Allow sign in of client controlled guest users")
+	serveCmd.Flags().Bool("allow-dynamic-client-registration", false, "Allow dynamic OAuth2 client registration")
 	serveCmd.Flags().Bool("log-timestamp", true, "Prefix each log line with timestamp")
 	serveCmd.Flags().String("log-level", "info", "Log level (one of panic, fatal, error, warn, info or debug)")
 

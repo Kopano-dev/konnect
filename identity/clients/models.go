@@ -126,6 +126,10 @@ func (cr *ClientRegistration) Secure(rawKid interface{}) (*Secured, error) {
 // SetDynamic modifieds the required data for the associated client registration
 // so it becomes a dynamic client.
 func (cr *ClientRegistration) SetDynamic(ctx context.Context, creator func(ctx context.Context, signingMethod jwt.SigningMethod, claims jwt.Claims) (string, error)) error {
+	if creator == nil {
+		return fmt.Errorf("no creator")
+	}
+
 	if cr.ID != "" {
 		return fmt.Errorf("has ID already")
 	}

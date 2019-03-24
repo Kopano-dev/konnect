@@ -150,16 +150,18 @@ func (p *Provider) RegisterManagers(mgrs *managers.Managers) error {
 	p.identityManager.OnSetLogon(onSetLogon)
 	p.identityManager.OnUnsetLogon(onUnsetLogon)
 
-	// NOTE(longsleep): This is hackish. Find a better way to propagate our
-	// provides JWT stuff to the client registry.
-	p.clients.StatelessCreator = p.makeJWT
-	p.clients.StatelessValidator = p.validateJWT
-
 	// Add guest manager if any can be found.
 	if guestManager, _ := mgrs.Get("guest"); guestManager != nil {
 		p.guestManager = guestManager.(identity.Manager)
 		p.guestManager.OnSetLogon(onSetLogon)
 		p.guestManager.OnUnsetLogon(onUnsetLogon)
+	}
+
+	if p.Config.RegistrationPath != "" {
+		// NOTE(longsleep): This is hackish. Find a better way to propagate our
+		// provides JWT stuff to the client registry.
+		p.clients.StatelessCreator = p.makeJWT
+		p.clients.StatelessValidator = p.validateJWT
 	}
 
 	return nil

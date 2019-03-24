@@ -169,6 +169,11 @@ func (bs *bootstrap) initialize() error {
 		logger.Infoln("client controlled guests are enabled")
 	}
 
+	bs.cfg.AllowDynamicClientRegistration, _ = cmd.Flags().GetBool("allow-dynamic-client-registration")
+	if bs.cfg.AllowDynamicClientRegistration {
+		logger.Infoln("dynamic client registration is enabled")
+	}
+
 	encryptionSecretFn, _ := cmd.Flags().GetString("encryption-secret")
 	if encryptionSecretFn == "" {
 		encryptionSecretFn = os.Getenv("KONNECTD_ENCRYPTION_SECRET")
@@ -416,6 +421,11 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 		return nil, fmt.Errorf("failed to find common URL prefix for authorize and endsession: %v", err)
 	}
 
+	var registrationPath = ""
+	if bs.cfg.AllowDynamicClientRegistration {
+		registrationPath = "/konnect/v1/register"
+	}
+
 	provider, err := oidcProvider.NewProvider(&oidcProvider.Config{
 		Config: bs.cfg,
 
@@ -427,7 +437,7 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 		UserInfoPath:           "/konnect/v1/userinfo",
 		EndSessionPath:         bs.endSessionEndpointURI.EscapedPath(),
 		CheckSessionIframePath: "/konnect/v1/session/check-session.html",
-		RegistrationPath:       "/konnect/v1/register",
+		RegistrationPath:       registrationPath,
 
 		BrowserStateCookiePath: "/konnect/v1/session/",
 		BrowserStateCookieName: "__Secure-KKBS", // Kopano-Konnect-Browser-State
