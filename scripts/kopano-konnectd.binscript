@@ -151,6 +151,10 @@ case "${1}" in
 			set -- "$@" "--allow-client-guests"
 		fi
 
+		if [ "$allow_dynamic_client_registration" = "yes" ]; then
+			set -- "$@" "--allow-dynamic-client-registration"
+		fi
+
 		# kc identity manager
 
 		if [ "$identity_manager" = "kc" ]; then
