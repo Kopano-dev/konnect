@@ -19,6 +19,7 @@ Konnect can do and how you could use it, this section lists the
 - https://openid.net/specs/openid-connect-discovery-1_0.html
 - https://openid.net/specs/openid-connect-frontchannel-1_0.html
 - https://openid.net/specs/openid-connect-session-1_0.html
+- https://openid.net/specs/openid-connect-registration-1_0.html
 
 Furthermore the following extensions/base specifications extend, define and
 combine the implementation details.
