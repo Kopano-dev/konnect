@@ -20,18 +20,23 @@ package clients
 import (
 	"context"
 	"crypto"
+	"crypto/subtle"
+	"encoding/base64"
 	"fmt"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mendsley/gojwk"
+	"golang.org/x/crypto/blake2b"
 	_ "gopkg.in/yaml.v2" // Make sure we have yaml.
 	"stash.kopano.io/kgol/rndm"
 )
 
-// DynamicStatelessClientIDPrefix is the prefix used to identity dynamic
-// stateless client ids.
-const DynamicStatelessClientIDPrefix = "dyn."
+// Constat data used with dynamic stateless clients.
+const (
+	DynamicStatelessClientIDPrefix     = "dyn."
+	DynamicStatelessClientStaticSaltV1 = "konnect-client-v1"
+)
 
 // RegistryData is the base structur of our client registry configuration file.
 type RegistryData struct {
@@ -139,10 +144,10 @@ func (cr *ClientRegistration) SetDynamic(ctx context.Context, creator func(ctx c
 	cr.SecretExpiresAt = time.Now().Add(1 * time.Hour).Unix()
 	cr.Dynamic = true
 
-	// Create random secret.
-	// TODO(longsleep): Encrypt sub with iss specific key to be able to check
-	// as the client secret.
-	sub := rndm.GenerateRandomString(32)
+	sub, secret, err := cr.makeSecret(nil)
+	if err != nil {
+		return fmt.Errorf("failed to make dynamic client secret: %v", err)
+	}
 
 	// Stateless Dynamic Client Registration encodes all relevant data in the
 	// client_id. See https://openid.net/specs/openid-connect-registration-1_0.html#StatelessRegistration
@@ -162,9 +167,53 @@ func (cr *ClientRegistration) SetDynamic(ctx context.Context, creator func(ctx c
 		return nil
 	}
 
-	// Fill in id and secret.
+	// Fill in ID and secret.
 	cr.ID = DynamicStatelessClientIDPrefix + id
-	cr.Secret = sub
+	cr.Secret = secret
 
 	return nil
+}
+
+func (cr *ClientRegistration) makeSecret(secret []byte) (string, string, error) {
+	// Create random secret. HMAC the client name with it to get the subject.
+	if secret == nil {
+		secret = rndm.GenerateRandomBytes(64)
+	}
+
+	hasher, err := blake2b.New512(secret)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create hasher for dynamic client_id: %v", err)
+	}
+	hasher.Write([]byte(cr.Name))
+	hasher.Write([]byte(" "))
+	hasher.Write([]byte(DynamicStatelessClientStaticSaltV1))
+	sub := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
+
+	return sub, base64.RawURLEncoding.EncodeToString(secret), nil
+}
+
+func (cr *ClientRegistration) validateSecret(clientSecret string) (bool, error) {
+	if cr.Dynamic {
+		if cr.Secret == "" {
+			// Fail fast, since dynamic clients must have a secret.
+			return false, fmt.Errorf("no secret in registration")
+		}
+
+		// Dynamic clients use hashed passwords.
+		secret, err := base64.RawURLEncoding.DecodeString(clientSecret)
+		if err != nil {
+			return false, fmt.Errorf("failed to decode client secret: %v", err)
+		}
+		sub, _, err := cr.makeSecret(secret)
+		if err != nil {
+			return false, fmt.Errorf("failed to produce client secret for comparison: %v", err)
+		}
+
+		return subtle.ConstantTimeCompare([]byte(sub), []byte(cr.Secret)) == 1, nil
+	}
+
+	if cr.Secret != "" && subtle.ConstantTimeCompare([]byte(clientSecret), []byte(cr.Secret)) != 1 {
+		return false, nil
+	}
+	return true, nil
 }

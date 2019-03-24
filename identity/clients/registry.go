@@ -19,7 +19,6 @@ package clients
 
 import (
 	"context"
-	"crypto/subtle"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -187,8 +186,10 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 		}
 	}
 
-	if !withoutSecret && client.Secret != "" && subtle.ConstantTimeCompare([]byte(clientSecret), []byte(client.Secret)) != 1 {
-		return fmt.Errorf("invalid client_secret")
+	if !withoutSecret {
+		if valid, err := client.validateSecret(clientSecret); !valid {
+			return fmt.Errorf("invalid client_secret: %v", err)
+		}
 	}
 
 	return nil
@@ -307,6 +308,7 @@ func (r *Registry) getDynamicClient(clientID string) (*ClientRegistration, bool)
 			registration = claims.ClientRegistration
 			registration.ID = clientID
 			registration.Secret = claims.StandardClaims.Subject
+			registration.Dynamic = true
 		}
 	}
 

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mendsley/gojwk"
@@ -60,6 +61,11 @@ type ClientRegistrationRequest struct {
 // DecodeClientRegistrationRequest returns a ClientRegistrationRequest holding
 // the provided request's data.
 func DecodeClientRegistrationRequest(req *http.Request) (*ClientRegistrationRequest, error) {
+	contentType := req.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "application/json") {
+		return nil, fmt.Errorf("invalid content-type")
+	}
+
 	decoder := json.NewDecoder(req.Body)
 	var crr ClientRegistrationRequest
 	err := decoder.Decode(&crr)

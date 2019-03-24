@@ -37,6 +37,10 @@ import (
 	"stash.kopano.io/kc/konnect/utils"
 )
 
+const (
+	registrationSizeLimit = 1024 * 512
+)
+
 // WellKnownHandler implements the HTTP provider configuration endpoint
 // for OpenID Connect 1.0 as specified at https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
 func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
@@ -353,7 +357,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// Additional validations according to https://tools.ietf.org/html/rfc6749#section-4.1.3
-	clientDetails, err = p.clients.Lookup(req.Context(), tr.ClientID, tr.ClientSecret, tr.RedirectURI, "", true)
+	clientDetails, err = p.clients.Lookup(req.Context(), tr.ClientID, tr.ClientSecret, tr.RedirectURI, "", false)
 	if err != nil {
 		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2AccessDenied, err.Error())
 		goto done
@@ -832,6 +836,7 @@ func (p *Provider) CheckSessionIframeHandler(rw http.ResponseWriter, req *http.R
 // with OpenID Connect Registration 1.0 as specified at
 // https://openid.net/specs/openid-connect-registration-1_0.html#ClientRegistration
 func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request) {
+	req.Body = http.MaxBytesReader(rw, req.Body, registrationSizeLimit)
 	addResponseHeaders(rw.Header())
 
 	crr, err := payload.DecodeClientRegistrationRequest(req)
@@ -839,9 +844,19 @@ func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request
 		p.logger.WithError(err).Errorln("client registration request failed to decode request data")
 
 		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		return
 	}
 
 	var cr *clients.ClientRegistration
+
+	// Validate request method
+	switch req.Method {
+	case http.MethodPost:
+		// breaks
+	default:
+		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "request must be sent with POST")
+		goto done
+	}
 
 	// Validate request.
 	err = crr.Validate()
