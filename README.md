@@ -112,24 +112,6 @@ The base URL of the frontend proxy is what will become the value of the `--iss`
 parameter when starting up Konnect. OIDC requires the Issuer Identifier to be
 secure (https:// required).
 
-### Kopano Webapp backend (Cookie backend)
-
-This assumes that you have a set-up Kopano with a reverse proxy on
-`https://mykopano.local` together with the proper proxy configuration to
-pass through all requests to the `/konnect/v1/` prefix to `127.0.0.1:8777`. also
-do not forget to reverse proxy `/.well-known/openid-configuration`.
-
-Kopano Webapp needs to support the `?continue=` request parameter and the domains
-of possible OIDC clients need to be added into `webapp/config.php` with the
-`REDIRECT_ALLOWED_DOMAINS` setting.
-
-```
-bin/konnectd serve --listen=127.0.0.1:8777 \
-  --iss=https://mykopano.local \
-  --sign-in-uri=https://mykopano.local/webapp/ \
-  cookie https://mykopano.local/webapp/?load=custom&name=oidcuser "KOPANO_WEBAPP encryption-store-key"
-```
-
 ### Kopano Groupware Storage server backend
 
 This assumes that Konnect can connect directly to a Kopano server via SOAP
@@ -194,6 +176,28 @@ export LDAP_FILTER="(objectClass=organizationalPerson)"
 bin/konnectd serve --listen=127.0.0.1:8777 \
   --iss=https://mykonnect.local \
   ldap
+```
+
+### Cookie backend
+
+A cookie backend is also there for testing. It has limited amount of features
+and should not be used in production. Essentially this backend assumes a login
+area uses a HTTP cookie for authentication and Konnect is runnig in the same
+scope as this cookie so the Konnect request can read and validate the cookie
+using an internal proxy request.
+
+This assumes that you have a set-up Kopano with a reverse proxy on
+`https://mykopano.local` together with the proper proxy configuration to
+pass through all requests to the `/konnect/v1/` prefix to `127.0.0.1:8777`.
+Kopano Webapp supports the `?continue=` request parameter and the domains
+of possible OIDC clients need to be added into `webapp/config.php` with the
+`REDIRECT_ALLOWED_DOMAINS` setting.
+
+```
+bin/konnectd serve --listen=127.0.0.1:8777 \
+  --iss=https://mykopano.local \
+  --sign-in-uri=https://mykopano.local/webapp/ \
+  cookie https://mykopano.local/webapp/?load=custom&name=oidcuser "KOPANO_WEBAPP encryption-store-key"
 ```
 
 ### Run with Docker
