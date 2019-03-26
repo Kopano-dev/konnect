@@ -7,6 +7,7 @@ GO      ?= go
 GOFMT   ?= gofmt
 DEP     ?= dep
 GOLINT  ?= golint
+DLV     ?= dlv
 
 GO2XUNIT ?= go2xunit
 
@@ -27,7 +28,19 @@ TIMEOUT  = 30
 
 export GOPATH CGO_ENABLED
 
+# Debug variables
+
+DLV_LISTEN     ?= 127.0.0.1:2345
+DLV_APIVERSION ?= 2
+DLV_ARGS       ?=
+DLV_EXECUTABLE ?= bin/konnectd
+DLV_ATTACH_PID ?= $(shell pgrep -f $(DLV_EXECUTABLE))
+
 # Build
+
+LDFLAGS  ?= -s -w
+ASMFLAGS ?= -trimpath=$(GOPATH)
+GCFLAGS  ?= -trimpath=$(GOPATH)
 
 .PHONY: all
 all: fmt vendor | $(CMDS) identifier-webapp
@@ -40,9 +53,9 @@ $(BASE): ; $(info creating local GOPATH ...)
 $(CMDS): vendor | $(BASE) ; $(info building $@ ...) @
 	cd $(BASE) && $(GO) build \
 		-tags release \
-		-asmflags '-trimpath=$(GOPATH)' \
-		-gcflags '-trimpath=$(GOPATH)' \
-		-ldflags '-s -w -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -extldflags -static' \
+		-asmflags '$(ASMFLAGS)' \
+		-gcflags '$(GCFLAGS)' \
+		-ldflags '$(LDFLAGS) -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -extldflags -static' \
 		-o bin/$(notdir $@) $(PACKAGE)/$@
 
 .PHONY: identifier-webapp
@@ -102,6 +115,12 @@ test-xml: vendor | $(BASE) ; $(info running $(NAME:%=% )tests ...)	@
 	@mkdir -p test
 	cd $(BASE) && 2>&1 CGO_ENABLED=$(CGO_ENABLED) $(GO) test -timeout $(TIMEOUT)s $(ARGS) -v $(TESTPKGS) | tee test/tests.output
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
+
+# Debug
+
+.PHONY: dlv
+dlv: ; $(info attaching Delve debugger ...)
+	$(DLV) attach --api-version=$(DLV_APIVERSION) --listen=$(DLV_LISTEN) $(DLV_ARGS) $(DLV_ATTACH_PID) $(DLV_EXECUTABLE)
 
 # Dep
 
