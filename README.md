@@ -3,6 +3,8 @@
 Kopano Konnect implements an [OpenID provider](http://openid.net/specs/openid-connect-core-1_0.html)
 (OP) with integrated web login and consent forms.
 
+[![Go Report Card](https://goreportcard.com/report/stash.kopano.io/kc/konnect)](https://goreportcard.com/report/stash.kopano.io/kc/konnect)
+
 ## Quickstart
 
 Either download a Konnect binary release from https://download.kopano.io/community/konnect:/
