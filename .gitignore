@@ -1,6 +1,7 @@
 /vendor
 /bin
 /.gopath
+/.vscode
 /test/tests.*
 /golint.txt
 /govet.txt
