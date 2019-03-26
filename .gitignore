@@ -2,6 +2,7 @@
 /bin
 /.gopath
 /.vscode
+/cmd/konnectd/debug
 /test/tests.*
 /golint.txt
 /govet.txt
