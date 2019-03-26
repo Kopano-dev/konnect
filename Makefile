@@ -30,7 +30,6 @@ export GOPATH CGO_ENABLED
 
 # Debug variables
 
-DLV_LISTEN     ?= 127.0.0.1:2345
 DLV_APIVERSION ?= 2
 DLV_ARGS       ?=
 DLV_EXECUTABLE ?= bin/konnectd
@@ -120,7 +119,7 @@ test-xml: vendor | $(BASE) ; $(info running $(NAME:%=% )tests ...)	@
 
 .PHONY: dlv
 dlv: ; $(info attaching Delve debugger ...)
-	$(DLV) attach --api-version=$(DLV_APIVERSION) --listen=$(DLV_LISTEN) $(DLV_ARGS) $(DLV_ATTACH_PID) $(DLV_EXECUTABLE)
+	$(DLV) attach --api-version=$(DLV_APIVERSION) $(DLV_ARGS) $(DLV_ATTACH_PID) $(DLV_EXECUTABLE)
 
 # Dep
 

@@ -287,8 +287,97 @@ cd ~/go/src/stash.kopano.io/kc/konnect
 make test
 ```
 
-### Development
+## Development
 
 As Konnect includes a web application (identifier), a `Caddyfile.dev` file is
 provided which exposes the identifier's web application directly via a
 webpack dev server.
+
+### Debugging
+
+Konnect is built stripped and without debug symbols by default. To build for
+debugging, compile with additional environment variables which override/reset
+build optimization like this
+
+```
+LDFLAGS="" GCFLAGS="all=-N -l" ASMFLAGS="" make cmd/konnectd
+```
+
+The resulting binary is not stripped and sutiable to be debugged with [Delve](https://github.com/go-delve/delve).
+
+To connect Delve to a running Konnect binary you can use the `make dlv` command.
+Control its behavior via `DLV_*` environment variables. See the `Makefile` source
+for details.
+
+```
+DLV_ARGS= make dlv
+```
+
+#### Remote debugging
+
+To use remote debugging, pass additional args like this.
+
+```
+DLV_ARGS=--listen=:2345 make dlv
+```
+
+#### IDE integration for development and debugging
+
+Some editors like VSCode are offering integrated debugger support for Go based
+software via extensions. Konnect can be started directly from such an IDE by
+pointing the IDE to the corresponding `cmd` which should be debugged. This is
+most likely `cmd/konnect`.
+
+Example `.vscode/launch.json` for building and running `konnectd` directly from
+VSCode:
+
+```
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Run Konnect kc",
+			"type": "go",
+			"request": "launch",
+			"mode": "debug",
+			"program": "${workspaceFolder}/cmd/konnectd",
+			"args": [
+				"serve",
+				"--listen=0.0.0.0:8777",
+				"--iss=https://your-issuer:8443",
+				"--log-level=debug",
+				"--identifier-client-path=${workspaceFolder}/identifier/build",
+				"--identifier-registration-conf=${workspaceFolder}/identifier-registration.yaml",
+				"--identifier-scopes-conf=${workspaceFolder}/scopes.yaml",
+				"--signing-method=ES256",
+				"--signing-private-key=${workspaceFolder}/examples/keys/example-1-ecdsa-p-256.pem",
+				"--encryption-secret=${workspaceFolder}/examples/encryption.key",
+				"--validation-keys-path=${workspaceFolder}/examples/keys",
+				"--allow-dynamic-client-registration",
+				"--allow-client-guests",
+				"kc",
+			],
+			"env": {
+				"KOPANO_SERVER_DEFAULT_URI": "http://127.0.0.1:236",
+			},
+		},
+		{
+			"name": "Attach",
+			"type": "go",
+			"request": "launch",
+			"remotePath": "${workspaceFolder}/.gopath/src/stash.kopano.io/kc/konnect",
+			"mode": "remote",
+			"port": 2345,
+			"host": "127.0.0.1",
+			"program": "${workspaceFolder}",
+		},
+	]
+}
+```
+
+The `Run konnect kc` launcher builds and runs konnectd with the debugger
+attached to it directly, while the `Attach` launcher connects to a remote
+debugger.
+
+See https://github.com/go-delve/delve/blob/master/Documentation/EditorIntegration.md
+for further examples and details.
