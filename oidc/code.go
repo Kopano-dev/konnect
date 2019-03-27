@@ -19,6 +19,7 @@ package oidc
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 )
@@ -32,26 +33,38 @@ const (
 // ValidateCodeChallenge implements https://tools.ietf.org/html/rfc7636#section-4.6
 // code challenge verification.
 func ValidateCodeChallenge(challenge string, method string, verifier string) error {
-	var err error
+	if method == "" {
+		// We default to S256CodeChallengeMethod.
+		method = S256CodeChallengeMethod
+	}
+
+	computed, err := MakeCodeChallenge(method, verifier)
+	if err != nil {
+		return err
+	}
+
+	if subtle.ConstantTimeCompare([]byte(challenge), []byte(computed)) != 1 {
+		return errors.New("invalid code challenge")
+	}
+	return nil
+}
+
+// MakeCodeChallenge creates a code challenge using the provided method and
+// verifier for https://tools.ietf.org/html/rfc7636#section-4.6 verification.
+func MakeCodeChallenge(method string, verifier string) (string, error) {
+	if verifier == "" {
+		return "", errors.New("invalid verifier")
+	}
 
 	switch method {
 	case PlainCodeChallengeMethod:
-		if challenge != verifier {
-			err = errors.New("invalid code challenge")
-		}
-	case "":
-		// We default to S256CodeChallengeMethod.
-		fallthrough
+		// Challenge is verifier.
+		return verifier, nil
 	case S256CodeChallengeMethod:
-		// BASE64URL-ENCODE(SHA256(ASCII(code_verifier))) == code_challenge
+		// BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
 		sum := sha256.Sum256([]byte(verifier))
-		if challenge != base64.URLEncoding.EncodeToString(sum[:]) {
-			err = errors.New("invalid code challenge")
-		}
-
-	default:
-		err = errors.New("transform algorithm not supported")
+		return base64.URLEncoding.EncodeToString(sum[:]), nil
 	}
 
-	return err
+	return "", errors.New("transform algorithm not supported")
 }

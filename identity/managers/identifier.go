@@ -105,6 +105,11 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 	var user *identifierUser
 	var err error
 
+	if authenticationErrorID := req.Form.Get("error"); authenticationErrorID != "" {
+		// Incoming with error. Directly abort and return.
+		return nil, ar.NewError(authenticationErrorID, req.Form.Get("error_description"))
+	}
+
 	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, ar.MaxAge, true)
 	if u != nil {
 		// TODO(longsleep): Add other user meta data.

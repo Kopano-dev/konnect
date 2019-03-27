@@ -51,3 +51,28 @@ clients:
 #    redirect_uris:
 #      - http://localhost
 
+# External authority registry.
+authorities:
+#  - id: my-univention
+#    name: Univention
+#    client_id: kopano-konnect
+#    authority_type: oidc
+#    jwks:
+#      keys:
+#        - kty: EC
+#          use: sig
+#          kid: example-key-1
+#          crv: P-256
+#          x: RTZpWoRbjwX1YavmSHVBj6Cy3Yzdkkp6QLvTGB22D0c
+#          y: jeavjwcX0xlDSchFcBMzXSU7wGs2VPpNxWCwmxFvmF0
+#    default: yes
+#    authorization_endpoint: https://my-univention/signin/v1/identifier/_/authorize
+#    response_type: id_token
+#    scopes:
+#      - openid
+#      - profile
+#    identity_claim_name: preferred_username
+#    identity_aliases:
+#      external-user-a: local-user-a
+#      external-user-b: local-user-b
+#    identity_alias_required: true

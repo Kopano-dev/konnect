@@ -126,3 +126,56 @@ func (i *Identifier) getConsentCookieName(cr *ConsentRequest) (string, error) {
 	name := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
 	return name, nil
 }
+
+func (i *Identifier) setOAuth2Cookie(rw http.ResponseWriter, state string, value string) error {
+	name, err := i.getOAuth2CookieName(state)
+	if err != nil {
+		return err
+	}
+
+	cookie := http.Cookie{
+		Name:   name,
+		Value:  value,
+		MaxAge: 60,
+
+		Path:     i.pathPrefix + "/identifier/oauth2/cb",
+		Secure:   true,
+		HttpOnly: true,
+	}
+	http.SetCookie(rw, &cookie)
+
+	return nil
+}
+
+func (i *Identifier) getOAuth2Cookie(req *http.Request, state string) (*http.Cookie, error) {
+	name, err := i.getOAuth2CookieName(state)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.Cookie(name)
+}
+
+func (i *Identifier) removeOAuth2Cookie(rw http.ResponseWriter, req *http.Request, state string) error {
+	name, err := i.getOAuth2CookieName(state)
+	if err != nil {
+		return nil
+	}
+
+	cookie := http.Cookie{
+		Name: name,
+
+		Path:     i.pathPrefix + "/identifier/oauth2/cb",
+		Secure:   true,
+		HttpOnly: true,
+
+		Expires: farPastExpiryTime,
+	}
+	http.SetCookie(rw, &cookie)
+
+	return nil
+}
+
+func (i *Identifier) getOAuth2CookieName(state string) (string, error) {
+	return "__my_state_cookie__", nil
+}

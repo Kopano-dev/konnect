@@ -69,6 +69,7 @@ type bootstrap struct {
 	issuerIdentifierURI        *url.URL
 	identifierClientPath       string
 	identifierRegistrationConf string
+	identifierAuthoritiesConf  string
 	identifierScopesConf       string
 
 	encryptionSecret []byte
@@ -214,6 +215,7 @@ func (bs *bootstrap) initialize() error {
 		if _, errStat := os.Stat(bs.identifierRegistrationConf); errStat != nil {
 			return fmt.Errorf("identifier-registration-conf file not found or unable to access: %v", errStat)
 		}
+		bs.identifierAuthoritiesConf = bs.identifierRegistrationConf
 	}
 
 	bs.identifierScopesConf, _ = cmd.Flags().GetString("identifier-scopes-conf")

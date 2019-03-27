@@ -18,7 +18,6 @@
 package identifier
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -32,13 +31,13 @@ import (
 	"github.com/sirupsen/logrus"
 	jose "gopkg.in/square/go-jose.v2"
 	jwt "gopkg.in/square/go-jose.v2/jwt"
-	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identifier/meta"
 	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/identity/authorities"
 	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/utils"
@@ -56,6 +55,7 @@ var audienceMarker = jwt.Audience([]string{"2019012201"})
 type Identifier struct {
 	Config *Config
 
+	baseURI         *url.URL
 	pathPrefix      string
 	staticFolder    string
 	logonCookieName string
@@ -63,11 +63,13 @@ type Identifier struct {
 	webappIndexHTML []byte
 
 	authorizationEndpointURI *url.URL
+	oauth2CbEndpointURI      *url.URL
 
-	encrypter jose.Encrypter
-	recipient *jose.Recipient
-	backend   backends.Backend
-	clients   *clients.Registry
+	encrypter   jose.Encrypter
+	recipient   *jose.Recipient
+	backend     backends.Backend
+	clients     *clients.Registry
+	authorities *authorities.Registry
 
 	meta *meta.Meta
 
@@ -89,9 +91,13 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		return nil, fmt.Errorf("identifier failed to read client index.html: %v", err)
 	}
 
+	oauth2CbEndpointURI, _ := url.Parse(c.BaseURI.String())
+	oauth2CbEndpointURI.Path = c.PathPrefix + "/identifier/oauth2/cb"
+
 	i := &Identifier{
 		Config: c,
 
+		baseURI:         c.BaseURI,
 		pathPrefix:      c.PathPrefix,
 		staticFolder:    staticFolder,
 		logonCookieName: c.LogonCookieName,
@@ -99,6 +105,7 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		webappIndexHTML: webappIndexHTML,
 
 		authorizationEndpointURI: c.AuthorizationEndpointURI,
+		oauth2CbEndpointURI:      oauth2CbEndpointURI,
 
 		backend: c.Backend,
 
@@ -122,6 +129,7 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 // RegisterManagers registers the provided managers,
 func (i *Identifier) RegisterManagers(mgrs *managers.Managers) error {
 	i.clients = mgrs.Must("clients").(*clients.Registry)
+	i.authorities = mgrs.Must("authorities").(*authorities.Registry)
 
 	if service, ok := i.backend.(managers.ServiceUsesManagers); ok {
 		err := service.RegisterManagers(mgrs)
@@ -140,7 +148,7 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 
 	r.PathPrefix("/static/").Handler(i.staticHandler(http.StripPrefix(i.pathPrefix, http.FileServer(http.Dir(i.staticFolder))), true))
 	r.Handle("/service-worker.js", i.staticHandler(http.StripPrefix(i.pathPrefix, http.FileServer(http.Dir(i.staticFolder))), false))
-	r.Handle("/identifier", i).Methods(http.MethodGet)
+	r.Handle("/identifier", http.HandlerFunc(i.handleIdentifier)).Methods(http.MethodGet)
 	r.Handle("/chooseaccount", i).Methods(http.MethodGet)
 	r.Handle("/consent", i).Methods(http.MethodGet)
 	r.Handle("/welcome", i).Methods(http.MethodGet)
@@ -150,6 +158,8 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/hello", i.secureHandler(http.HandlerFunc(i.handleHello))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/consent", i.secureHandler(http.HandlerFunc(i.handleConsent))).Methods(http.MethodPost)
+	r.Handle("/identifier/oauth2/start", http.HandlerFunc(i.handleOAuth2Start)).Methods(http.MethodGet)
+	r.Handle("/identifier/oauth2/cb", http.HandlerFunc(i.handleOAuth2Cb)).Methods(http.MethodGet)
 
 	if i.backend != nil {
 		i.backend.RunWithContext(ctx)
@@ -159,18 +169,10 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 // ServeHTTP implements the http.Handler interface.
 func (i *Identifier) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	addCommonResponseHeaders(rw.Header())
+	addNoCacheResponseHeaders(rw.Header())
 
-	nonce := rndm.GenerateRandomString(32)
-
-	rw.Header().Set("Cache-Control", "no-cache, max-age=0, public")
-	// FIXME(longsleep): Set a secure CSP. Right now we need `data:` for images
-	// since it is used. Since `data:` URLs possibly could allow xss, a better
-	// way should be found for our early loading inline SVG stuff.
-	rw.Header().Set("Content-Security-Policy", fmt.Sprintf("default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'nonce-%s'; base-uri 'none'; frame-ancestors 'none';", nonce))
-
-	// Inject random nonce.
-	index := bytes.Replace(i.webappIndexHTML, []byte("__CSP_NONCE__"), []byte(nonce), 1)
-	rw.Write(index)
+	// Show default.
+	i.newIdentifierDefault(rw, req)
 }
 
 // SetKey sets the provided key for the accociated identifier.
@@ -479,6 +481,53 @@ func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.Re
 	}
 
 	return &consent, nil
+}
+
+// SetStateToOAuth2StateCookie serializses the provided StateRequest and sets it
+// as cookie on the provided ReponseWriter.
+func (i *Identifier) SetStateToOAuth2StateCookie(ctx context.Context, rw http.ResponseWriter, sd *StateData) error {
+	serialized, err := jwt.Encrypted(i.encrypter).Claims(sd).CompactSerialize()
+	if err != nil {
+		return err
+	}
+
+	return i.setOAuth2Cookie(rw, sd.State, serialized)
+}
+
+// GetStateFromOAuth2StateCookie extracts state information for the provided
+// request.
+func (i *Identifier) GetStateFromOAuth2StateCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request) (*StateData, error) {
+	state := req.Form.Get("state")
+	if state == "" {
+		return nil, nil
+	}
+
+	cookie, err := i.getOAuth2Cookie(req, state)
+	if err != nil {
+		if err == http.ErrNoCookie {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	// Directly remove the cookie again after we used it.
+	i.removeOAuth2Cookie(rw, req, state)
+
+	token, err := jwt.ParseEncrypted(cookie.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	sd := &StateData{}
+	if err = token.Claims(i.recipient.Key, sd); err != nil {
+		return nil, err
+	}
+
+	if sd.State != state {
+		return nil, fmt.Errorf("state mismatch")
+	}
+
+	return sd, nil
 }
 
 // Name returns the active identifiers backend's name.

@@ -71,8 +71,8 @@ func NewRegistry(trustedURI *url.URL, registrationConfFilepath string, logger lo
 	}
 
 	for _, client := range registryData.Clients {
+		validateErr := client.Validate()
 		registerErr := r.Register(client)
-
 		fields := logrus.Fields{
 			"client_id":          client.ID,
 			"with_client_secret": client.Secret != "",
@@ -83,6 +83,10 @@ func NewRegistry(trustedURI *url.URL, registrationConfFilepath string, logger lo
 			"origins":            client.Origins,
 		}
 
+		if validateErr != nil {
+			logger.WithError(validateErr).WithFields(fields).Warnln("skipped registration of invalid client entry")
+			continue
+		}
 		if registerErr != nil {
 			logger.WithError(registerErr).WithFields(fields).Warnln("skipped registration of invalid client")
 			continue

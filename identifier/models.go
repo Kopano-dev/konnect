@@ -119,6 +119,15 @@ type StateResponse struct {
 	State   string `json:"state"`
 }
 
+// StateData contains data bound to a state.
+type StateData struct {
+	State    string `json:"state"`
+	RawQuery string `json:"raw_query,omitempty"`
+
+	ClientID string `json:"client_id"`
+	Ref      string `json:"ref,omitempty"`
+}
+
 // A ConsentRequest is the request data as sent to the consent endpoint.
 type ConsentRequest struct {
 	State          string `json:"state"`

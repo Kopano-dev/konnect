@@ -76,6 +76,12 @@ type ClientRegistration struct {
 	PostLogoutRedirectURIs []string `yaml:"post_logout_redirect_uris,flow" json:"post_logout_redirect_uris,omitempty"`
 }
 
+// Validate validates the associated client registration data and returns error
+// if the data is not valid.
+func (cr *ClientRegistration) Validate() error {
+	return nil
+}
+
 // Secure looks up the a matching key from the accociated client registration
 // and returns its public key part as a secured client.
 func (cr *ClientRegistration) Secure(rawKid interface{}) (*Secured, error) {

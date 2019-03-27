@@ -95,6 +95,7 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	activeIdentifier, err := identifier.NewIdentifier(&identifier.Config{
 		Config: bs.cfg,
 
+		BaseURI:         bs.issuerIdentifierURI,
 		PathPrefix:      "/signin/v1",
 		StaticFolder:    bs.identifierClientPath,
 		LogonCookieName: "__Secure-KKT", // Kopano-Konnect-Token

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Kopano and its licensors
+ * Copyright 2019 Kopano and its licensors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -18,23 +18,19 @@
 package identifier
 
 import (
-	"net/url"
-
-	"stash.kopano.io/kc/konnect/config"
-	"stash.kopano.io/kc/konnect/identifier/backends"
+	"github.com/gorilla/schema"
 )
 
-// Config defines a Server's configuration settings.
-type Config struct {
-	Config *config.Config
+// Create a Decoder instance as a package global, because it caches
+// meta-data about structs, and an instance can be shared safely.
+var urlSchemaDecoder = schema.NewDecoder()
 
-	BaseURI         *url.URL
-	PathPrefix      string
-	StaticFolder    string
-	LogonCookieName string
-	ScopesConf      string
+// DecodeURLSchema decodes request for mdata in to the provided dst url struct.
+func DecodeURLSchema(dst interface{}, src map[string][]string) error {
+	return urlSchemaDecoder.Decode(dst, src)
+}
 
-	AuthorizationEndpointURI *url.URL
-
-	Backend backends.Backend
+func init() {
+	urlSchemaDecoder.SetAliasTag("url")
+	urlSchemaDecoder.IgnoreUnknownKeys(true)
 }
