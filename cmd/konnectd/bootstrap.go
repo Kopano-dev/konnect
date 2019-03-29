@@ -84,6 +84,19 @@ type bootstrap struct {
 	managers *managers.Managers
 }
 
+func init() {
+	// NOTE(longsleep): Ensure to use same salt length as the hash size.
+	// See https://www.ietf.org/mail-archive/web/jose/current/msg02901.html for
+	// reference and https://github.com/dgrijalva/jwt-go/issues/285 for
+	// the issue in upstream jwt-go.
+	for _, alg := range []string{jwt.SigningMethodPS256.Name, jwt.SigningMethodPS384.Name, jwt.SigningMethodPS512.Name} {
+		sm := jwt.GetSigningMethod(alg)
+		if signingMethodRSAPSS, ok := sm.(*jwt.SigningMethodRSAPSS); ok {
+			signingMethodRSAPSS.Options.SaltLength = rsa.PSSSaltLengthEqualsHash
+		}
+	}
+}
+
 // initialize, parsed parameters from commandline with validation and adds them
 // to the accociated bootstrap data.
 func (bs *bootstrap) initialize() error {
@@ -238,13 +251,6 @@ func (bs *bootstrap) initialize() error {
 	bs.signingMethod = jwt.GetSigningMethod(signingMethodString)
 	if bs.signingMethod == nil {
 		return fmt.Errorf("unknown signing method: %s", signingMethodString)
-	}
-	if signingMethodRSAPSS, ok := bs.signingMethod.(*jwt.SigningMethodRSAPSS); ok {
-		// NOTE(longsleep): Ensure to use same salt length the hash size.
-		// See https://www.ietf.org/mail-archive/web/jose/current/msg02901.html for
-		// reference and https://github.com/dgrijalva/jwt-go/issues/285 for
-		// the issue in upstream jwt-go.
-		signingMethodRSAPSS.Options.SaltLength = rsa.PSSSaltLengthEqualsHash
 	}
 
 	signingKeyFns, _ := cmd.Flags().GetStringArray("signing-private-key")
