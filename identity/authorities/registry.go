@@ -71,6 +71,7 @@ func NewRegistry(registrationConfFilepath string, logger logrus.FieldLogger) (*R
 			"with_client_secret": authority.ClientSecret != "",
 			"authority_type":     authority.AuthorityType,
 			"insecure":           authority.Insecure,
+			"default":            authority.Default,
 			"alias_required":     authority.IdentityAliasRequired,
 		}
 
@@ -97,8 +98,12 @@ func NewRegistry(registrationConfFilepath string, logger logrus.FieldLogger) (*R
 	}
 
 	if defaultAuthority != nil {
-		r.defaultID = defaultAuthority.ID
-		logger.WithField("id", defaultAuthority.ID).Infoln("setup default authority")
+		if defaultAuthority.Default {
+			r.defaultID = defaultAuthority.ID
+			logger.WithField("id", defaultAuthority.ID).Infoln("using external default authority")
+		} else {
+			logger.Warnln("non-default authorities are not supported yet")
+		}
 	}
 
 	return r, nil
