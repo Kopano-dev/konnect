@@ -140,7 +140,7 @@ func (r *Registry) Register(client *ClientRegistration) error {
 			parsed, _ := url.Parse(urlString)
 			if parsed.Scheme == "https" {
 				return fmt.Errorf("invalid redirect_uri %v - scheme must not be https when application_type is native", parsed)
-			} else if parsed.Scheme == "http" && parsed.Host != "localhost" {
+			} else if parsed.Scheme == "http" && parsed.Hostname() != "localhost" {
 				return fmt.Errorf("invalid redirect_uri %v = http host must be localhost when application_type is native", parsed)
 			}
 		}
