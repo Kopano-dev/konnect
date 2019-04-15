@@ -132,8 +132,8 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 				case *identity.IsHandledError:
 					// breaks, breaks
 				default:
+					im.logger.WithFields(utils.ErrorAsFields(err)).Errorln("inner authorize request failed")
 				}
-				im.logger.WithFields(utils.ErrorAsFields(err)).Errorln("inner authorize request failed")
 			}
 		}
 		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
