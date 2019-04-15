@@ -22,9 +22,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect"
-	"stash.kopano.io/kc/konnect/oidc"
 )
 
 const (

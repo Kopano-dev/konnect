@@ -24,31 +24,6 @@ import (
 	"stash.kopano.io/kc/konnect/utils"
 )
 
-// OIDC and OAuth2 error codes.
-const (
-	ErrorOAuth2UnsupportedResponseType = "unsupported_response_type"
-	ErrorOAuth2InvalidRequest          = "invalid_request"
-	ErrorOAuth2InvalidToken            = "invalid_token"
-	ErrorOAuth2InsufficientScope       = "insufficient_scope"
-	ErrorOAuth2InvalidGrant            = "invalid_grant"
-	ErrorOAuth2UnsupportedGrantType    = "unsupported_grant_type"
-	ErrorOAuth2AccessDenied            = "access_denied"
-	ErrorOAuth2ServerError             = "server_error"
-	ErrorOAuth2TemporarilyUnavailable  = "temporarily_unavailable"
-
-	ErrorOIDCInteractionRequired = "interaction_required"
-	ErrorOIDCLoginRequired       = "login_required"
-	ErrorOIDCConsentRequired     = "consent_required"
-
-	ErrorOIDCRequestNotSupported      = "request_not_supported"
-	ErrorOIDCInvalidRequestObject     = "invalid_request_object"
-	ErrorOIDCRequestURINotSupported   = "request_uri_not_supported"
-	ErrorOIDCRegistrationNotSupported = "registration_not_supported"
-
-	ErrorOIDCInvalidRedirectURI    = "invalid_redirect_uri"
-	ErrorOIDCInvalidClientMetadata = "invalid_client_metadata"
-)
-
 // OAuth2Error defines a general OAuth2 error with id and decription.
 type OAuth2Error struct {
 	ErrorID          string `json:"error"`
@@ -90,7 +65,7 @@ func WriteWWWAuthenticateError(rw http.ResponseWriter, code int, err error) {
 	rw.WriteHeader(code)
 }
 
-// IsErrorWithCode returns true if the given error is an OAuth2Error error with
+// IsErrorWithID returns true if the given error is an OAuth2Error error with
 // the given ID.
 func IsErrorWithID(err error, id string) bool {
 	if err == nil {

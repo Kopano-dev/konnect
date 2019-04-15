@@ -25,11 +25,12 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
+	"stash.kopano.io/kgol/oidc-go"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/oidc"
+
 	"stash.kopano.io/kc/konnect/oidc/payload"
 )
 
@@ -138,11 +139,11 @@ func (im *DummyIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 	if promptConsent {
 		if ar.Prompts[oidc.PromptNone] == true {
-			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
+			return auth, ar.NewError(oidc.ErrorCodeOIDCInteractionRequired, "consent required")
 		}
 
 		// TODO(longsleep): Implement consent page.
-		return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required, but page not implemented")
+		return auth, ar.NewError(oidc.ErrorCodeOIDCInteractionRequired, "consent required, but page not implemented")
 	}
 
 	auth.AuthorizeScopes(approvedScopes)

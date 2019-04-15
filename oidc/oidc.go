@@ -17,13 +17,6 @@
 
 package oidc
 
-const (
-	// ScopeOpenID is the string value of the base OIDC scope.
-	ScopeOpenID = "openid"
-	// ScopeProfile is the string value of the OIDC profile scope.
-	ScopeProfile = "profile"
-	// ScopeEmail is the string value of the OIDC email scope.
-	ScopeEmail = "email"
-	// ScopeOfflineAccess is the string value of the OIDC offline_access scope.
-	ScopeOfflineAccess = "offline_access"
-)
+// KonnectIDTokenSubjectSaltV1 is the salt value used when hasing Subjects in
+// ID tokens created by Konnect.
+const KonnectIDTokenSubjectSaltV1 = "konnect-IDToken-v1"

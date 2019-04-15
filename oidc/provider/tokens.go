@@ -23,11 +23,12 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"stash.kopano.io/kgol/oidc-go"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -85,7 +86,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 		return "", err
 	}
 
-	idTokenClaims := &oidc.IDTokenClaims{
+	idTokenClaims := &konnectoidc.IDTokenClaims{
 		Nonce: ar.Nonce,
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    p.issuerIdentifier,
@@ -98,7 +99,7 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 
 	if session != nil {
 		// Include session data in ID token.
-		idTokenClaims.SessionClaims = &oidc.SessionClaims{
+		idTokenClaims.SessionClaims = &konnectoidc.SessionClaims{
 			SessionID: session.ID,
 		}
 	}
@@ -159,10 +160,10 @@ func (p *Provider) makeIDToken(ctx context.Context, ar *payload.AuthenticationRe
 		}
 
 		if (!withAccessToken && ar.Scopes[oidc.ScopeProfile]) || requestedScopesMap[oidc.ScopeProfile] {
-			idTokenClaims.ProfileClaims = oidc.NewProfileClaims(freshAuth.Claims(oidc.ScopeProfile)[0])
+			idTokenClaims.ProfileClaims = konnectoidc.NewProfileClaims(freshAuth.Claims(oidc.ScopeProfile)[0])
 		}
 		if (!withAccessToken && ar.Scopes[oidc.ScopeEmail]) || requestedScopesMap[oidc.ScopeEmail] {
-			idTokenClaims.EmailClaims = oidc.NewEmailClaims(freshAuth.Claims(oidc.ScopeEmail)[0])
+			idTokenClaims.EmailClaims = konnectoidc.NewEmailClaims(freshAuth.Claims(oidc.ScopeEmail)[0])
 		}
 
 		auth = freshAuth

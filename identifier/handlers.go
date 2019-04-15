@@ -30,11 +30,13 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect/identifier/meta"
 	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity/authorities"
-	"stash.kopano.io/kc/konnect/oidc"
+
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -557,25 +559,27 @@ func (i *Identifier) handleOAuth2Start(rw http.ResponseWriter, req *http.Request
 		return
 	}
 
-	var authority *authorities.AuthorityRegistration
+	var authority *authorities.Details
 	if authorityID := req.Form.Get("authority_id"); authorityID != "" {
-		authority, _ = i.authorities.Get(req.Context(), authorityID)
+		authority, _ = i.authorities.Lookup(req.Context(), authorityID)
 	}
 
 	i.newOAuth2Start(rw, req, authority)
 }
 
-func (i *Identifier) newOAuth2Start(rw http.ResponseWriter, req *http.Request, authority *authorities.AuthorityRegistration) {
+func (i *Identifier) newOAuth2Start(rw http.ResponseWriter, req *http.Request, authority *authorities.Details) {
 	var err error
 
 	if authority == nil {
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2TemporarilyUnavailable, "no authority")
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2TemporarilyUnavailable, "no authority")
+	} else if !authority.IsReady() {
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2TemporarilyUnavailable, "authority not ready")
 	}
 
 	switch typedErr := err.(type) {
 	case nil:
 		// breaks
-	case *oidc.OAuth2Error:
+	case *konnectoidc.OAuth2Error:
 		// Redirect back, with error.
 		i.logger.WithFields(utils.ErrorAsFields(err)).Debugln("oauth2 start error")
 		// NOTE(longsleep): Pass along error ID but not the description to avoid
@@ -679,7 +683,7 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 	var sd *StateData
 	var user *IdentifiedUser
 	var claims jwt.MapClaims
-	var authority *authorities.AuthorityRegistration
+	var authority *authorities.Details
 
 	for {
 		sd, err = i.GetStateFromOAuth2StateCookie(req.Context(), rw, req)
@@ -693,16 +697,16 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Load authority with client_id in state.
-		authority, _ = i.authorities.Get(req.Context(), sd.Ref)
+		authority, _ = i.authorities.Lookup(req.Context(), sd.Ref)
 		if authority == nil {
 			i.logger.WithField("client_id", sd.ClientID).Debugln("identifier failed to find authority in oauth2 cb")
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "unknown client_id")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "unknown client_id")
 			break
 		}
 
 		if authenticationErrorID := req.Form.Get("error"); authenticationErrorID != "" {
 			// Incoming error case.
-			err = oidc.NewOAuth2Error(authenticationErrorID, req.Form.Get("error_description"))
+			err = konnectoidc.NewOAuth2Error(authenticationErrorID, req.Form.Get("error_description"))
 			break
 		}
 
@@ -724,7 +728,7 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 					err = nil
 				} else {
 					i.logger.WithError(idTokenParseErr).Debugln("identifier failed to validate oauth2 cb id token")
-					err = oidc.NewOAuth2Error(oidc.ErrorOAuth2ServerError, "authority response validation failed")
+					err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2ServerError, "authority response validation failed")
 					break
 				}
 			}
@@ -738,7 +742,7 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 			un, claimsErr := authority.IdentityClaimValue(claims)
 			if claimsErr != nil {
 				i.logger.WithError(claimsErr).Debugln("identifier failed to get username from oauth2 cb id token claims")
-				err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InsufficientScope, "identity claim not found")
+				err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InsufficientScope, "identity claim not found")
 				break
 			}
 
@@ -752,11 +756,11 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			i.logger.WithError(err).WithField("username", *username).Debugln("identifier failed to resolve oauth2 cb user with backend")
 			// TODO(longsleep): Break on validation error.
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2AccessDenied, "failed to resolve user")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, "failed to resolve user")
 			break
 		}
 		if user == nil || user.Subject() == "" {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2AccessDenied, "no such user")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, "no such user")
 			break
 		}
 
@@ -795,7 +799,7 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 	switch typedErr := err.(type) {
 	case nil:
 		// breaks
-	case *oidc.OAuth2Error:
+	case *konnectoidc.OAuth2Error:
 		// Pass along OAuth2 error.
 		i.logger.WithFields(utils.ErrorAsFields(err)).Debugln("oauth2 cb error")
 		// NOTE(longsleep): Pass along error ID but not the description to avoid

@@ -20,7 +20,7 @@ package payload
 import (
 	"encoding/json"
 
-	"stash.kopano.io/kc/konnect/oidc"
+	"stash.kopano.io/kgol/oidc-go"
 )
 
 var scopedClaims = map[string]string{

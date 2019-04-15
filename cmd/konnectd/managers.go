@@ -52,14 +52,14 @@ func newManagers(ctx context.Context, bs *bootstrap) (*managers.Managers, error)
 	mgrs.Set("code", code)
 
 	// Identifier client registry manager.
-	clients, err := identityClients.NewRegistry(bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
+	clients, err := identityClients.NewRegistry(ctx, bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client registry: %v", err)
 	}
 	mgrs.Set("clients", clients)
 
 	// Identifier authorities registry manager.
-	authorities, err := identityAuthorities.NewRegistry(bs.identifierAuthoritiesConf, logger)
+	authorities, err := identityAuthorities.NewRegistry(ctx, bs.identifierAuthoritiesConf, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authorities registry: %v", err)
 	}

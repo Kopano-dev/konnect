@@ -28,7 +28,8 @@ import (
 
 	"github.com/orcaman/concurrent-map"
 	"github.com/sirupsen/logrus"
-	kcc "stash.kopano.io/kgol/kcc-go"
+	"stash.kopano.io/kgol/kcc-go"
+	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/config"
@@ -36,7 +37,6 @@ import (
 	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/managers"
-	"stash.kopano.io/kc/konnect/oidc"
 )
 
 const (

@@ -25,7 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kgol/oidc-go"
 )
 
 func TestWellKnownHandler(t *testing.T) {
@@ -60,7 +60,7 @@ func TestWellKnownHandler(t *testing.T) {
 		t.Errorf("Content-Type response header was incorrect, got %s, want application/json; encoding=utf-8", rr.Header().Get("Content-Type"))
 	}
 
-	wellKnown := &payload.WellKnown{}
+	wellKnown := &oidc.WellKnown{}
 	if err := json.Unmarshal(body, wellKnown); err != nil {
 		t.Fatal(err)
 	}

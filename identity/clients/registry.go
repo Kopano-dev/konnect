@@ -29,8 +29,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-
-	"stash.kopano.io/kc/konnect/oidc"
+	"stash.kopano.io/kgol/oidc-go"
 )
 
 // Registry implements the registry for registered clients.
@@ -47,7 +46,7 @@ type Registry struct {
 }
 
 // NewRegistry created a new client Registry with the provided parameters.
-func NewRegistry(trustedURI *url.URL, registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
+func NewRegistry(ctx context.Context, trustedURI *url.URL, registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
 	registryData := &RegistryData{}
 
 	if registrationConfFilepath != "" {

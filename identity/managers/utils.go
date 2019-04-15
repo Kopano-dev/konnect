@@ -22,7 +22,7 @@ import (
 
 	"golang.org/x/crypto/blake2b"
 
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 )
 
 func setupSupportedScopes(scopes []string, extra []string, override []string) []string {
@@ -35,7 +35,7 @@ func setupSupportedScopes(scopes []string, extra []string, override []string) []
 
 func getPublicSubject(sub []byte, extra []byte) (string, error) {
 	// Hash the raw subject with a konnect specific salt.
-	hasher, err := blake2b.New512([]byte(oidc.KonnectIDTokenSubjectSaltV1))
+	hasher, err := blake2b.New512([]byte(konnectoidc.KonnectIDTokenSubjectSaltV1))
 	if err != nil {
 		return "", err
 	}

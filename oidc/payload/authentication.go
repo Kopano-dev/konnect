@@ -26,8 +26,9 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"stash.kopano.io/kgol/oidc-go"
 
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 )
 
 // AuthenticationRequest holds the incoming parameters and request data for
@@ -35,7 +36,7 @@ import (
 // http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest and
 // http://openid.net/specs/openid-connect-core-1_0.html#ImplicitAuthRequest
 type AuthenticationRequest struct {
-	providerMetadata *WellKnown
+	providerMetadata *oidc.WellKnown
 
 	RawScope        string         `schema:"scope"`
 	Claims          *ClaimsRequest `schema:"claims"`
@@ -72,13 +73,13 @@ type AuthenticationRequest struct {
 
 // DecodeAuthenticationRequest returns a AuthenticationRequest holding the
 // provided requests form data.
-func DecodeAuthenticationRequest(req *http.Request, providerMetadata *WellKnown, keyFunc jwt.Keyfunc) (*AuthenticationRequest, error) {
+func DecodeAuthenticationRequest(req *http.Request, providerMetadata *oidc.WellKnown, keyFunc jwt.Keyfunc) (*AuthenticationRequest, error) {
 	return NewAuthenticationRequest(req.Form, providerMetadata, keyFunc)
 }
 
 // NewAuthenticationRequest returns a AuthenticationRequest holding the
 // provided url values.
-func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, keyFunc jwt.Keyfunc) (*AuthenticationRequest, error) {
+func NewAuthenticationRequest(values url.Values, providerMetadata *oidc.WellKnown, keyFunc jwt.Keyfunc) (*AuthenticationRequest, error) {
 	ar := &AuthenticationRequest{
 		providerMetadata: providerMetadata,
 
@@ -109,7 +110,7 @@ func NewAuthenticationRequest(values url.Values, providerMetadata *WellKnown, ke
 			return nil, fmt.Errorf("Not validated")
 		})
 		if err != nil {
-			return nil, ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, err.Error())
+			return nil, ar.NewBadRequest(oidc.ErrorCodeOIDCInvalidRequestObject, err.Error())
 		}
 
 		if claims, ok := request.Claims.(*RequestObjectClaims); ok {
@@ -194,7 +195,7 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, me
 	// Basic consistency validation following spec at
 	// https://openid.net/specs/openid-connect-core-1_0.html#SignedRequestObject
 	if ok := ar.Scopes[oidc.ScopeOpenID]; !ok {
-		return ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "openid scope required when using the request parameter")
+		return ar.NewBadRequest(oidc.ErrorCodeOIDCInvalidRequestObject, "openid scope required when using the request parameter")
 	}
 	if roc.RawScope != "" {
 		ar.Scopes = make(map[string]bool)
@@ -206,12 +207,12 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, me
 	}
 	if roc.RawResponseType != "" {
 		if roc.RawResponseType != ar.RawResponseType {
-			return ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "request object response_type mismatch")
+			return ar.NewBadRequest(oidc.ErrorCodeOIDCInvalidRequestObject, "request object response_type mismatch")
 		}
 	}
 	if roc.ClientID != "" {
 		if roc.ClientID != ar.ClientID {
-			return ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "request object client_id mismatch")
+			return ar.NewBadRequest(oidc.ErrorCodeOIDCInvalidRequestObject, "request object client_id mismatch")
 		}
 	}
 
@@ -265,7 +266,7 @@ func (ar *AuthenticationRequest) ApplyRequestObject(roc *RequestObjectClaims, me
 // Validate validates the request data of the accociated authentication request.
 func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 	if _, ok := ar.Scopes[oidc.ScopeOpenID]; !ok {
-		return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "missing openid scope in request")
+		return ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "missing openid scope in request")
 	}
 
 	switch ar.RawResponseType {
@@ -287,13 +288,13 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 	case oidc.ResponseTypeIDTokenToken:
 		// Implicit flow with access token.
 		if ar.Nonce == "" {
-			return ar.NewError(oidc.ErrorOAuth2InvalidRequest, "nonce is required for implicit flow")
+			return ar.NewError(oidc.ErrorCodeOAuth2InvalidRequest, "nonce is required for implicit flow")
 		}
 	case oidc.ResponseTypeToken:
 		// OAuth2 flow implicit grant.
 		// breaks
 	default:
-		return ar.NewError(oidc.ErrorOAuth2UnsupportedResponseType, "")
+		return ar.NewError(oidc.ErrorCodeOAuth2UnsupportedResponseType, "")
 	}
 
 	// Additional checks for flows with code.
@@ -307,31 +308,31 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 			// Plain is discouraged, and thus not supported.
 			fallthrough
 		default:
-			return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "transform algorithm not supported")
+			return ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "transform algorithm not supported")
 		}
 	}
 
 	if _, hasNonePrompt := ar.Prompts[oidc.PromptNone]; hasNonePrompt {
 		if len(ar.Prompts) > 1 {
 			// Cannot have other prompts if none is requested.
-			return ar.NewError(oidc.ErrorOAuth2InvalidRequest, "cannot request other prompts together with none")
+			return ar.NewError(oidc.ErrorCodeOAuth2InvalidRequest, "cannot request other prompts together with none")
 		}
 	}
 
 	if ar.ClientID == "" {
-		return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "missing client_id")
+		return ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "missing client_id")
 	}
 	// TODO(longsleep): implement client_id white list.
 
 	if ar.RedirectURI == nil || ar.RedirectURI.Host == "" || ar.RedirectURI.Scheme == "" {
-		return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "invalid or missing redirect_uri")
+		return ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "invalid or missing redirect_uri")
 	}
 
 	if ar.RawIDTokenHint != "" {
 		parser := &jwt.Parser{
 			SkipClaimsValidation: true,
 		}
-		idTokenHint, err := parser.ParseWithClaims(ar.RawIDTokenHint, &oidc.IDTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		idTokenHint, err := parser.ParseWithClaims(ar.RawIDTokenHint, &konnectoidc.IDTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if keyFunc != nil {
 				return keyFunc(token)
 			}
@@ -339,7 +340,7 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 			return nil, fmt.Errorf("Not validated")
 		})
 		if err != nil {
-			return ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, err.Error())
+			return ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		}
 		ar.IDTokenHint = idTokenHint
 	}
@@ -356,10 +357,10 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 	}
 
 	if ar.RawRequestURI != "" {
-		return ar.NewError(oidc.ErrorOIDCRequestURINotSupported, "")
+		return ar.NewError(oidc.ErrorCodeOIDCRequestURINotSupported, "")
 	}
 	if ar.RawRegistration != "" {
-		return ar.NewError(oidc.ErrorOIDCRegistrationNotSupported, "")
+		return ar.NewError(oidc.ErrorCodeOIDCRegistrationNotSupported, "")
 	}
 
 	return nil
@@ -369,8 +370,8 @@ func (ar *AuthenticationRequest) Validate(keyFunc jwt.Keyfunc) error {
 func (ar *AuthenticationRequest) Verify(userID string) error {
 	if ar.IDTokenHint != nil {
 		// Compare userID with IDTokenHint.
-		if userID != ar.IDTokenHint.Claims.(*oidc.IDTokenClaims).Subject {
-			return ar.NewError(oidc.ErrorOIDCLoginRequired, "userid mismatch")
+		if userID != ar.IDTokenHint.Claims.(*konnectoidc.IDTokenClaims).Subject {
+			return ar.NewError(oidc.ErrorCodeOIDCLoginRequired, "userid mismatch")
 		}
 	}
 

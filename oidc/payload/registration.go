@@ -26,9 +26,10 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/mendsley/gojwk"
+	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect/identity/clients"
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 )
 
 // ClientRegistrationRequest holds the incoming request data for the OpenID
@@ -91,7 +92,7 @@ func DecodeClientRegistrationRequest(req *http.Request) (*ClientRegistrationRequ
 // request and fills in default data where required.
 func (crr *ClientRegistrationRequest) Validate() error {
 	if len(crr.RedirectURIs) == 0 {
-		return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidRedirectURI, "redirect_uris required")
+		return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "redirect_uris required")
 	}
 
 	// Validate and filter response_type.
@@ -153,7 +154,7 @@ func (crr *ClientRegistrationRequest) Validate() error {
 	}
 	for grantType := range requiredGrantTypes {
 		if ok := registeredGrantTypes[grantType]; !ok {
-			return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "grant_types conflict with response_types")
+			return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "grant_types conflict with response_types")
 		}
 	}
 
@@ -168,14 +169,14 @@ func (crr *ClientRegistrationRequest) Validate() error {
 		for _, uriString := range crr.RedirectURIs {
 			uri, err := url.Parse(uriString)
 			if err != nil {
-				return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidRedirectURI, "failed to parse redirect_uris")
+				return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "failed to parse redirect_uris")
 			}
 			if ok := registeredGrantTypes[oidc.GrantTypeImplicit]; ok {
 				if uri.Scheme != "https" {
-					return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidRedirectURI, "implicit web clients must use https redirect_uris")
+					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "implicit web clients must use https redirect_uris")
 				}
 				if uri.Hostname() == "localhost" {
-					return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidRedirectURI, "implicit web clients must not use localhost redirect_uris")
+					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "implicit web clients must not use localhost redirect_uris")
 				}
 			}
 		}
@@ -186,17 +187,17 @@ func (crr *ClientRegistrationRequest) Validate() error {
 		for _, uriString := range crr.RedirectURIs {
 			uri, err := url.Parse(uriString)
 			if err != nil {
-				return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidRedirectURI, "failed to parse redirect_uris")
+				return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "failed to parse redirect_uris")
 			}
 			if uri.Scheme == "http" {
 				if uri.Hostname() != "localhost" {
-					return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidRedirectURI, "native clients must only use localhost redirect_uris with http")
+					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "native clients must only use localhost redirect_uris with http")
 				}
 			}
 		}
 
 	default:
-		return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "unknown application_type")
+		return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "unknown application_type")
 	}
 
 	if crr.RawIDTokenSignedResponseAlg == "" {
@@ -205,19 +206,19 @@ func (crr *ClientRegistrationRequest) Validate() error {
 	if crr.RawIDTokenSignedResponseAlg != "" {
 		alg := jwt.GetSigningMethod(crr.RawIDTokenSignedResponseAlg)
 		if alg == nil {
-			return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "unknown id_token_signed_response_alg")
+			return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "unknown id_token_signed_response_alg")
 		}
 	}
 	if crr.RawUserInfoSignedResponseAlg != "" {
 		alg := jwt.GetSigningMethod(crr.RawUserInfoSignedResponseAlg)
 		if alg == nil {
-			return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "unknown userinfo_signed_response_alg")
+			return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "unknown userinfo_signed_response_alg")
 		}
 	}
 	if crr.RawRequestObjectSigningAlg != "" {
 		alg := jwt.GetSigningMethod(crr.RawRequestObjectSigningAlg)
 		if alg == nil {
-			return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "unknown request_object_signing_alg")
+			return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "unknown request_object_signing_alg")
 		}
 	}
 	if crr.RawTokenEndpointAuthMethod == "" {
@@ -230,20 +231,20 @@ func (crr *ClientRegistrationRequest) Validate() error {
 		case oidc.AuthMethodNone:
 			// breaks
 		default:
-			return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "unsupported token_endpoint_auth_method")
+			return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "unsupported token_endpoint_auth_method")
 		}
 	}
 	if crr.RawTokenEndpointAuthSigningAlg != "" {
 		alg := jwt.GetSigningMethod(crr.RawTokenEndpointAuthSigningAlg)
 		if alg == nil {
-			return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "unknown token_endpoint_auth_signing_alg")
+			return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "unknown token_endpoint_auth_signing_alg")
 		}
 	}
 
 	for _, uriString := range crr.PostLogoutRedirectURIs {
 		_, err := url.Parse(uriString)
 		if err != nil {
-			return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "failed to parse post_logout_redirect_uris")
+			return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "failed to parse post_logout_redirect_uris")
 		}
 	}
 
@@ -257,14 +258,14 @@ func (crr *ClientRegistrationRequest) Validate() error {
 				switch key.Use {
 				case "":
 					if enc {
-						return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "jwks includes enc key and unset use key")
+						return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "jwks includes enc key and unset use key")
 					}
 					empty = true
 					key.Use = "sig"
 				case "enc":
 					enc = true
 					if empty {
-						return oidc.NewOAuth2Error(oidc.ErrorOIDCInvalidClientMetadata, "jwks includes enc key and unset use key")
+						return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidClientMetadata, "jwks includes enc key and unset use key")
 					}
 				}
 			}

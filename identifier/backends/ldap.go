@@ -28,16 +28,16 @@ import (
 	"strings"
 	"time"
 
-	"stash.kopano.io/kc/konnect"
-	"stash.kopano.io/kc/konnect/config"
-	ldapDefinitions "stash.kopano.io/kc/konnect/identifier/backends/ldap"
-	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
-	"stash.kopano.io/kc/konnect/oidc"
-
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	"gopkg.in/ldap.v2"
+	"stash.kopano.io/kgol/oidc-go"
+
+	"stash.kopano.io/kc/konnect"
+	"stash.kopano.io/kc/konnect/config"
+	ldapDefinitions "stash.kopano.io/kc/konnect/identifier/backends/ldap"
+	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 )
 
 const ldapIdentifierBackendName = "identifier-ldap"

@@ -31,15 +31,15 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/identity/clients"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
 	"stash.kopano.io/kc/konnect/managers"
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
-	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -48,7 +48,7 @@ type Provider struct {
 	Config *Config
 
 	issuerIdentifier string
-	metadata         *payload.WellKnown
+	metadata         *oidc.WellKnown
 
 	wellKnownPath          string
 	jwksPath               string
@@ -325,7 +325,7 @@ func (p *Provider) getValidationKey(id string) (crypto.PublicKey, bool) {
 // this once all other settings at the provider have been done.
 func (p *Provider) InitializeMetadata() error {
 	// Create well-known document.
-	p.metadata = &payload.WellKnown{
+	p.metadata = &oidc.WellKnown{
 		Issuer:                p.issuerIdentifier,
 		AuthorizationEndpoint: p.makeIssURL(p.authorizationPath),
 		TokenEndpoint:         p.makeIssURL(p.tokenPath),
@@ -457,7 +457,7 @@ func (p *Provider) GetAccessTokenClaimsFromRequest(req *http.Request) (*konnect.
 	switch auth[0] {
 	case oidc.TokenTypeBearer:
 		if len(auth) != 2 {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Invalid Bearer authorization header format")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "Invalid Bearer authorization header format")
 			break
 		}
 		claims = &konnect.AccessTokenClaims{}
@@ -467,11 +467,11 @@ func (p *Provider) GetAccessTokenClaimsFromRequest(req *http.Request) (*konnect.
 		})
 		if err != nil {
 			// Wrap as OAuth2 error.
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error())
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidToken, err.Error())
 		}
 
 	default:
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "Bearer authorization required")
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "Bearer authorization required")
 	}
 
 	return claims, err

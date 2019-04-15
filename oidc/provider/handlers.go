@@ -26,12 +26,13 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	jwk "github.com/mendsley/gojwk"
 	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kgol/oidc-go"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/identity/clients"
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
@@ -96,7 +97,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 	err = req.ParseForm()
 	if err != nil {
 		p.logger.WithError(err).Errorln("authorize request invalid form data")
-		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		return
 	}
 
@@ -142,7 +143,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("authorize request invalid request data")
-		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		return
 	}
 	err = ar.Validate(func(token *jwt.Token) (interface{}, error) {
@@ -172,7 +173,7 @@ func (p *Provider) AuthorizeHandler(rw http.ResponseWriter, req *http.Request) {
 		// https://openid.net/specs/openid-connect-core-1_0.html#ImplicitValidation
 		if subRequest, ok := ar.Claims.IDToken.Get(oidc.SubjectIdentifierClaim); ok {
 			if !subRequest.Match(auth.Subject()) {
-				err = ar.NewError(oidc.ErrorOAuth2AccessDenied, "sub claim request mismatch")
+				err = ar.NewError(oidc.ErrorCodeOAuth2AccessDenied, "sub claim request mismatch")
 				goto done
 			}
 		}
@@ -265,8 +266,8 @@ done:
 			p.LoginRequiredPage(rw, req, err.(*identity.LoginRequiredError).SignInURI())
 		case *identity.IsHandledError:
 			// do nothing
-		case *oidc.OAuth2Error:
-			err = ar.NewError(err.Error(), err.(*oidc.OAuth2Error).Description())
+		case *konnectoidc.OAuth2Error:
+			err = ar.NewError(err.Error(), err.(*konnectoidc.OAuth2Error).Description())
 			p.Found(rw, ar.RedirectURI, err, ar.UseFragment)
 		default:
 			p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("authorize request failed")
@@ -331,7 +332,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	case http.MethodPost:
 		// breaks
 	default:
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "request must be sent with POST")
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "request must be sent with POST")
 		goto done
 	}
 
@@ -339,12 +340,12 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	// http://openid.net/specs/openid-connect-core-1_0.html#TokenRequestValidation
 	err = req.ParseForm()
 	if err != nil {
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		goto done
 	}
 	tr, err = payload.DecodeTokenRequest(req, p.metadata)
 	if err != nil {
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		goto done
 	}
 
@@ -359,7 +360,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	// Additional validations according to https://tools.ietf.org/html/rfc6749#section-4.1.3
 	clientDetails, err = p.clients.Lookup(req.Context(), tr.ClientID, tr.ClientSecret, tr.RedirectURI, "", false)
 	if err != nil {
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2AccessDenied, err.Error())
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, err.Error())
 		goto done
 	}
 	if clientDetails != nil && clientDetails.Registration != nil {
@@ -370,7 +371,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 	case oidc.GrantTypeAuthorizationCode:
 		codeRecord, codeRecordFound := p.codeManager.Pop(tr.Code)
 		if !codeRecordFound {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "code not found")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidGrant, "code not found")
 			goto done
 		}
 
@@ -382,27 +383,27 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 
 		// Ensure that the authorization code was issued to the client id.
 		if ar.ClientID != tr.ClientID {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "client_id mismatch")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidGrant, "client_id mismatch")
 			goto done
 		}
 
 		// Ensure that the "redirect_uri" parameter is a match.
 		if ar.RawRedirectURI != tr.RawRedirectURI {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "redirect_uri mismatch")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidGrant, "redirect_uri mismatch")
 			goto done
 		}
 
 		// Validate code challenge according to https://tools.ietf.org/html/rfc7636#section-4.6
 		if tr.CodeVerifier != "" || ar.CodeChallenge != "" {
 			if codeVerifierErr := oidc.ValidateCodeChallenge(ar.CodeChallenge, ar.CodeChallengeMethod, tr.CodeVerifier); codeVerifierErr != nil {
-				err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, codeVerifierErr.Error())
+				err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidGrant, codeVerifierErr.Error())
 				goto done
 			}
 		}
 
 	case oidc.GrantTypeRefreshToken:
 		if tr.RefreshToken == nil {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "missing refresh_token")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidGrant, "missing refresh_token")
 			goto done
 		}
 
@@ -411,7 +412,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 
 		// Ensure that the authorization code was issued to the client id.
 		if claims.Audience != tr.ClientID {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "client_id mismatch")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidGrant, "client_id mismatch")
 			goto done
 		}
 
@@ -419,7 +420,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 
 		userID, sessionRef := p.getUserIDAndSessionRefFromClaims(&claims.StandardClaims, claims.IdentityClaims)
 		if userID == "" {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, "missing data in kc.identity claim")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidToken, "missing data in kc.identity claim")
 			goto done
 		}
 
@@ -449,7 +450,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 			authorizedScopes = make(map[string]bool)
 			for scope := range tr.Scopes {
 				if !approvedScopes[scope] {
-					err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InsufficientScope, "insufficient scope")
+					err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InsufficientScope, "insufficient scope")
 					goto done
 				} else {
 					authorizedScopes[scope] = true
@@ -463,7 +464,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		// Load user record from identitymanager, without any scopes or claims.
 		auth, found, err = currentIdentityManager.Fetch(ctx, userID, sessionRef, nil, nil)
 		if !found {
-			err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidGrant, "user not found")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidGrant, "user not found")
 			goto done
 		}
 		if err != nil {
@@ -480,7 +481,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 
 	default:
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2UnsupportedGrantType, "grant_type value not implemented")
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2UnsupportedGrantType, "grant_type value not implemented")
 		goto done
 	}
 
@@ -512,7 +513,7 @@ func (p *Provider) TokenHandler(rw http.ResponseWriter, req *http.Request) {
 done:
 	if err != nil {
 		switch err.(type) {
-		case *oidc.OAuth2Error:
+		case *konnectoidc.OAuth2Error:
 			err = utils.WriteJSON(rw, http.StatusBadRequest, err, "")
 			if err != nil {
 				p.logger.WithError(err).Errorln("token request failed writing response")
@@ -570,7 +571,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 	claims, err := p.GetAccessTokenClaimsFromRequest(req)
 	if err != nil {
 		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request unauthorized")
-		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, err)
+		konnectoidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, err)
 		return
 	}
 
@@ -610,7 +611,7 @@ func (p *Provider) UserInfoHandler(rw http.ResponseWriter, req *http.Request) {
 done:
 	if err != nil {
 		p.logger.WithFields(utils.ErrorAsFields(err)).Debugln("userinfo request invalid token")
-		oidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidToken, err.Error()))
+		konnectoidc.WriteWWWAuthenticateError(rw, http.StatusUnauthorized, konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidToken, err.Error()))
 		return
 	}
 
@@ -623,11 +624,11 @@ done:
 
 	response := &konnect.UserInfoResponse{
 		UserInfoResponse: &payload.UserInfoResponse{
-			UserInfoClaims: oidc.UserInfoClaims{
+			UserInfoClaims: konnectoidc.UserInfoClaims{
 				Subject: publicSubject,
 			},
-			ProfileClaims: oidc.NewProfileClaims(auth.Claims(oidc.ScopeProfile)[0]),
-			EmailClaims:   oidc.NewEmailClaims(auth.Claims(oidc.ScopeEmail)[0]),
+			ProfileClaims: konnectoidc.NewProfileClaims(auth.Claims(oidc.ScopeProfile)[0]),
+			EmailClaims:   konnectoidc.NewEmailClaims(auth.Claims(oidc.ScopeEmail)[0]),
 		},
 	}
 
@@ -736,14 +737,14 @@ func (p *Provider) EndSessionHandler(rw http.ResponseWriter, req *http.Request) 
 	err = req.ParseForm()
 	if err != nil {
 		p.logger.WithError(err).Errorln("endsession request invalid form data")
-		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		return
 	}
 
 	esr, err := payload.DecodeEndSessionRequest(req, p.metadata)
 	if err != nil {
 		p.logger.WithError(err).Errorln("endsession request invalid request data")
-		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		return
 	}
 	err = esr.Validate(func(token *jwt.Token) (interface{}, error) {
@@ -780,8 +781,8 @@ done:
 			p.Found(rw, err.(*identity.RedirectError).RedirectURI(), nil, false)
 		case *identity.IsHandledError:
 			// do nothing
-		case *oidc.OAuth2Error:
-			err = esr.NewError(err.Error(), err.(*oidc.OAuth2Error).Description())
+		case *konnectoidc.OAuth2Error:
+			err = esr.NewError(err.Error(), err.(*konnectoidc.OAuth2Error).Description())
 			if esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
 				p.ErrorPage(rw, http.StatusForbidden, err.Error(), "oauth2 error")
 			} else {
@@ -843,7 +844,7 @@ func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request
 	if err != nil {
 		p.logger.WithError(err).Errorln("client registration request failed to decode request data")
 
-		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorOAuth2InvalidRequest, err.Error())
+		p.ErrorPage(rw, http.StatusBadRequest, oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		return
 	}
 
@@ -854,7 +855,7 @@ func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request
 	case http.MethodPost:
 		// breaks
 	default:
-		err = oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, "request must be sent with POST")
+		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "request must be sent with POST")
 		goto done
 	}
 
@@ -878,7 +879,7 @@ func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request
 done:
 	if err != nil {
 		switch err.(type) {
-		case *oidc.OAuth2Error:
+		case *konnectoidc.OAuth2Error:
 			err = utils.WriteJSON(rw, http.StatusBadRequest, err, "")
 			if err != nil {
 				p.logger.WithError(err).Errorln("client registration request failed writing response")

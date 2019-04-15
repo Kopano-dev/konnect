@@ -26,13 +26,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kgol/oidc-go"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/identifier"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/managers"
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -136,7 +137,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 				}
 			}
 		}
-		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
+		err = ar.NewError(oidc.ErrorCodeOIDCLoginRequired, "IdentifierIdentityManager: not signed in")
 	}
 
 	// Check prompt value.
@@ -149,12 +150,12 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 	case ar.Prompts[oidc.PromptLogin] == true:
 		if err == nil {
 			// Enforce to show sign-in, when signed in.
-			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: prompt=login request")
+			err = ar.NewError(oidc.ErrorCodeOIDCLoginRequired, "IdentifierIdentityManager: prompt=login request")
 		}
 	case ar.Prompts[oidc.PromptSelectAccount] == true:
 		if err == nil {
 			// Enforce to show sign-in, when signed in.
-			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "IdentifierIdentityManager: prompt=select_account request")
+			err = ar.NewError(oidc.ErrorCodeOIDCLoginRequired, "IdentifierIdentityManager: prompt=select_account request")
 		}
 	default:
 		// Let all other prompt values pass.
@@ -222,7 +223,7 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 	}
 	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin, true)
 	if err != nil {
-		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, err.Error())
+		return nil, ar.NewError(oidc.ErrorCodeOAuth2AccessDenied, err.Error())
 	}
 
 	// If not trusted, always force consent.
@@ -239,7 +240,7 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 	}
 	if consent != nil {
 		if !consent.Allow {
-			return auth, ar.NewError(oidc.ErrorOAuth2AccessDenied, "consent denied")
+			return auth, ar.NewError(oidc.ErrorCodeOAuth2AccessDenied, "consent denied")
 		}
 
 		promptConsent = false
@@ -258,7 +259,7 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 
 	if promptConsent {
 		if ar.Prompts[oidc.PromptNone] == true {
-			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
+			return auth, ar.NewError(oidc.ErrorCodeOIDCInteractionRequired, "consent required")
 		}
 
 		// Build consent URL.
@@ -330,11 +331,11 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 	// of fail we should treat is as unstrusted client.
 	if esr.IDTokenHint == nil {
 		im.logger.Debugln("endsession request without id_token_hint")
-		return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "id_token_hint required")
+		return esr.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "id_token_hint required")
 	}
 
 	origin := utils.OriginFromRequestHeaders(req.Header)
-	claims := esr.IDTokenHint.Claims.(*oidc.IDTokenClaims)
+	claims := esr.IDTokenHint.Claims.(*konnectoidc.IDTokenClaims)
 	clientDetails, err := im.clients.Lookup(ctx, claims.Audience, "", esr.PostLogoutRedirectURI, origin, true)
 	if err != nil {
 		// FIXME(longsleep): This error should no be fatal since according to
@@ -342,7 +343,7 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 		// id_token_hint is not enforced to match the audience. Instead of fail
 		// we should treat it as untrusted client.
 		im.logger.WithError(err).Errorln("IdentifierIdentityManager: id_token_hint does not match request")
-		return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "id_token_hint does not match request")
+		return esr.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "id_token_hint does not match request")
 	}
 
 	var user *identifierUser
@@ -379,7 +380,7 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 		// clients or when no URL was set.
 		u, _ := url.Parse(im.signedOutURI)
 		u.RawQuery = fmt.Sprintf("flow=%s", identifier.FlowOIDC)
-		return identity.NewRedirectError(oidc.ErrorOIDCInteractionRequired, u)
+		return identity.NewRedirectError(oidc.ErrorCodeOIDCInteractionRequired, u)
 	}
 
 	return nil

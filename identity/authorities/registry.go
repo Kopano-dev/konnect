@@ -39,7 +39,7 @@ type Registry struct {
 }
 
 // NewRegistry creates a new authorizations Registry with the provided parameters.
-func NewRegistry(registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
+func NewRegistry(ctx context.Context, registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
 	registryData := &RegistryData{}
 
 	if registrationConfFilepath != "" {
@@ -72,6 +72,7 @@ func NewRegistry(registrationConfFilepath string, logger logrus.FieldLogger) (*R
 			"authority_type":     authority.AuthorityType,
 			"insecure":           authority.Insecure,
 			"default":            authority.Default,
+			"discover":           authority.discover,
 			"alias_required":     authority.IdentityAliasRequired,
 		}
 
@@ -93,6 +94,8 @@ func NewRegistry(registrationConfFilepath string, logger logrus.FieldLogger) (*R
 			// TODO(longsleep): Implement authority selection.
 			logger.Warnln("non-default additional authorities are not supported yet")
 		}
+
+		go authority.Initialize(ctx, logger)
 
 		logger.WithFields(fields).Debugln("registered authority")
 	}
@@ -126,14 +129,6 @@ func (r *Registry) Register(authority *AuthorityRegistration) error {
 
 	switch authority.AuthorityType {
 	case AuthorityTypeOIDC:
-		// Validate mandatory fields.
-		if authority.AuthorizationEndpoint == nil {
-			return errors.New("authorization_endpoint is empty")
-		}
-		if authority.JWKS == nil && !authority.Insecure {
-			return errors.New("jwks is empty")
-		}
-
 		// Ensure some defaults.
 		if len(authority.Scopes) == 0 {
 			authority.Scopes = authorityDefaultScopes
@@ -159,6 +154,44 @@ func (r *Registry) Register(authority *AuthorityRegistration) error {
 	return nil
 }
 
+// Lookup returns and validates the authority Detail information for the provided
+// parameters from the accociated authority registry.
+func (r *Registry) Lookup(ctx context.Context, authorityID string) (*Details, error) {
+	registration, ok := r.Get(ctx, authorityID)
+	if !ok {
+		return nil, fmt.Errorf("unknown authority id: %v", authorityID)
+	}
+
+	// Create immutable registry record.
+	// TODO(longsleep): Cache record.
+	details := &Details{
+		ID:            registration.ID,
+		Name:          registration.Name,
+		AuthorityType: registration.AuthorityType,
+
+		ClientID:     registration.ClientID,
+		ClientSecret: registration.ClientSecret,
+
+		Insecure: registration.Insecure,
+
+		Scopes:              registration.Scopes,
+		ResponseType:        registration.ResponseType,
+		CodeChallengeMethod: registration.CodeChallengeMethod,
+
+		Registration: registration,
+	}
+	registration.mutex.RLock()
+	// Fill in dynamic stuff.
+	details.ready = registration.ready
+	if registration.ready {
+		details.AuthorizationEndpoint = registration.authorizationEndpoint
+		details.validationKeys = registration.validationKeys
+	}
+	registration.mutex.RUnlock()
+
+	return details, nil
+}
+
 // Get returns the registered authorities registration for the provided client ID.
 func (r *Registry) Get(ctx context.Context, authorityID string) (*AuthorityRegistration, bool) {
 	if authorityID == "" {
@@ -174,7 +207,7 @@ func (r *Registry) Get(ctx context.Context, authorityID string) (*AuthorityRegis
 }
 
 // Default returns the default authority from the associated registry if any.
-func (r *Registry) Default(ctx context.Context) *AuthorityRegistration {
-	authority, _ := r.Get(ctx, r.defaultID)
+func (r *Registry) Default(ctx context.Context) *Details {
+	authority, _ := r.Lookup(ctx, r.defaultID)
 	return authority
 }

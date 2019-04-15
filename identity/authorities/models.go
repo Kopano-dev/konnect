@@ -18,15 +18,16 @@
 package authorities
 
 import (
+	"context"
 	"crypto"
 	"errors"
 	"fmt"
 	"net/url"
+	"sync"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/mendsley/gojwk"
-
-	"stash.kopano.io/kc/konnect/oidc"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/square/go-jose.v2"
+	"stash.kopano.io/kgol/oidc-go"
 )
 
 // Supported Authority kind string values.
@@ -53,53 +54,91 @@ type AuthorityRegistration struct {
 	Name          string `yaml:"name"`
 	AuthorityType string `yaml:"authority_type"`
 
+	Iss string `yaml:"iss"`
+
 	ClientID     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"`
 
-	Insecure bool `yaml:"insecure"`
-	Default  bool `yaml:"default"`
+	Insecure bool  `yaml:"insecure"`
+	Default  bool  `yaml:"default"`
+	Discover *bool `yaml:"discover"`
 
 	Scopes              []string `yaml:"scopes"`
 	ResponseType        string   `yaml:"response_type"`
 	CodeChallengeMethod string   `yaml:"code_challenge_method"`
 
+	RawMetadataEndpoint      string `yaml:"metadata_endpoint"`
 	RawAuthorizationEndpoint string `yaml:"authorization_endpoint"`
 
-	JWKS *gojwk.Key `yaml:"jwks"`
+	JWKS *jose.JSONWebKeySet `yaml:"jwks"`
 
 	IdentityClaimName string `yaml:"identity_claim_name"`
 
 	IdentityAliases       map[string]string `yaml:"identity_aliases,flow"`
 	IdentityAliasRequired bool              `yaml:"identity_alias_required"`
 
-	AuthorizationEndpoint *url.URL `yaml:"-"`
+	discover              bool     `yaml:"-"`
+	metadataEndpoint      *url.URL `yaml:"-"`
+	authorizationEndpoint *url.URL `yaml:"-"`
 
 	validationKeys map[string]crypto.PublicKey
+
+	mutex sync.RWMutex
+	ready bool
 }
 
 // Validate validates the associated authority registration data and returns
 // error if the data is not valid.
 func (ar *AuthorityRegistration) Validate() error {
+	if ar.RawMetadataEndpoint != "" {
+		if u, err := url.Parse(ar.RawMetadataEndpoint); err == nil {
+			ar.metadataEndpoint = u
+		} else {
+			return fmt.Errorf("invalid metadata_endpoint value: %v", err)
+		}
+	}
 	if ar.RawAuthorizationEndpoint != "" {
 		if u, err := url.Parse(ar.RawAuthorizationEndpoint); err == nil {
 			if u.Scheme != "https" {
 				return errors.New("authorization_endpoint must be https")
 			}
 
-			ar.AuthorizationEndpoint = u
+			ar.authorizationEndpoint = u
 		} else {
 			return fmt.Errorf("invalid authorization_endpoint value: %v", err)
 		}
 	}
 	if ar.JWKS != nil {
-		ar.validationKeys = make(map[string]crypto.PublicKey)
-		for _, jwk := range ar.JWKS.Keys {
-			if jwk.Use == "sig" {
-				if key, err := jwk.DecodePublicKey(); err == nil {
-					ar.validationKeys[jwk.Kid] = key
-				} else {
-					return fmt.Errorf("failed to decode public key: %v", err)
-				}
+		if err := ar.setValidationKeysFromJWKS(ar.JWKS, false); err != nil {
+			return err
+		}
+	}
+	if ar.Discover != nil {
+		ar.discover = *ar.Discover
+	}
+
+	switch ar.AuthorityType {
+	case AuthorityTypeOIDC:
+		// Additional behavior.
+		if ar.metadataEndpoint == nil && (ar.Discover == nil || ar.discover == true) {
+			if ar.Iss == "" {
+				return fmt.Errorf("oidc authority iss is empty")
+			}
+			if metadataEndpoint, mdeErr := url.Parse(ar.Iss); mdeErr == nil {
+				metadataEndpoint.Path = "/.well-known/openid-configuration"
+				ar.metadataEndpoint = metadataEndpoint
+				ar.discover = true
+			} else {
+				return fmt.Errorf("invalid iss value: %v", mdeErr)
+			}
+		}
+
+		if !ar.discover {
+			if ar.authorizationEndpoint == nil {
+				return errors.New("authorization_endpoint is empty")
+			}
+			if ar.JWKS == nil && !ar.Insecure {
+				return errors.New("jwks is empty")
 			}
 		}
 	}
@@ -107,73 +146,50 @@ func (ar *AuthorityRegistration) Validate() error {
 	return nil
 }
 
-// IdentityClaimValue returns the claim value of the provided claims from the
-// claim defined at the associated registration.
-func (ar *AuthorityRegistration) IdentityClaimValue(claims map[string]interface{}) (string, error) {
-	icn := ar.IdentityClaimName
-	if icn == "" {
-		icn = oidc.PreferredUsernameClaim
+func (ar *AuthorityRegistration) setValidationKeysFromJWKS(jwks *jose.JSONWebKeySet, skipInvalid bool) error {
+	if jwks == nil || len(jwks.Keys) == 0 {
+		ar.validationKeys = nil
+		return nil
 	}
 
-	cvr, ok := claims[icn]
-	if !ok {
-		return "", errors.New("identity claim not found")
-	}
-	cvs, ok := cvr.(string)
-	if !ok {
-		return "", errors.New("identify claim has invalid type")
-	}
-
-	// Convert claim value.
-	whitelisted := false
-	if ar.IdentityAliases != nil {
-		if alias, ok := ar.IdentityAliases[cvs]; ok && alias != "" {
-			cvs = alias
-			whitelisted = true
+	ar.validationKeys = make(map[string]crypto.PublicKey)
+	skipped := 0
+	for _, jwk := range jwks.Keys {
+		if jwk.Use == "sig" {
+			if key, ok := jwk.Key.(crypto.PublicKey); ok {
+				ar.validationKeys[jwk.KeyID] = key
+			} else {
+				if !skipInvalid {
+					return fmt.Errorf("failed to decode public key")
+				} else {
+					skipped++
+				}
+			}
 		}
 	}
-
-	// Check whitelist.
-	if ar.IdentityAliasRequired && !whitelisted {
-		return "", errors.New("identity claim has no alias")
+	if skipped > 0 {
+		return fmt.Errorf("failed to decode %d keys in set", skipped)
 	}
 
-	return cvs, nil
+	return nil
 }
 
-// Keyfunc returns a key func to validate JWTs with the keys of the associated
-// authority registration.
-func (ar *AuthorityRegistration) Keyfunc() jwt.Keyfunc {
-	return ar.validateJWT
-}
+// Initialize initializes the associated registration with the provided context.
+func (ar *AuthorityRegistration) Initialize(ctx context.Context, logger logrus.FieldLogger) error {
+	ar.mutex.Lock()
+	defer ar.mutex.Unlock()
 
-func (ar *AuthorityRegistration) validateJWT(token *jwt.Token) (interface{}, error) {
-	rawAlg, ok := token.Header[oidc.JWTHeaderAlg]
-	if !ok {
-		return nil, errors.New("No alg header")
-	}
-	alg, ok := rawAlg.(string)
-	if !ok {
-		return nil, errors.New("Invalid alg value")
-	}
-	switch jwt.GetSigningMethod(alg).(type) {
-	case *jwt.SigningMethodRSA:
-	case *jwt.SigningMethodECDSA:
-	case *jwt.SigningMethodRSAPSS:
-	default:
-		return nil, fmt.Errorf("Unexpected alg value")
-	}
-	rawKid, ok := token.Header[oidc.JWTHeaderKeyID]
-	if !ok {
-		return nil, fmt.Errorf("No kid header")
-	}
-	kid, ok := rawKid.(string)
-	if !ok {
-		return nil, fmt.Errorf("Invalid kid value")
-	}
-	if key, ok := ar.validationKeys[kid]; ok {
-		return key, nil
+	switch ar.AuthorityType {
+	case AuthorityTypeOIDC:
+		if ar.authorizationEndpoint != nil && ar.validationKeys != nil {
+			ar.ready = true
+		}
+		if ar.metadataEndpoint == nil {
+			return fmt.Errorf("no metadata_endpoint set")
+		}
+
+		return initializeOIDC(ctx, logger, ar)
 	}
 
-	return nil, errors.New("No key available")
+	return nil
 }

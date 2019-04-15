@@ -25,15 +25,16 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
+	"stash.kopano.io/kgol/oidc-go"
 
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 )
 
 // TokenRequest holds the incoming parameters and request data for
 // the OpenID Connect 1.0 token endpoint as specified at
 // http://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
 type TokenRequest struct {
-	providerMetadata *WellKnown
+	providerMetadata *oidc.WellKnown
 
 	GrantType       string `schema:"grant_type"`
 	Code            string `schema:"code"`
@@ -53,7 +54,7 @@ type TokenRequest struct {
 
 // DecodeTokenRequest return a TokenRequest holding the provided
 // request's form data.
-func DecodeTokenRequest(req *http.Request, providerMetadata *WellKnown) (*TokenRequest, error) {
+func DecodeTokenRequest(req *http.Request, providerMetadata *oidc.WellKnown) (*TokenRequest, error) {
 	tr, err := NewTokenRequest(req.PostForm, providerMetadata)
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ func DecodeTokenRequest(req *http.Request, providerMetadata *WellKnown) (*TokenR
 }
 
 // NewTokenRequest returns a TokenRequest holding the provided url values.
-func NewTokenRequest(values url.Values, providerMetadata *WellKnown) (*TokenRequest, error) {
+func NewTokenRequest(values url.Values, providerMetadata *oidc.WellKnown) (*TokenRequest, error) {
 	tr := &TokenRequest{
 		providerMetadata: providerMetadata,
 
@@ -125,14 +126,14 @@ func (tr *TokenRequest) Validate(keyFunc jwt.Keyfunc, claims jwt.Claims) error {
 				return nil, fmt.Errorf("Not validated")
 			})
 			if err != nil {
-				return oidc.NewOAuth2Error(oidc.ErrorOAuth2InvalidRequest, err.Error())
+				return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 			}
 			tr.RefreshToken = refreshToken
 		}
 		// breaks
 
 	default:
-		return oidc.NewOAuth2Error(oidc.ErrorOAuth2UnsupportedGrantType, "unsupported grant_type value")
+		return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2UnsupportedGrantType, "unsupported grant_type value")
 	}
 
 	return nil

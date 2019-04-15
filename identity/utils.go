@@ -22,8 +22,10 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 
-	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kgol/oidc-go"
+
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 )
 
 // AuthorizeScopes uses the provided manager and user to filter the provided
@@ -79,16 +81,16 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 
 	if authorizedScope, _ := scopes[oidc.ScopeEmail]; authorizedScope {
 		if userWithEmail, ok := user.(UserWithEmail); ok {
-			claims[oidc.ScopeEmail] = &oidc.EmailClaims{
+			claims[oidc.ScopeEmail] = &konnectoidc.EmailClaims{
 				Email:         userWithEmail.Email(),
 				EmailVerified: userWithEmail.EmailVerified(),
 			}
 		}
 	}
 	if authorizedScope, _ := scopes[oidc.ScopeProfile]; authorizedScope {
-		var profileClaims *oidc.ProfileClaims
+		var profileClaims *konnectoidc.ProfileClaims
 		if userWithProfile, ok := user.(UserWithProfile); ok {
-			profileClaims = &oidc.ProfileClaims{
+			profileClaims = &konnectoidc.ProfileClaims{
 				Name:       userWithProfile.Name(),
 				FamilyName: userWithProfile.FamilyName(),
 				GivenName:  userWithProfile.GivenName(),
@@ -96,7 +98,7 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 		}
 		if userWithUsername, ok := user.(UserWithUsername); ok {
 			if profileClaims == nil {
-				profileClaims = &oidc.ProfileClaims{
+				profileClaims = &konnectoidc.ProfileClaims{
 					PreferredUsername: userWithUsername.Username(),
 				}
 			} else {
@@ -120,9 +122,9 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 					switch scope {
 					case oidc.ScopeEmail:
 						if userWithEmail, ok := user.(UserWithEmail); ok {
-							scopeClaims := oidc.NewEmailClaims(claims[scope])
+							scopeClaims := konnectoidc.NewEmailClaims(claims[scope])
 							if scopeClaims == nil {
-								scopeClaims = &oidc.EmailClaims{}
+								scopeClaims = &konnectoidc.EmailClaims{}
 								claims[scope] = scopeClaims
 							}
 							switch requestedClaim {
@@ -135,9 +137,9 @@ func GetUserClaimsForScopes(user User, scopes map[string]bool, requestedClaimsMa
 						}
 					case oidc.ScopeProfile:
 						if userWithProfile, ok := user.(UserWithProfile); ok {
-							scopeClaims := oidc.NewProfileClaims(claims[scope])
+							scopeClaims := konnectoidc.NewProfileClaims(claims[scope])
 							if scopeClaims == nil {
-								scopeClaims = &oidc.ProfileClaims{}
+								scopeClaims = &konnectoidc.ProfileClaims{}
 								claims[scope] = scopeClaims
 							}
 							switch requestedClaim {

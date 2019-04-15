@@ -23,15 +23,16 @@ import (
 	"net/url"
 
 	"github.com/dgrijalva/jwt-go"
+	"stash.kopano.io/kgol/oidc-go"
 
-	"stash.kopano.io/kc/konnect/oidc"
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 )
 
 // EndSessionRequest holds the incoming parameters and request data for OpenID
 // Connect Session Management 1.0 RP initiaed logout requests as specified at
 // https://openid.net/specs/openid-connect-session-1_0.html#RPLogout
 type EndSessionRequest struct {
-	providerMetadata *WellKnown
+	providerMetadata *oidc.WellKnown
 
 	RawIDTokenHint           string `schema:"id_token_hint"`
 	RawPostLogoutRedirectURI string `schema:"post_logout_redirect_uri"`
@@ -43,13 +44,13 @@ type EndSessionRequest struct {
 
 // DecodeEndSessionRequest returns a EndSessionRequest holding the
 // provided requests form data.
-func DecodeEndSessionRequest(req *http.Request, providerMetadata *WellKnown) (*EndSessionRequest, error) {
+func DecodeEndSessionRequest(req *http.Request, providerMetadata *oidc.WellKnown) (*EndSessionRequest, error) {
 	return NewEndSessionRequest(req.Form, providerMetadata)
 }
 
 // NewEndSessionRequest returns a EndSessionRequest holding the
 // provided url values.
-func NewEndSessionRequest(values url.Values, providerMetadata *WellKnown) (*EndSessionRequest, error) {
+func NewEndSessionRequest(values url.Values, providerMetadata *oidc.WellKnown) (*EndSessionRequest, error) {
 	esr := &EndSessionRequest{
 		providerMetadata: providerMetadata,
 	}
@@ -69,7 +70,7 @@ func (esr *EndSessionRequest) Validate(keyFunc jwt.Keyfunc) error {
 		parser := &jwt.Parser{
 			SkipClaimsValidation: true,
 		}
-		idTokenHint, err := parser.ParseWithClaims(esr.RawIDTokenHint, &oidc.IDTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		idTokenHint, err := parser.ParseWithClaims(esr.RawIDTokenHint, &konnectoidc.IDTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if keyFunc != nil {
 				return keyFunc(token)
 			}
@@ -77,7 +78,7 @@ func (esr *EndSessionRequest) Validate(keyFunc jwt.Keyfunc) error {
 			return nil, fmt.Errorf("Not validated")
 		})
 		if err != nil {
-			return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, err.Error())
+			return esr.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, err.Error())
 		}
 		esr.IDTokenHint = idTokenHint
 	}
@@ -89,8 +90,8 @@ func (esr *EndSessionRequest) Validate(keyFunc jwt.Keyfunc) error {
 func (esr *EndSessionRequest) Verify(userID string) error {
 	if esr.IDTokenHint != nil {
 		// Compare userID with IDTokenHint.
-		if userID != esr.IDTokenHint.Claims.(*oidc.IDTokenClaims).Subject {
-			return esr.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "userid mismatch")
+		if userID != esr.IDTokenHint.Claims.(*konnectoidc.IDTokenClaims).Subject {
+			return esr.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "userid mismatch")
 		}
 	}
 

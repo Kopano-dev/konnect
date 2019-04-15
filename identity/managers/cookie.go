@@ -30,12 +30,12 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kgol/oidc-go"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/managers"
-	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/version"
 )
@@ -243,11 +243,11 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 	if err != nil {
 		// Error, directly return.
 		im.logger.Errorln("CookieIdentityManager: backend request error", err)
-		return nil, ar.NewError(oidc.ErrorOAuth2ServerError, "CookieIdentityManager: backend request error")
+		return nil, ar.NewError(oidc.ErrorCodeOAuth2ServerError, "CookieIdentityManager: backend request error")
 	}
 	if user == nil {
 		// Not signed in.
-		err = ar.NewError(oidc.ErrorOIDCLoginRequired, "CookieIdentityManager: not signed in")
+		err = ar.NewError(oidc.ErrorCodeOIDCLoginRequired, "CookieIdentityManager: not signed in")
 	}
 
 	// Check prompt value.
@@ -260,7 +260,7 @@ func (im *CookieIdentityManager) Authenticate(ctx context.Context, rw http.Respo
 	case ar.Prompts[oidc.PromptLogin] == true:
 		if err == nil {
 			// Enforce to show sign-in, when signed in.
-			err = ar.NewError(oidc.ErrorOIDCLoginRequired, "CookieIdentityManager: prompt=login request")
+			err = ar.NewError(oidc.ErrorCodeOIDCLoginRequired, "CookieIdentityManager: prompt=login request")
 		}
 	case ar.Prompts[oidc.PromptSelectAccount] == true:
 		// Not supported, just ignore.
@@ -332,11 +332,11 @@ func (im *CookieIdentityManager) Authorize(ctx context.Context, rw http.Response
 
 	if promptConsent {
 		if ar.Prompts[oidc.PromptNone] == true {
-			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
+			return auth, ar.NewError(oidc.ErrorCodeOIDCInteractionRequired, "consent required")
 		}
 
 		// TODO(longsleep): Implement permissions page / consent prompt.
-		return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
+		return auth, ar.NewError(oidc.ErrorCodeOIDCInteractionRequired, "consent required")
 	}
 
 	auth.AuthorizeScopes(approvedScopes)

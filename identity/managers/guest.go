@@ -25,13 +25,13 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"stash.kopano.io/kgol/oidc-go"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/managers"
-	"stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
@@ -196,42 +196,42 @@ func (im *GuestIdentityManager) RegisterManagers(mgrs *managers.Managers) error 
 func (im *GuestIdentityManager) Authenticate(ctx context.Context, rw http.ResponseWriter, req *http.Request, ar *payload.AuthenticationRequest, next identity.Manager) (identity.AuthRecord, error) {
 	// Check if required scopes are there.
 	if !ar.Scopes[konnect.ScopeGuestOK] {
-		return nil, ar.NewError(oidc.ErrorOIDCLoginRequired, "GuestIdentityManager: required scope missing")
+		return nil, ar.NewError(oidc.ErrorCodeOIDCLoginRequired, "GuestIdentityManager: required scope missing")
 	}
 
 	// Authenticate with signed client request object, so that must be there.
 	if ar.Request == nil {
-		return nil, ar.NewError(oidc.ErrorOIDCInvalidRequestObject, "GuestIdentityManager: no request object")
+		return nil, ar.NewError(oidc.ErrorCodeOIDCInvalidRequestObject, "GuestIdentityManager: no request object")
 	}
 
 	// Further checks of signed claims.
 	roc, ok := ar.Request.Claims.(*payload.RequestObjectClaims)
 	if !ok {
-		return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: invalid claims request")
+		return nil, ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "GuestIdentityManager: invalid claims request")
 	}
 
 	// NOTE(longsleep): Require claims in request object to ensure that the
 	// claims requested come from there.
 	if roc.Claims == nil || ar.Claims == nil {
-		return nil, ar.NewError(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: missing claims request")
+		return nil, ar.NewError(oidc.ErrorCodeOAuth2InvalidRequest, "GuestIdentityManager: missing claims request")
 	}
 	// NOTE(longsleep): Guest mode requires ID token claims request with the
 	// guest claim set to an expected value.
 	if ar.Claims.IDToken == nil {
-		return nil, ar.NewError(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: missing claims request for id_token")
+		return nil, ar.NewError(oidc.ErrorCodeOAuth2InvalidRequest, "GuestIdentityManager: missing claims request for id_token")
 	}
 	guest, ok := ar.Claims.IDToken.GetStringValue("guest")
 	if !ok {
-		return nil, ar.NewError(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: missing claim guest in id_token claims request")
+		return nil, ar.NewError(oidc.ErrorCodeOAuth2InvalidRequest, "GuestIdentityManager: missing claim guest in id_token claims request")
 	}
 
 	// Ensure that request object claim is signed.
 	if ar.Request.Method == jwt.SigningMethodNone {
-		return nil, ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "GuestIdentityManager: request object must be signed")
+		return nil, ar.NewBadRequest(oidc.ErrorCodeOIDCInvalidRequestObject, "GuestIdentityManager: request object must be signed")
 	}
 
 	if guest == "" {
-		return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: invalid claim guest in id_token claims request")
+		return nil, ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "GuestIdentityManager: invalid claim guest in id_token claims request")
 	}
 
 	// Additional email and profile claim values will be taken over into the
@@ -300,29 +300,29 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 	// Authenticate with signed client request object, so that must be there.
 	if ar.Request == nil {
-		return nil, ar.NewError(oidc.ErrorOIDCInvalidRequestObject, "GuestIdentityManager: authorize without request object")
+		return nil, ar.NewError(oidc.ErrorCodeOIDCInvalidRequestObject, "GuestIdentityManager: authorize without request object")
 	}
 
 	// Further checks of signed claims.
 	roc, ok := ar.Request.Claims.(*payload.RequestObjectClaims)
 	if !ok {
-		return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: authorize with invalid claims request")
+		return nil, ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "GuestIdentityManager: authorize with invalid claims request")
 	}
 
 	securedDetails := roc.Secure()
 	if securedDetails == nil {
-		return nil, ar.NewBadRequest(oidc.ErrorOIDCInvalidRequestObject, "GuestIdentityManager: authorize without secure client")
+		return nil, ar.NewBadRequest(oidc.ErrorCodeOIDCInvalidRequestObject, "GuestIdentityManager: authorize without secure client")
 	}
 
 	// TODO(longsleep): Validate scopes and force prompt.
 
 	if promptConsent {
 		if ar.Prompts[oidc.PromptNone] == true {
-			return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required")
+			return auth, ar.NewError(oidc.ErrorCodeOIDCInteractionRequired, "consent required")
 		}
 
 		// TODO(longsleep): Implement consent page.
-		return auth, ar.NewError(oidc.ErrorOIDCInteractionRequired, "consent required, but not supported for guests")
+		return auth, ar.NewError(oidc.ErrorCodeOIDCInteractionRequired, "consent required, but not supported for guests")
 	}
 
 	origin := ""
@@ -333,11 +333,11 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 	clientDetails, err := im.clients.Lookup(req.Context(), ar.ClientID, "", ar.RedirectURI, origin, true)
 	if err != nil {
-		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, err.Error())
+		return nil, ar.NewError(oidc.ErrorCodeOAuth2AccessDenied, err.Error())
 	}
 
 	if clientDetails.ID != securedDetails.ID {
-		return nil, ar.NewError(oidc.ErrorOAuth2AccessDenied, "client mismatch")
+		return nil, ar.NewError(oidc.ErrorCodeOAuth2AccessDenied, "client mismatch")
 	}
 
 	// If not trusted we need to check request scopes.
@@ -374,7 +374,7 @@ func (im *GuestIdentityManager) Authorize(ctx context.Context, rw http.ResponseW
 
 		// Ensure that guest scope was approved.
 		if ok, _ := approvedScopes[konnect.ScopeGuestOK]; !ok {
-			return nil, ar.NewBadRequest(oidc.ErrorOAuth2InvalidRequest, "GuestIdentityManager: client does not authorize "+konnect.ScopeGuestOK+" scope")
+			return nil, ar.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "GuestIdentityManager: client does not authorize "+konnect.ScopeGuestOK+" scope")
 		}
 	}
 
