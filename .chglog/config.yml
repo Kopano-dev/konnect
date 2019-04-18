@@ -1,0 +1,26 @@
+style: bitbucket
+template: CHANGELOG.tpl.md
+info:
+  title: CHANGELOG
+  repository_url: https://stash.kopano.io/projects/KC/repos/konnect/
+options:
+  commits:
+    # filters:
+    #   Type:
+    #     - feat
+    #     - fix
+    #     - perf
+    #     - refactor
+  commit_groups:
+    # title_maps:
+    #   feat: Features
+    #   fix: Bug Fixes
+    #   perf: Performance Improvements
+    #   refactor: Code Refactoring
+  header:
+    pattern: "^(.*)$"
+    pattern_maps:
+      - Subject
+  notes:
+    keywords:
+      - BREAKING CHANGE
