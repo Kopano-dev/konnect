@@ -61,3 +61,6 @@
   name = "github.com/ghodss/yaml"
   version = "1.0.0"
 
+[[constraint]]
+  name = "stash.kopano.io/kgol/oidc-go"
+  version = "0.1.0"

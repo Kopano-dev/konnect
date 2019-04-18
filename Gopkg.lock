@@ -50,20 +50,20 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:ca59b1175189b3f0e9f1793d2c350114be36eaabbe5b9f554b35edee1de50aea"
+  digest = "1:d5f97fc268267ec1b61c3453058c738246fc3e746f14b1ae25161513b7367b0c"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a7962380ca08b5a188038c69871b8d3fbdf31e89"
-  version = "v1.7.0"
+  revision = "c5c6c98bc25355028a63748a498942a6398ccd22"
+  version = "v1.7.1"
 
 [[projects]]
-  digest = "1:f7463b67871bf7fe475e2c69fb0d21ead07de5188b8d7f8abf8fc961965ed841"
+  digest = "1:345ad428d03cc89fa5498d61383d0d7f39afbe8731ca135c0ec92782285121d3"
   name = "github.com/gorilla/schema"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d0e4c24cff97ae983e9847e0ed5a02dc10013d41"
-  version = "v1.0.2"
+  revision = "124d17ef95858a10835ce95502446cb5a9e9f715"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
@@ -74,12 +74,12 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:0a69a1c0db3591fcefb47f115b224592c8dfa4368b7ba9fae509d5e16cdc95c8"
+  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
   pruneopts = "UT"
-  revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
-  version = "v1.0.1"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
 
 [[projects]]
   branch = "master"
@@ -102,11 +102,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0fabc073fb52287e01405bd06fe721b968970fc0f6c88714a070afb2097e552a"
+  digest = "1:8368165a1d56fb9c296eb90ed90c51cc0ce563d73c911d3a4c7cb2faa5fc544e"
   name = "github.com/orcaman/concurrent-map"
   packages = ["."]
   pruneopts = "UT"
-  revision = "7ed82d9cb71768a4e3656ee8837c7af568c75459"
+  revision = "2693aad1ed7517c2bb5b3a42cb8fde88b941d89d"
 
 [[projects]]
   branch = "master"
@@ -136,12 +136,12 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:87c2e02fb01c27060ccc5ba7c5a407cc91147726f8f40b70cceeedbc52b1f3a8"
+  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
-  version = "v1.3.0"
+  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
+  version = "v1.4.1"
 
 [[projects]]
   digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
@@ -161,7 +161,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:19aa7a317cabf2ad854e9e9b899a70d910feec9833561193b347ffb9f9824de4"
+  digest = "1:4e8cc49a6f4756de4d31ca61edd72f7c1a78c5790765d1145efc91a750042991"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -172,22 +172,20 @@
     "pbkdf2",
     "poly1305",
     "salsa20/salsa",
-    "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "b8fe1690c61389d7d2a8074a507d1d40c5d30448"
+  revision = "f416ebab96af27ca70b6e5c23d6a0747530da626"
 
 [[projects]]
   branch = "master"
-  digest = "1:8b38d0f580ac12385b9b7dc1a242441ff4d59a4889f20044f5c23cc47c2004bb"
+  digest = "1:38aa494d309ed1454312b7c19f869ce99edcc5a4ee61f599090a8d15b6c2d4e6"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
-    "windows",
   ]
   pruneopts = "UT"
-  revision = "41f3e6584952bb034a481797859f6ab34b6803bd"
+  revision = "12500544f89f9420afe9529ba8940bf72d294972"
 
 [[projects]]
   branch = "master"
@@ -195,7 +193,7 @@
   name = "golang.org/x/time"
   packages = ["rate"]
   pruneopts = "UT"
-  revision = "85acf8d2951cb2a3bde7632f9ff273ef0379bcbd"
+  revision = "9d24e82272b4f38b78bc8cff74fa936d31ccd8ef"
 
 [[projects]]
   digest = "1:af07c44dc04418be522bfd4e21ca9130d58169ea084e3a883e23772003a381c4"
@@ -214,7 +212,7 @@
   version = "v2.5.1"
 
 [[projects]]
-  digest = "1:a4cde1eec9a17eb2399a50c6e1a9fe3fde039994de058f9dbf6592d157bfe97b"
+  digest = "1:9593bab40e981b1f90b7e07faeab0d09b75fe338880d08880f986a9d3283c53f"
   name = "gopkg.in/square/go-jose.v2"
   packages = [
     ".",
@@ -223,8 +221,8 @@
     "jwt",
   ]
   pruneopts = "UT"
-  revision = "e94fb177d3668d35ab39c61cbb2f311550557e83"
-  version = "v2.2.2"
+  revision = "730df5f748271903322feb182be83b43ebbbe27d"
+  version = "v2.3.1"
 
 [[projects]]
   digest = "1:2a81c6e126d36ad027328cffaa4888fc3be40f09dc48028d1f93705b718130b9"
@@ -243,12 +241,12 @@
   version = "v2.0.1"
 
 [[projects]]
-  branch = "master"
   digest = "1:05c67dc6aab8d89af757f205480b320b4ffe60f176ba6f5b8908bbfd3bf69cd0"
   name = "stash.kopano.io/kgol/oidc-go"
   packages = ["."]
   pruneopts = "UT"
   revision = "0f3bf16d2ef6d2c4b66bcac7a9c17ed29cc574cf"
+  version = "v0.1.0"
 
 [[projects]]
   digest = "1:e004a22416b1063c30360a2a91beadb538fa8c103362e6c653aaa1de4d6bbb5e"
