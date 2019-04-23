@@ -33,7 +33,7 @@ func newCookieIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	logger := bs.cfg.Logger
 
 	if bs.authorizationEndpointURI.EscapedPath() == "" {
-		bs.authorizationEndpointURI.Path = "/konnect/v1/authorize"
+		bs.authorizationEndpointURI.Path = bs.makeURIPath(apiTypeKonnect, "/authorize")
 	}
 
 	if !strings.HasPrefix(bs.signInFormURI.EscapedPath(), "/") {

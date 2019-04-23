@@ -18,6 +18,7 @@
 package identifier
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -93,6 +94,8 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 
 	oauth2CbEndpointURI, _ := url.Parse(c.BaseURI.String())
 	oauth2CbEndpointURI.Path = c.PathPrefix + "/identifier/oauth2/cb"
+
+	webappIndexHTML = bytes.Replace(webappIndexHTML, []byte("__PATH_PREFIX__"), []byte(c.PathPrefix), 1)
 
 	i := &Identifier{
 		Config: c,

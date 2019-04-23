@@ -15,7 +15,8 @@ const defaultState = {
   error: null,
   flow: flow,
   query: query,
-  updateAvailable: false
+  updateAvailable: false,
+  pathPrefix: document.getElementById('root').getAttribute('data-path-prefix')
 };
 
 function commonReducer(state = defaultState, action) {

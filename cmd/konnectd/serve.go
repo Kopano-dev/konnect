@@ -56,6 +56,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("validation-keys-path", "", "Full path to a folder containg PEM encoded private or public key files used for token validaton (file name without extension is used as kid)")
 	serveCmd.Flags().String("encryption-secret", "", fmt.Sprintf("Full path to a file containing a %d bytes secret key", encryption.KeySize))
 	serveCmd.Flags().String("signing-method", "PS256", "JWT default signing method")
+	serveCmd.Flags().String("uri-base-path", "", "Custom base path for URI endpoints")
 	serveCmd.Flags().String("sign-in-uri", "", "Custom redirection URI to sign-in form")
 	serveCmd.Flags().String("signed-out-uri", "", "Custom redirection URI to signed-out goodbye page")
 	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")

@@ -53,6 +53,12 @@ const (
 	identityManagerNameLDAP   = "ldap"
 )
 
+// API types.
+const (
+	apiTypeKonnect = "konnect"
+	apiTypeSignin  = "signin"
+)
+
 // bootstrap is a data structure to hold configuration required to start
 // konnectd.
 type bootstrap struct {
@@ -79,6 +85,7 @@ type bootstrap struct {
 	validators       map[string]crypto.PublicKey
 
 	accessTokenDurationSeconds uint64
+	uriBasePath                string
 
 	cfg      *config.Config
 	managers *managers.Managers
@@ -119,6 +126,8 @@ func (bs *bootstrap) initialize() error {
 	} else if bs.issuerIdentifierURI.Host == "" {
 		return fmt.Errorf("invalid iss value, URL must have a host")
 	}
+
+	bs.uriBasePath, _ = cmd.Flags().GetString("uri-base-path")
 
 	signInFormURIString, _ := cmd.Flags().GetString("sign-in-uri")
 	bs.signInFormURI, err = url.Parse(signInFormURIString)
@@ -361,6 +370,19 @@ func (bs *bootstrap) setup(ctx context.Context) error {
 	return nil
 }
 
+func (bs *bootstrap) makeURIPath(api string, subpath string) string {
+	subpath = strings.TrimPrefix(subpath, "/")
+
+	switch api {
+	case apiTypeKonnect:
+		return fmt.Sprintf("%s/konnect/v1/%s", strings.TrimSuffix(bs.uriBasePath, "/"), subpath)
+	case apiTypeSignin:
+		return fmt.Sprintf("%s/signin/v1/%s", strings.TrimSuffix(bs.uriBasePath, "/"), subpath)
+	default:
+		panic("unknown api type")
+	}
+}
+
 func (bs *bootstrap) setupIdentity(ctx context.Context) (identity.Manager, error) {
 	var err error
 	logger := bs.cfg.Logger
@@ -431,7 +453,7 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 
 	var registrationPath = ""
 	if bs.cfg.AllowDynamicClientRegistration {
-		registrationPath = "/konnect/v1/register"
+		registrationPath = bs.makeURIPath(apiTypeKonnect, "/register")
 	}
 
 	provider, err := oidcProvider.NewProvider(&oidcProvider.Config{
@@ -439,15 +461,15 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 
 		IssuerIdentifier:       bs.issuerIdentifierURI.String(),
 		WellKnownPath:          "/.well-known/openid-configuration",
-		JwksPath:               "/konnect/v1/jwks.json",
+		JwksPath:               bs.makeURIPath(apiTypeKonnect, "/jwks.json"),
 		AuthorizationPath:      bs.authorizationEndpointURI.EscapedPath(),
-		TokenPath:              "/konnect/v1/token",
-		UserInfoPath:           "/konnect/v1/userinfo",
+		TokenPath:              bs.makeURIPath(apiTypeKonnect, "/token"),
+		UserInfoPath:           bs.makeURIPath(apiTypeKonnect, "/userinfo"),
 		EndSessionPath:         bs.endSessionEndpointURI.EscapedPath(),
-		CheckSessionIframePath: "/konnect/v1/session/check-session.html",
+		CheckSessionIframePath: bs.makeURIPath(apiTypeKonnect, "/session/check-session.html"),
 		RegistrationPath:       registrationPath,
 
-		BrowserStateCookiePath: "/konnect/v1/session/",
+		BrowserStateCookiePath: bs.makeURIPath(apiTypeKonnect, "/session/"),
 		BrowserStateCookieName: "__Secure-KKBS", // Kopano-Konnect-Browser-State
 
 		SessionCookiePath: sessionCookiePath,

@@ -25,11 +25,11 @@ const styles = () => ({
 
 class Identifier extends PureComponent {
   render() {
-    const { classes, hello } = this.props;
+    const { classes, hello, pathPrefix } = this.props;
 
     return (
       <div className={classes.root}>
-        <BrowserRouter basename="/signin/v1">
+        <BrowserRouter basename={pathPrefix}>
           <Switch>
             <PrivateRoute path="/welcome" exact component={Welcomescreen} hello={hello}></PrivateRoute>
             <Route path="/goodbye" exact component={Goodbyescreen}></Route>
@@ -51,15 +51,17 @@ Identifier.propTypes = {
   classes: PropTypes.object.isRequired,
 
   hello: PropTypes.object,
-  updateAvailable: PropTypes.bool.isRequired
+  updateAvailable: PropTypes.bool.isRequired,
+  pathPrefix: PropTypes.string.isRequired
 };
 
 const mapStateToProps = (state) => {
-  const { hello, updateAvailable } = state.common;
+  const { hello, updateAvailable, pathPrefix } = state.common;
 
   return {
     hello,
-    updateAvailable
+    updateAvailable,
+    pathPrefix
   };
 };
 

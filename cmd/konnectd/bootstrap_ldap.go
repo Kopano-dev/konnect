@@ -35,19 +35,19 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	if bs.authorizationEndpointURI.String() != "" {
 		return nil, fmt.Errorf("ldap backend is incompatible with authorization-endpoint-uri parameter")
 	}
-	bs.authorizationEndpointURI.Path = "/signin/v1/identifier/_/authorize"
+	bs.authorizationEndpointURI.Path = bs.makeURIPath(apiTypeSignin, "/identifier/_/authorize")
 
 	if bs.endSessionEndpointURI.String() != "" {
 		return nil, fmt.Errorf("ldap backend is incompatible with endsession-endpoint-uri parameter")
 	}
-	bs.endSessionEndpointURI.Path = "/signin/v1/identifier/_/endsession"
+	bs.endSessionEndpointURI.Path = bs.makeURIPath(apiTypeSignin, "/identifier/_/endsession")
 
 	if bs.signInFormURI.EscapedPath() == "" {
-		bs.signInFormURI.Path = "/signin/v1/identifier"
+		bs.signInFormURI.Path = bs.makeURIPath(apiTypeSignin, "/identifier")
 	}
 
 	if bs.signedOutURI.EscapedPath() == "" {
-		bs.signedOutURI.Path = "/signin/v1/goodbye"
+		bs.signedOutURI.Path = bs.makeURIPath(apiTypeSignin, "/goodbye")
 	}
 
 	// Default LDAP attribute mappings.
@@ -92,7 +92,7 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		Config: bs.cfg,
 
 		BaseURI:         bs.issuerIdentifierURI,
-		PathPrefix:      "/signin/v1",
+		PathPrefix:      strings.TrimSuffix(bs.makeURIPath(apiTypeSignin, ""), "/"),
 		StaticFolder:    bs.identifierClientPath,
 		LogonCookieName: "__Secure-KKT", // Kopano-Konnect-Token
 		ScopesConf:      bs.identifierScopesConf,
