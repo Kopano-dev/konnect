@@ -19,29 +19,57 @@ package utils
 
 import (
 	"crypto/tls"
+	"net"
 	"net/http"
 	"time"
 
 	"stash.kopano.io/kc/konnect/version"
 )
 
-const defaultHTTPTimeout = time.Second * 30
+const (
+	defaultHTTPTimeout               = 30 * time.Second
+	defaultHTTPKeepAlive             = 30 * time.Second
+	defaultHTTPMaxIdleConns          = 100
+	defaultHTTPIdleConnTimeout       = 90 * time.Second
+	defaultHTTPTLSHandshakeTimeout   = 10 * time.Second
+	defaultHTTPExpectContinueTimeout = 1 * time.Second
+)
 
 // DefaultHTTPUserAgent is the User-Agent Header which should be used when
 // making HTTP requests.
 var DefaultHTTPUserAgent = "Kopano-Konnect/" + version.Version
 
+// HTTPTransportWithTLSClientConfig creates a new http.Transport with sane
+// default settings using the provided tls.Config.
+func HTTPTransportWithTLSClientConfig(tlsClientConfig *tls.Config) *http.Transport {
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   defaultHTTPTimeout,
+			KeepAlive: defaultHTTPKeepAlive,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          defaultHTTPMaxIdleConns,
+		IdleConnTimeout:       defaultHTTPIdleConnTimeout,
+		TLSHandshakeTimeout:   defaultHTTPTLSHandshakeTimeout,
+		ExpectContinueTimeout: defaultHTTPExpectContinueTimeout,
+
+		TLSClientConfig: tlsClientConfig,
+	}
+}
+
 // DefaultHTTPClient is a http.Client with a timeout set.
 var DefaultHTTPClient = &http.Client{
-	Timeout: defaultHTTPTimeout,
+	Timeout:   defaultHTTPTimeout,
+	Transport: HTTPTransportWithTLSClientConfig(nil),
 }
+
+// InsecureSkipVerifyTLSConfig is a tls.Config which does skip TLS verification.
+var InsecureSkipVerifyTLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 // InsecureHTTPClient is a http.Client with a timeout set and with TLS
 // varification disabled.
 var InsecureHTTPClient = &http.Client{
-	Timeout: defaultHTTPTimeout,
-	Transport: &http.Transport{
-		// NOTE(longsleep): This disable http2 client support. See https://github.com/golang/go/issues/14275 for reasons.
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	},
+	Timeout:   defaultHTTPTimeout,
+	Transport: HTTPTransportWithTLSClientConfig(InsecureSkipVerifyTLSConfig),
 }

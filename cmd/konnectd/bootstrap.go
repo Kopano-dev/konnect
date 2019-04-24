@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -43,6 +42,7 @@ import (
 	"stash.kopano.io/kc/konnect/identity"
 	"stash.kopano.io/kc/konnect/managers"
 	oidcProvider "stash.kopano.io/kc/konnect/oidc/provider"
+	"stash.kopano.io/kc/konnect/utils"
 )
 
 // Identity managers.
@@ -156,9 +156,7 @@ func (bs *bootstrap) initialize() error {
 	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
 	if tlsInsecureSkipVerify {
 		// NOTE(longsleep): This disable http2 client support. See https://github.com/golang/go/issues/14275 for reasons.
-		bs.tlsClientConfig = &tls.Config{
-			InsecureSkipVerify: tlsInsecureSkipVerify,
-		}
+		bs.tlsClientConfig = utils.InsecureSkipVerifyTLSConfig
 		logger.Warnln("insecure mode, TLS client connections are susceptible to man-in-the-middle attacks")
 		logger.Debugln("http2 client support is disabled (insecure mode)")
 	}
@@ -309,19 +307,7 @@ func (bs *bootstrap) initialize() error {
 		}
 	}
 
-	bs.cfg.HTTPTransport = &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientConfig:       bs.tlsClientConfig,
-	}
+	bs.cfg.HTTPTransport = utils.HTTPTransportWithTLSClientConfig(bs.tlsClientConfig)
 
 	bs.accessTokenDurationSeconds = 10 * 60 // 10 Minutes.
 
