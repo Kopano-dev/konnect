@@ -156,9 +156,10 @@ func (bs *bootstrap) initialize() error {
 	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
 	if tlsInsecureSkipVerify {
 		// NOTE(longsleep): This disable http2 client support. See https://github.com/golang/go/issues/14275 for reasons.
-		bs.tlsClientConfig = utils.InsecureSkipVerifyTLSConfig
+		bs.tlsClientConfig = utils.InsecureSkipVerifyTLSConfig()
 		logger.Warnln("insecure mode, TLS client connections are susceptible to man-in-the-middle attacks")
-		logger.Debugln("http2 client support is disabled (insecure mode)")
+	} else {
+		bs.tlsClientConfig = utils.DefaultTLSConfig()
 	}
 
 	trustedProxies, _ := cmd.Flags().GetStringArray("trusted-proxy")

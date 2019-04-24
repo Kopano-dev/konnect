@@ -161,7 +161,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4e8cc49a6f4756de4d31ca61edd72f7c1a78c5790765d1145efc91a750042991"
+  digest = "1:7c8547d77159d7c58496615be7d03e20a9c139b9384e382dd60e194c6a6b0534"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -174,18 +174,56 @@
     "salsa20/salsa",
   ]
   pruneopts = "UT"
-  revision = "f416ebab96af27ca70b6e5c23d6a0747530da626"
+  revision = "c05e17bb3b2dca130fc919668a96b4bec9eb9442"
 
 [[projects]]
   branch = "master"
-  digest = "1:38aa494d309ed1454312b7c19f869ce99edcc5a4ee61f599090a8d15b6c2d4e6"
+  digest = "1:01831e6da6dfda2ea208bc4a153f6fb2fe02b0baec3af50f3b61c0d87d99a3f7"
+  name = "golang.org/x/net"
+  packages = [
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
+  ]
+  pruneopts = "UT"
+  revision = "4829fb13d2c62012c17688fa7f629f371014946d"
+
+[[projects]]
+  branch = "master"
+  digest = "1:9e58d5274a95c70358b4d22c39dd3bc7490a827b778728ac73af8fdd93a20704"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "12500544f89f9420afe9529ba8940bf72d294972"
+  revision = "18eb32c0e2f0c2bc8d17842ed4ad41486f349ad4"
+
+[[projects]]
+  digest = "1:f4ea3f623a07a2602bb9c1624d6dc7d291261278ba2484508fac559dc7926048"
+  name = "golang.org/x/text"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable",
+  ]
+  pruneopts = "UT"
+  revision = "c942b20a5d85b458c4dce1589326051d85e25d6d"
+  version = "v0.3.1"
 
 [[projects]]
   branch = "master"
@@ -276,6 +314,7 @@
     "github.com/spf13/cobra",
     "golang.org/x/crypto/blake2b",
     "golang.org/x/crypto/nacl/secretbox",
+    "golang.org/x/net/http2",
     "golang.org/x/time/rate",
     "gopkg.in/ldap.v2",
     "gopkg.in/square/go-jose.v2",

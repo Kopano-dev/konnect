@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	identifierBackends "stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identity"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	"stash.kopano.io/kc/konnect/utils"
 	"stash.kopano.io/kc/konnect/version"
 )
 
@@ -76,6 +78,13 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	// Update kcc defaults to our values.
 	kcc.SessionAutorefreshInterval = time.Duration(sessionTimeoutSeconds-60) * time.Second
 	kcc.SessionExpirationGrace = 2 * time.Minute // 2 Minutes grace until cleanup.
+
+	// Setup kcc default HTTP client with our values.
+	tlsClientConfig := bs.tlsClientConfig
+	kcc.DefaultHTTPClient = &http.Client{
+		Timeout:   utils.DefaultHTTPClient.Timeout,
+		Transport: utils.HTTPTransportWithTLSClientConfig(tlsClientConfig),
+	}
 
 	kopanoStorageServerClient := kcc.NewKCC(nil)
 	kopanoStorageServerClient.SetClientApp("konnect", version.Version)

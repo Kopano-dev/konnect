@@ -23,6 +23,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/http2"
+
 	"stash.kopano.io/kc/konnect/version"
 )
 
@@ -42,7 +44,7 @@ var DefaultHTTPUserAgent = "Kopano-Konnect/" + version.Version
 // HTTPTransportWithTLSClientConfig creates a new http.Transport with sane
 // default settings using the provided tls.Config.
 func HTTPTransportWithTLSClientConfig(tlsClientConfig *tls.Config) *http.Transport {
-	return &http.Transport{
+	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   defaultHTTPTimeout,
@@ -53,23 +55,42 @@ func HTTPTransportWithTLSClientConfig(tlsClientConfig *tls.Config) *http.Transpo
 		IdleConnTimeout:       defaultHTTPIdleConnTimeout,
 		TLSHandshakeTimeout:   defaultHTTPTLSHandshakeTimeout,
 		ExpectContinueTimeout: defaultHTTPExpectContinueTimeout,
-
-		TLSClientConfig: tlsClientConfig,
 	}
+	if tlsClientConfig != nil {
+		transport.TLSClientConfig = tlsClientConfig
+		err := http2.ConfigureTransport(transport)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return transport
+}
+
+// DefaultTLSConfig returns a new tls.Config.
+func DefaultTLSConfig() *tls.Config {
+	return &tls.Config{
+		ClientSessionCache: tls.NewLRUClientSessionCache(0),
+	}
+}
+
+// InsecureSkipVerifyTLSConfig returns a new tls.Config which does skip TLS verification.
+func InsecureSkipVerifyTLSConfig() *tls.Config {
+	config := DefaultTLSConfig()
+	config.InsecureSkipVerify = true
+
+	return config
 }
 
 // DefaultHTTPClient is a http.Client with a timeout set.
 var DefaultHTTPClient = &http.Client{
 	Timeout:   defaultHTTPTimeout,
-	Transport: HTTPTransportWithTLSClientConfig(nil),
+	Transport: HTTPTransportWithTLSClientConfig(DefaultTLSConfig()),
 }
-
-// InsecureSkipVerifyTLSConfig is a tls.Config which does skip TLS verification.
-var InsecureSkipVerifyTLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 // InsecureHTTPClient is a http.Client with a timeout set and with TLS
 // varification disabled.
 var InsecureHTTPClient = &http.Client{
 	Timeout:   defaultHTTPTimeout,
-	Transport: HTTPTransportWithTLSClientConfig(InsecureSkipVerifyTLSConfig),
+	Transport: HTTPTransportWithTLSClientConfig(InsecureSkipVerifyTLSConfig()),
 }
