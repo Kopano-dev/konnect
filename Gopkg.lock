@@ -271,12 +271,12 @@
   version = "v2.1.1"
 
 [[projects]]
-  digest = "1:dc9ff62d88fc35477254f086e18fc7ef87e4b0caa363fb757edb50c2d263aa85"
+  digest = "1:86bdb48434f8ac803e9c7013509b9762dd043c3595c0b7c2b8cce419d80a4875"
   name = "stash.kopano.io/kgol/kcc-go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2c0dac37069b3aa9ccfa81e5061b0d500f410f7e"
-  version = "v2.0.1"
+  revision = "d06ce62918e95cb93417593860f06a3f87cb413c"
+  version = "v2.1.0"
 
 [[projects]]
   digest = "1:05c67dc6aab8d89af757f205480b320b4ffe60f176ba6f5b8908bbfd3bf69cd0"

@@ -59,6 +59,11 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	useGlobalSession := false
 	globalSessionUsername := os.Getenv("KOPANO_SERVER_USERNAME")
 	globalSessionPassword := os.Getenv("KOPANO_SERVER_PASSWORD")
+	globalSessionClientCertificate := os.Getenv("KOPANO_CLIENT_CERTIFICATE")
+	globalSessionClientPrivateKey := os.Getenv("KOPANO_CLIENT_PRIVATE_KEY")
+	if globalSessionUsername == "" && (globalSessionClientCertificate != "" && globalSessionClientPrivateKey != "") {
+		globalSessionUsername = "SYSTEM"
+	}
 	if globalSessionUsername != "" {
 		useGlobalSession = true
 	}
@@ -87,7 +92,21 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	}
 
 	kopanoStorageServerClient := kcc.NewKCC(nil)
-	kopanoStorageServerClient.SetClientApp("konnect", version.Version)
+	if err := kopanoStorageServerClient.SetClientApp("konnect", version.Version); err != nil {
+		return nil, fmt.Errorf("failed to initialize kc client: %v", err)
+	}
+	if useGlobalSession && (globalSessionClientCertificate != "" || globalSessionClientPrivateKey != "") {
+		if globalSessionClientCertificate == "" {
+			return nil, fmt.Errorf("invalid or empty KOPANO_CLIENT_CERTIFICATE value")
+		}
+		if globalSessionClientPrivateKey == "" {
+			return nil, fmt.Errorf("invalid or empty KOPANO_CLIENT_PRIVATE_KEY value")
+		}
+		if err := kopanoStorageServerClient.LoadX509KeyPair(globalSessionClientCertificate, globalSessionClientPrivateKey); err != nil {
+			return nil, fmt.Errorf("failed to load/set kc client x509 certificate: %v", err)
+		}
+		logger.Infoln("kc server identifier backend initialized client for TLS authentication")
+	}
 
 	identifierBackend, identifierErr := identifierBackends.NewKCIdentifierBackend(
 		bs.cfg,

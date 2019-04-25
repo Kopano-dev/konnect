@@ -120,9 +120,9 @@ This assumes that Konnect can connect directly to a Kopano server via SOAP
 either using a unix socket or a TCP connection.
 
 Kopano Groupware Storage server backend connections can either use a dedicated
-service connection which might require a certain unix user to access the
-unix socket (not recommended) or bind the Konnect session and tokens to the
-underlaying Groupware Storage server's session (default).
+service connection which might require a TLS certificate or a certain unix user
+to access the unix socket (not recommended) or bind the Konnect session and
+tokens to the underlaying Groupware Storage server's session (default).
 
 ```
 export KOPANO_SERVER_DEFAULT_URI=http://mykopano.local:236
@@ -131,7 +131,8 @@ bin/konnectd serve --listen=127.0.0.1:8777 \
   --iss=https://mykonnect.local \
   kc
 ```
-Give dedicated session credentials via environment variables as shown in the
+
+Give dedicated user session credentials via environment variables as shown in the
 example below.
 
 ```
@@ -152,6 +153,20 @@ running as local admin user for best security.
 su - kopano
 export KOPANO_SERVER_DEFAULT_URI=file:///run/kopano/server.sock
 export KOPANO_SERVER_USERNAME=SYSTEM
+
+bin/konnectd serve --listen=127.0.0.1:8777 \
+  --iss=https://mykonnect.local \
+  kc
+```
+
+In some situations the only option is to authenticate to the backend by
+providing TLS client certificate and private key via environment variables.
+
+```
+export KOPANO_SERVER_DEFAULT_URI=https://mykopano.local:237
+export KOPANO_SERVER_USERNAME=SYSTEM
+export KOPANO_CLIENT_CERTIFICATE=/path/to/client-tls/client-0.pem
+export KOPANO_CLIENT_PRIVATE_KEY=/path/to/client-tls/client-0.key
 
 bin/konnectd serve --listen=127.0.0.1:8777 \
   --iss=https://mykonnect.local \

@@ -51,7 +51,7 @@
 
 [[constraint]]
   name = "stash.kopano.io/kgol/kcc-go"
-  version = "2.0.1"
+  version = "~2.1.0"
 
 [[constraint]]
   name = "stash.kopano.io/kgol/rndm"
