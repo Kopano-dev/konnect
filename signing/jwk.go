@@ -15,17 +15,30 @@
  *
  */
 
-package provider
+package signing
 
 import (
 	"crypto"
+	"encoding/base64"
 
-	"github.com/dgrijalva/jwt-go"
+	jwk "github.com/mendsley/gojwk"
+	"golang.org/x/crypto/ed25519"
 )
 
-// A SigningKey bundles a signer with meta data and a signign method.
-type SigningKey struct {
-	ID            string
-	PrivateKey    crypto.Signer
-	SigningMethod jwt.SigningMethod
+// JWKFromPublicKey creates a JWK from a public key
+func JWKFromPublicKey(key crypto.PublicKey) (*jwk.Key, error) {
+	switch key := key.(type) {
+	case ed25519.PublicKey:
+		jwt := &jwk.Key{
+			Kty: "OKP",
+			Crv: "Ed25519",
+			X:   base64.RawURLEncoding.EncodeToString(key),
+		}
+
+		return jwt, nil
+
+	default:
+		return jwk.PublicKey(key)
+	}
+
 }

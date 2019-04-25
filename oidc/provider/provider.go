@@ -31,6 +31,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ed25519"
 	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect"
@@ -40,6 +41,7 @@ import (
 	"stash.kopano.io/kc/konnect/managers"
 	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
+	"stash.kopano.io/kc/konnect/signing"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -65,7 +67,7 @@ type Provider struct {
 	encryptionManager *identityManagers.EncryptionManager
 	clients           *clients.Registry
 
-	signingKeys          map[jwt.SigningMethod]*signingKey
+	signingKeys          map[jwt.SigningMethod]*SigningKey
 	signingMethodDefault jwt.SigningMethod
 	validationKeys       map[string]crypto.PublicKey
 
@@ -97,7 +99,7 @@ func NewProvider(c *Config) (*Provider, error) {
 		checkSessionIframePath: c.CheckSessionIframePath,
 		registrationPath:       c.RegistrationPath,
 
-		signingKeys:    make(map[jwt.SigningMethod]*signingKey),
+		signingKeys:    make(map[jwt.SigningMethod]*SigningKey),
 		validationKeys: make(map[string]crypto.PublicKey),
 
 		browserStateCookiePath: c.BrowserStateCookiePath,
@@ -174,126 +176,152 @@ func (p *Provider) makeIssURL(path string) string {
 	return fmt.Sprintf("%s%s", p.issuerIdentifier, path)
 }
 
+// SetSigningMethod sets the provided signing method as default signing method
+// of the associated provider.
+func (p *Provider) SetSigningMethod(signingMethod jwt.SigningMethod) error {
+	p.logger.WithField("alg", signingMethod.Alg()).Infoln("set provider signing alg")
+	p.signingMethodDefault = signingMethod
+
+	return nil
+}
+
 // SetSigningKey sets the provided signer as key for token signing with the
-// provided signing method and uses the provided id as key id. The public key of
-// the provided signer is also added as validation key with the same id.
-func (p *Provider) SetSigningKey(id string, key crypto.Signer, signingMethod jwt.SigningMethod) error {
-	if signingMethod == nil {
-		// Auto select signingMethod based on the signer.
-		switch s := key.(type) {
-		case *rsa.PrivateKey:
-			signingMethod = jwt.SigningMethodPS256
-		case *ecdsa.PrivateKey:
-			signingMethod = jwt.SigningMethodES256
-		default:
-			return fmt.Errorf("unsupported signer type: %v", s)
+// provided id as key id. The public key of the provided signer is also added
+// as validation key with the same key id.
+func (p *Provider) SetSigningKey(id string, key crypto.Signer) error {
+	var signingMethod jwt.SigningMethod
+
+	// Auto select signingMethod based on the signer.
+	switch s := key.(type) {
+	case *rsa.PrivateKey:
+		signingMethod = jwt.SigningMethodPS256
+	case *ecdsa.PrivateKey:
+		signingMethod = jwt.SigningMethodES256
+	case ed25519.PrivateKey:
+		signingMethod = signing.SigningMethodEdDSA
+	default:
+		return fmt.Errorf("unsupported signer type: %v", s)
+	}
+
+	if p.signingMethodDefault == nil {
+		if err := p.SetSigningMethod(signingMethod); err != nil {
+			return err
 		}
 	}
-	if p.signingMethodDefault == nil {
-		p.signingMethodDefault = signingMethod
-		p.logger.WithField("alg", signingMethod.Alg()).Infoln("set provider signing alg")
-	}
+
 	p.logger.WithFields(logrus.Fields{
-		"type": fmt.Sprintf("%T", key),
-		"id":   id,
+		"type":   fmt.Sprintf("%T", key),
+		"id":     id,
+		"method": fmt.Sprintf("%T", signingMethod),
 	}).Infoln("set provider signing key")
 
 	switch signingMethod.(type) {
 	case *jwt.SigningMethodECDSA:
 		// Add all other supported ECDSA signing methods as well.
-		p.signingKeys[jwt.SigningMethodES256] = &signingKey{
+		p.signingKeys[jwt.SigningMethodES256] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodES256,
 		}
-		p.signingKeys[jwt.SigningMethodES384] = &signingKey{
+		p.signingKeys[jwt.SigningMethodES384] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodES384,
 		}
-		p.signingKeys[jwt.SigningMethodES512] = &signingKey{
+		p.signingKeys[jwt.SigningMethodES512] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodES512,
 		}
 	case *jwt.SigningMethodRSA:
 		// Add all supported RSA and RSAPSS signing methods as well.
-		p.signingKeys[jwt.SigningMethodRS256] = &signingKey{
+		p.signingKeys[jwt.SigningMethodRS256] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodRS256,
 		}
-		p.signingKeys[jwt.SigningMethodRS384] = &signingKey{
+		p.signingKeys[jwt.SigningMethodRS384] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodRS384,
 		}
-		p.signingKeys[jwt.SigningMethodRS512] = &signingKey{
+		p.signingKeys[jwt.SigningMethodRS512] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodRS512,
 		}
-		p.signingKeys[jwt.SigningMethodPS256] = &signingKey{
+		p.signingKeys[jwt.SigningMethodPS256] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodPS256,
 		}
-		p.signingKeys[jwt.SigningMethodPS384] = &signingKey{
+		p.signingKeys[jwt.SigningMethodPS384] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodPS384,
 		}
-		p.signingKeys[jwt.SigningMethodPS512] = &signingKey{
+		p.signingKeys[jwt.SigningMethodPS512] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodPS512,
 		}
 	case *jwt.SigningMethodRSAPSS:
 		// Add all supported RSA and RSAPSS signing methods as well.
-		p.signingKeys[jwt.SigningMethodRS256] = &signingKey{
+		p.signingKeys[jwt.SigningMethodRS256] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodRS256,
 		}
-		p.signingKeys[jwt.SigningMethodRS384] = &signingKey{
+		p.signingKeys[jwt.SigningMethodRS384] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodRS384,
 		}
-		p.signingKeys[jwt.SigningMethodRS512] = &signingKey{
+		p.signingKeys[jwt.SigningMethodRS512] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodRS512,
 		}
-		p.signingKeys[jwt.SigningMethodPS256] = &signingKey{
+		p.signingKeys[jwt.SigningMethodPS256] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodPS256,
 		}
-		p.signingKeys[jwt.SigningMethodPS384] = &signingKey{
+		p.signingKeys[jwt.SigningMethodPS384] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodPS384,
 		}
-		p.signingKeys[jwt.SigningMethodPS512] = &signingKey{
+		p.signingKeys[jwt.SigningMethodPS512] = &SigningKey{
 			ID:            id,
 			PrivateKey:    key,
 			SigningMethod: jwt.SigningMethodPS512,
+		}
+	case *signing.SigningMethodEdwardsCurve:
+		p.signingKeys[signingMethod] = &SigningKey{
+			ID:            id,
+			PrivateKey:    key,
+			SigningMethod: signingMethod,
 		}
 	default:
 		return fmt.Errorf("unsupported signing method type")
 	}
 
-	if rsk, ok := p.signingKeys[signingMethod]; !ok || rsk.PrivateKey != key {
+	if _, ok := p.signingKeys[signingMethod]; !ok {
 		return fmt.Errorf("unsupported signing method")
 	}
 
-	p.SetValidationKey(id, key.Public(), signingMethod)
+	p.SetValidationKey(id, key.Public())
 
 	return nil
 }
 
-func (p *Provider) getSigningKey(signingMethod jwt.SigningMethod) (*signingKey, bool) {
+// GetSigningKey returns a matching signing key for the provided signing method.
+func (p *Provider) GetSigningKey(signingMethod jwt.SigningMethod) (*SigningKey, bool) {
+	return p.getSigningKey(signingMethod)
+}
+
+func (p *Provider) getSigningKey(signingMethod jwt.SigningMethod) (*SigningKey, bool) {
 	if signingMethod == nil {
 		// Use default signign method if none given.
 		signingMethod = p.signingMethodDefault
@@ -305,7 +333,7 @@ func (p *Provider) getSigningKey(signingMethod jwt.SigningMethod) (*signingKey, 
 
 // SetValidationKey sets the provider public key as validation key for token
 // validation for tokens with the provided key.
-func (p *Provider) SetValidationKey(id string, key crypto.PublicKey, signingMethod jwt.SigningMethod) error {
+func (p *Provider) SetValidationKey(id string, key crypto.PublicKey) error {
 	p.logger.WithFields(logrus.Fields{
 		"type": fmt.Sprintf("%T", key),
 		"id":   id,
@@ -314,6 +342,11 @@ func (p *Provider) SetValidationKey(id string, key crypto.PublicKey, signingMeth
 	p.validationKeys[id] = key
 
 	return nil
+}
+
+// GetValidationKey returns the validation key for the provided id.
+func (p *Provider) GetValidationKey(id string) (crypto.PublicKey, bool) {
+	return p.getValidationKey(id)
 }
 
 func (p *Provider) getValidationKey(id string) (crypto.PublicKey, bool) {
@@ -374,6 +407,7 @@ func (p *Provider) InitializeMetadata() error {
 		jwt.SigningMethodPS384.Alg(),
 		jwt.SigningMethodPS512.Alg(),
 		jwt.SigningMethodNone.Alg(),
+		signing.SigningMethodEdDSA.Alg(),
 	}
 	p.metadata.TokenEndpointAuthMethodsSupported = []string{
 		oidc.AuthMethodClientSecretBasic,

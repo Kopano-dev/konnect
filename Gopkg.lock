@@ -191,14 +191,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9e58d5274a95c70358b4d22c39dd3bc7490a827b778728ac73af8fdd93a20704"
+  digest = "1:ef6f5a1afcf6996c2a9871649ac6ed5a4ae9f4baea7fd004b8b10aed97ff53d8"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "18eb32c0e2f0c2bc8d17842ed4ad41486f349ad4"
+  revision = "16072639606ea9e22c7d86e4cbd6af6314f4193c"
 
 [[projects]]
   digest = "1:f4ea3f623a07a2602bb9c1624d6dc7d291261278ba2484508fac559dc7926048"
@@ -279,12 +279,12 @@
   version = "v2.1.0"
 
 [[projects]]
-  digest = "1:05c67dc6aab8d89af757f205480b320b4ffe60f176ba6f5b8908bbfd3bf69cd0"
+  digest = "1:600b01ddd2158e6d4d8ed3f68e346d4f5151fdc11395607b3e307740aa2bcc04"
   name = "stash.kopano.io/kgol/oidc-go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0f3bf16d2ef6d2c4b66bcac7a9c17ed29cc574cf"
-  version = "v0.1.0"
+  revision = "e95fb7907fe37b6f39c47ec927587c0919367c70"
+  version = "v0.2.0"
 
 [[projects]]
   digest = "1:e004a22416b1063c30360a2a91beadb538fa8c103362e6c653aaa1de4d6bbb5e"
@@ -313,6 +313,7 @@
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "golang.org/x/crypto/blake2b",
+    "golang.org/x/crypto/ed25519",
     "golang.org/x/crypto/nacl/secretbox",
     "golang.org/x/net/http2",
     "golang.org/x/time/rate",

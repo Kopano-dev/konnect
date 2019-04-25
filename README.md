@@ -105,6 +105,35 @@ file. Without any explicitly registered clients, Konnect will only accept client
 which redirect to an URI which starts with the value provided with the `--iss`
 parameter.
 
+## Konnect cryptography and validation
+
+A tool can be used to create keys for Konnect and also to validate tokens to
+ensure correct operation is [Step CLI](https://github.com/smallstep/cli). This
+helps since OpenSSL is not able to create or validate all of the different key
+formats, ciphers and curves which are supported by Konnect.
+
+Here are some examples relevant for Konnect.
+
+```
+step crypto keypair 1-rsa.pub 1-rsa.pem \
+  --kty RSA --size 4096 --no-password --insecure
+```
+
+```
+step crypto keypair 1-ecdsa-p-256.pub 1-ecdsa-p-256.pem \
+  --kty EC --curve P-256 --no-password --insecure
+```
+
+```
+step crypto jwk create 1-eddsa-ed25519.pub.json 1-eddsa-ed25519.key.json \
+  -kty OKP --crv Ed25519 --no-password --insecure
+```
+
+```
+echo $TOKEN_VALUE | step crypto jwt verify --iss $ISS \
+  --aud playground-trusted.js --jwks $ISS/konnect/v1/jwks.json
+```
+
 ## URL endpoints
 
 Take a look at `Caddyfile.example` on the URL endpoints provided by Konnect and

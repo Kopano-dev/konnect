@@ -63,8 +63,12 @@
 
 [[constraint]]
   name = "stash.kopano.io/kgol/oidc-go"
-  version = "0.1.0"
+  version = "0.2.0"
 
 [[constraint]]
   branch = "master"
   name = "golang.org/x/net"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"

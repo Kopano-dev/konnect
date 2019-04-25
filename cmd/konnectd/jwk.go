@@ -61,15 +61,20 @@ func jwkFromPem(cmd *cobra.Command, args []string) error {
 	fn := args[0]
 
 	key, err := func() (interface{}, error) {
-		signer, err := loadSignerFromFile(fn)
+		signerKid, signer, err := loadSignerFromFile(fn)
 		if err == nil {
+			if kid == "" {
+				kid = signerKid
+			}
 			return signer, nil
 		}
-		validator, err := loadValidatorFromFile(fn)
+		validatorKid, validator, err := loadValidatorFromFile(fn)
 		if err == nil {
+			if kid == "" {
+				kid = validatorKid
+			}
 			return validator, nil
 		}
-
 		return nil, err
 	}()
 	if err != nil {

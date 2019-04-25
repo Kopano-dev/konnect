@@ -282,11 +282,6 @@ func (bs *bootstrap) initialize() error {
 				}
 			}
 		}
-		// Ensure we have a signer for the things we need.
-		err = validateSigners(bs)
-		if err != nil {
-			return err
-		}
 	} else {
 		//NOTE(longsleep): remove me - create keypair a random key pair.
 		sm := jwt.SigningMethodPS256
@@ -294,6 +289,12 @@ func (bs *bootstrap) initialize() error {
 		logger.WithField("alg", sm.Name).Warnf("missing --signing-private-key parameter, using random %d bit signing key", defaultSigningKeyBits)
 		signer, _ := rsa.GenerateKey(rand.Reader, defaultSigningKeyBits)
 		bs.signers[bs.signingKeyID] = signer
+	}
+
+	// Ensure we have a signer for the things we need.
+	err = validateSigners(bs)
+	if err != nil {
+		return err
 	}
 
 	validationKeysPath, _ := cmd.Flags().GetString("validation-keys-path")
@@ -469,18 +470,24 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 	if err != nil {
 		return nil, fmt.Errorf("failed to create provider: %v", err)
 	}
+	if bs.signingMethod != nil {
+		err = provider.SetSigningMethod(bs.signingMethod)
+		if err != nil {
+			return nil, fmt.Errorf("failed to set provider signing method: %v", err)
+		}
+	}
 
 	// All add signers.
 	for id, signer := range bs.signers {
 		if id == bs.signingKeyID {
-			err = provider.SetSigningKey(id, signer, bs.signingMethod)
+			err = provider.SetSigningKey(id, signer)
 			// Always set default key.
 			if id != defaultSigningKeyID {
-				provider.SetValidationKey(defaultSigningKeyID, signer.Public(), bs.signingMethod)
+				provider.SetValidationKey(defaultSigningKeyID, signer.Public())
 			}
 		} else {
 			// Set non default signers as well.
-			err = provider.SetSigningKey(id, signer, nil)
+			err = provider.SetSigningKey(id, signer)
 		}
 		if err != nil {
 			return nil, err
@@ -488,9 +495,17 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 	}
 	// Add all validators.
 	for id, publicKey := range bs.validators {
-		err = provider.SetValidationKey(id, publicKey, bs.signingMethod)
+		err = provider.SetValidationKey(id, publicKey)
 		if err != nil {
 			return nil, err
+		}
+	}
+	if bs.signingKeyID == "" {
+		if sk, ok := provider.GetSigningKey(bs.signingMethod); ok {
+			bs.signingKeyID = sk.ID
+			provider.SetValidationKey(defaultSigningKeyID, sk.PrivateKey.Public())
+		} else {
+			return nil, fmt.Errorf("no signing key for selected signing method")
 		}
 	}
 	logger.Infoln("oidc token signing set up")

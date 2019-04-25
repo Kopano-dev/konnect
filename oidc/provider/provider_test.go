@@ -27,7 +27,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 
 	"stash.kopano.io/kc/konnect/config"
@@ -90,7 +89,7 @@ func NewTestProvider(ctx context.Context, t *testing.T) (*httptest.Server, *Prov
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.SetSigningKey("default", rsaPrivateKey, jwt.SigningMethodPS256)
+	p.SetSigningKey("default", rsaPrivateKey)
 	err = p.RegisterManagers(mgrs)
 	if err != nil {
 		t.Fatal(err)

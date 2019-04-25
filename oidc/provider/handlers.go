@@ -35,6 +35,7 @@ import (
 	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
+	"stash.kopano.io/kc/konnect/signing"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -65,7 +66,7 @@ func (p *Provider) JwksHandler(rw http.ResponseWriter, req *http.Request) {
 		Keys: make([]*jwk.Key, 0, len(validationKeys)-1),
 	}
 	for kid, key := range validationKeys {
-		keyJwk, err := jwk.PublicKey(key)
+		keyJwk, err := signing.JWKFromPublicKey(key)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
