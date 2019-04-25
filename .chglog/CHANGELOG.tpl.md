@@ -6,12 +6,16 @@
 {{ range .Unreleased.CommitGroups -}}
 ### {{ .Title }}
 {{ range .Commits -}}
+{{ if not (hasSuffix (lower .Subject) " changelog") -}}
 - {{ if .Scope }}**{{ .Scope }}:** {{ end }}{{ .Subject }}
+{{ end -}}
 {{ end }}
 {{ end -}}
 {{ else }}
 {{ range .Unreleased.Commits -}}
+{{ if not (hasSuffix (lower .Subject) " changelog") -}}
 - {{ if .Scope }}**{{ .Scope }}:** {{ end }}{{ .Subject }}
+{{ end -}}
 {{ end }}
 {{ end -}}
 {{ end -}}
@@ -22,12 +26,16 @@
 {{ range .CommitGroups -}}
 ### {{ .Title }}
 {{ range .Commits -}}
+{{ if not (hasSuffix (lower .Subject) " changelog") -}}
 - {{ if .Scope }}**{{ .Scope }}:** {{ end }}{{ .Subject }}
+{{ end -}}
 {{ end }}
 {{ end -}}
 {{ else }}
 {{ range .Commits -}}
+{{ if not (hasSuffix (lower .Subject) " changelog") -}}
 - {{ if .Scope }}**{{ .Scope }}:** {{ end }}{{ .Subject }}
+{{ end -}}
 {{ end }}
 {{ end -}}
 
