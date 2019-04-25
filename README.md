@@ -145,7 +145,7 @@ bin/konnectd serve --listen=127.0.0.1:8777 \
   kc
 ```
 
-Or run konnect as local_admin_unix user. Only run konnectd like this when you
+Or run Konnect as local_admin_unix user. Only run konnectd like this when you
 actually use that authentication scheme. Otherwise ensure that Konnect is not
 running as local admin user for best security.
 
