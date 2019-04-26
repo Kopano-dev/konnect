@@ -82,8 +82,8 @@ also can directly connect to a LDAP server.
 All backends require certain general parameters to be present. Create a RSA
 key-pair file with `openssl genpkey -algorithm RSA -out private-key.pem -pkeyopt rsa_keygen_bits:4096`
 and provide the key file with the `--signing-private-key` parameter. Konnect can
-load PKCS#1 and PKCS#8 key files. If you skip this, Konnect will create a random
-non-persistent RSA key on startup.
+load PEM encoded PKCS#1 and PKCS#8 key files and JSON Web Keys from `.json` files
+If you skip this, Konnect will create a random non-persistent RSA key on startup.
 
 To encrypt certain values, Konnect needs a secure encryption key. Create a
 suitable key of 32 bytes with `openssl rand -out encryption.key 32` and provide
