@@ -201,7 +201,7 @@
   revision = "16072639606ea9e22c7d86e4cbd6af6314f4193c"
 
 [[projects]]
-  digest = "1:f4ea3f623a07a2602bb9c1624d6dc7d291261278ba2484508fac559dc7926048"
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -222,8 +222,8 @@
     "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "c942b20a5d85b458c4dce1589326051d85e25d6d"
-  version = "v0.3.1"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   branch = "master"
@@ -271,20 +271,20 @@
   version = "v2.1.1"
 
 [[projects]]
-  digest = "1:86bdb48434f8ac803e9c7013509b9762dd043c3595c0b7c2b8cce419d80a4875"
+  digest = "1:9a67ac025ac0bed60f6c84d2bcefd4abd40a15c8b5be3d32d1bcaa8bcd8f0d6a"
   name = "stash.kopano.io/kgol/kcc-go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d06ce62918e95cb93417593860f06a3f87cb413c"
-  version = "v2.1.0"
+  revision = "022a268e55daaeb14ae0e27ce0d8ecd91ec347b0"
+  version = "v3.0.0"
 
 [[projects]]
-  digest = "1:600b01ddd2158e6d4d8ed3f68e346d4f5151fdc11395607b3e307740aa2bcc04"
+  digest = "1:3cbf6c7fe4df8116b3660a9aabbd8b035a27b45d3c03d0f8fecacd25fd7eaff3"
   name = "stash.kopano.io/kgol/oidc-go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e95fb7907fe37b6f39c47ec927587c0919367c70"
-  version = "v0.2.0"
+  revision = "91c341772a1a5297661ad9f57faff0f5aa404ab6"
+  version = "v0.2.1"
 
 [[projects]]
   digest = "1:e004a22416b1063c30360a2a91beadb538fa8c103362e6c653aaa1de4d6bbb5e"

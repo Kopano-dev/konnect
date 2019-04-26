@@ -51,7 +51,7 @@
 
 [[constraint]]
   name = "stash.kopano.io/kgol/kcc-go"
-  version = "~2.1.0"
+  version = "~3.0.0"
 
 [[constraint]]
   name = "stash.kopano.io/kgol/rndm"
@@ -63,7 +63,7 @@
 
 [[constraint]]
   name = "stash.kopano.io/kgol/oidc-go"
-  version = "0.2.0"
+  version = "0.2.1"
 
 [[constraint]]
   branch = "master"
