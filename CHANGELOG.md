@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add hint that Konnect has learned to load JSON Web Keys
+- Update external Kopano dependencies
+- Include NOTICE files in 3rdparty-LICENSES.md
 - Log default OIDC provider signing details
 - Implement support for EdDSA keys
 - Fix typos
