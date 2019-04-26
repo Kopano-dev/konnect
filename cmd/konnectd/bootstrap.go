@@ -500,15 +500,20 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 			return nil, err
 		}
 	}
-	if bs.signingKeyID == "" {
-		if sk, ok := provider.GetSigningKey(bs.signingMethod); ok {
-			bs.signingKeyID = sk.ID
-			provider.SetValidationKey(defaultSigningKeyID, sk.PrivateKey.Public())
-		} else {
-			return nil, fmt.Errorf("no signing key for selected signing method")
-		}
+
+	sk, ok := provider.GetSigningKey(bs.signingMethod)
+	if !ok {
+		return nil, fmt.Errorf("no signing key for selected signing method")
 	}
-	logger.Infoln("oidc token signing set up")
+	if bs.signingKeyID == "" {
+		// Ensure that there is a default signing Key ID even if none was set.
+		provider.SetValidationKey(defaultSigningKeyID, sk.PrivateKey.Public())
+	}
+	logger.WithFields(logrus.Fields{
+		"id":     sk.ID,
+		"method": fmt.Sprintf("%T", sk.SigningMethod),
+		"alg":    sk.SigningMethod.Alg(),
+	}).Infoln("oidc token signing default set up")
 
 	return provider, nil
 }
