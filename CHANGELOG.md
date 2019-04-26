@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+
+## v0.22.0 (2019-04-26)
+
+- Add origins key to web client examples
 - Add hint that Konnect has learned to load JSON Web Keys
 - Update external Kopano dependencies
 - Include NOTICE files in 3rdparty-LICENSES.md
