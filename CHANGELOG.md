@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Log default OIDC provider signing details
+- Implement support for EdDSA keys
+- Fix typos
+- Add TLS client auth support for kc backend
+- Setup kcc default HTTP client
+- Unify HTTP client settings and setup
+- Add support to set URI base path
+- Translated using Weblate (Portuguese (Portugal))
+- Translated using Weblate (Norwegian Bokmål)
+- Translated using Weblate (Russian)
+- Update Go dependencies
+- Add threadsafe authority discovery support
 - Only log unhandled inner identity manager errors
 - Only compare hostname (not the port) for native clients
 - Only enable default external authority
