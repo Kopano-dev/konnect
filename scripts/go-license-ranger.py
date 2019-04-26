@@ -55,6 +55,14 @@ config = {
         'license.md',
         'license.txt'
     ],
+    "noticeFilenames": [
+        'NOTICE',
+        'NOTICE.md',
+        'NOTICE.txt',
+        'notice',
+        'notice.md',
+        'notice.txt'
+    ]
     # "manual": {
     #     "github.com/kopano-dev/example": "README.txt"
     # }
@@ -73,7 +81,7 @@ def main():
         print("Error: Invalid mode %s", config.get("mode"))
         sys.exit(1)
     missing = run(config["base"], dependencyFolders,
-                  config["licenseFilenames"])
+                  config["licenseFilenames"], config["noticeFilenames"])
     if len(missing) > config["allowMissing"]:
         print("Failed: Missing licenses: %d" % len(missing), file=sys.stderr)
         for m in missing:
@@ -109,11 +117,13 @@ def getDependenciesWithDep(dep="dep"):
     return installed
 
 
-def run(base, relativeFolderPaths, licenseFileNames):
+def run(base, relativeFolderPaths, licenseFileNames, noticeFileNames):
     relativeFolderPaths.sort()
-    missing, table = getLicenseTable(base, relativeFolderPaths,
-                                     licenseFileNames)
-    concatLicenses(table)
+    missing, licenseTable = getLicenseTable(base, relativeFolderPaths,
+                                            licenseFileNames)
+    _, noticeTable = getLicenseTable(base, relativeFolderPaths,
+                                     noticeFileNames)
+    concatLicenses(licenseTable, noticeTable)
     return missing
 
 
@@ -128,7 +138,7 @@ def getLicenseTable(base, relativeFolderPaths, licenseFileNames):
         licenses = findLicenseFile(base, table, abspath(folderPath),
                                    licenseFileNames)
 
-        if len(licenses) == 0 and folder in config.get("manual"):
+        if len(licenses) == 0 and folder in config.get("manual", ()):
             if config["debug"]:
                 print("> Using manual license definition: %s" % folderPath,
                       file=sys.stderr)
@@ -165,14 +175,16 @@ def findLicenseFile(base, table, folderPath, licenseFileNames):
     return result
 
 
-def concatLicenses(table):
+def concatLicenses(table, noticeTable):
     seen = {}
     tableValues = list(table.values())
     tableValues.sort()
+    notices = dict((module, notice) for module, notice in noticeTable.values())
 
     print(config.get("header", ""))
     for v in tableValues:
         module, licenses = v
+        notice = notices.get(module)
         for license in licenses:
             if license in seen:
                 if config["debug"]:
@@ -184,6 +196,13 @@ def concatLicenses(table):
                 print("> Licens %s" % license, file=sys.stderr)
 
             print("### %s\n" % module)
+            if notice:
+                with open(notice[0], 'r') as noticeFile:
+                    for line in noticeFile.readlines():
+                        print("> %s" % line.rstrip())
+                    print("")
+
+            print("License:\n")
             with open(license, 'r') as licenseFile:
                 print("```\n%s\n```\n" % licenseFile.read())
     print(config.get("footer", ""))
