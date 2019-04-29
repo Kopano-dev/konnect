@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Change license to Apache License 2.0
 
 
 ## v0.22.0 (2019-04-26)
