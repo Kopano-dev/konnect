@@ -49,12 +49,12 @@ var defaultScopesMap = map[string]string{
 
 var defaultScopesDefinitionMap = map[string]*Definition{
 	scopeAliasBasic: &Definition{
-		Description: "Access your basic account information",
-		Priority:    priorityBasic,
+		ID:       "scope_alias_basic",
+		Priority: priorityBasic,
 	},
 	oidc.ScopeOfflineAccess: &Definition{
-		Description: "Keep the allowed access persistently and forever",
-		Priority:    priorityOfflineAccess,
+		ID:       "scope_offline_access",
+		Priority: priorityOfflineAccess,
 	},
 }
 

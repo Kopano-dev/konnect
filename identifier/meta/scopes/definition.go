@@ -20,5 +20,6 @@ package scopes
 // A Definition contains the meta data for a single scope.
 type Definition struct {
 	Priority    int    `json:"priority" yaml:"priority"`
-	Description string `json:"description" yaml:"description"`
+	Description string `json:"description,omitempty" yaml:"description"`
+	ID          string `json:"id,omitempty"`
 }

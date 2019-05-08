@@ -6,6 +6,8 @@ import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import Checkbox from '@material-ui/core/Checkbox';
 
+import { injectIntl, intlShape, defineMessages, FormattedMessage } from 'react-intl';
+
 const styles = () => ({
   row: {
     paddingTop: 0,
@@ -13,7 +15,18 @@ const styles = () => ({
   }
 });
 
-const ScopesList = ({scopes, meta, classes, ...rest}) => {
+const scopeIDTranslations = defineMessages({
+  'scope_alias_basic': {
+    id: 'konnect.scopeDescription.aliasBasic',
+    defaultMessage: 'Access your basic account information'
+  },
+  'scope_offline_access': {
+    id: 'konnect.scopeDescription.offlineAccess',
+    defaultMessage: 'Keep the allowed access persistently and forever'
+  }
+});
+
+const ScopesList = ({scopes, meta, classes, intl, ...rest}) => {
   const { mapping, definitions } = meta;
 
   const rows = [];
@@ -35,10 +48,23 @@ const ScopesList = ({scopes, meta, classes, ...rest}) => {
     }
     let definition = definitions[id];
     let label ;
-    if (!definition) {
-      label = `Scope: ${scope}`;
-    } else {
-      label = definition.description;
+    if (definition) {
+      if (definition.id) {
+        const translation = scopeIDTranslations[definition.id];
+        if (translation) {
+          label = intl.formatMessage(translation);
+        }
+      }
+      if (!label) {
+        label = definition.description;
+      }
+    }
+    if (!label) {
+      label = <FormattedMessage
+        id="konnect.scopeDescription.scope"
+        defaultMessage="Scope: {scope}"
+        values={{scope}}
+      />;
     }
 
     rows.push(
@@ -66,9 +92,10 @@ const ScopesList = ({scopes, meta, classes, ...rest}) => {
 
 ScopesList.propTypes = {
   classes: PropTypes.object.isRequired,
+  intl: intlShape.isRequired,
 
   scopes: PropTypes.object.isRequired,
   meta: PropTypes.object.isRequired
 };
 
-export default withStyles(styles)(ScopesList);
+export default withStyles(styles)(injectIntl(ScopesList));
