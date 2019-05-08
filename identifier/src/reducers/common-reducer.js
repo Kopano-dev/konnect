@@ -10,13 +10,22 @@ const query = queryString.parse(document.location.search);
 const flow = query.flow || '';
 delete query.flow;
 
+const defaultPathPrefix = (() => {
+  let pathPrefix = document.getElementById('root').getAttribute('data-path-prefix');
+  if (pathPrefix === '__PATH_PREFIX__') {
+    // Not replaced, probably we are running in debug mode or whatever. Use sane default.
+    pathPrefix = '/signin/v1';
+  }
+  return pathPrefix;
+})();
+
 const defaultState = {
   hello: null,
   error: null,
   flow: flow,
   query: query,
   updateAvailable: false,
-  pathPrefix: document.getElementById('root').getAttribute('data-path-prefix')
+  pathPrefix: defaultPathPrefix
 };
 
 function commonReducer(state = defaultState, action) {
