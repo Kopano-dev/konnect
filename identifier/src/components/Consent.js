@@ -21,7 +21,8 @@ import ScopesList from './ScopesList';
 
 const styles = theme => ({
   button: {
-    margin: theme.spacing.unit
+    margin: theme.spacing.unit,
+    minWidth: 100
   },
   buttonProgress: {
     color: green[500],
@@ -152,6 +153,7 @@ class Consent extends Component {
               <Button
                 type="submit"
                 color="primary"
+                variant="contained"
                 className={classes.button}
                 disabled={!!loading}
                 onClick={this.action(true, scopes)}

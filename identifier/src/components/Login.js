@@ -18,7 +18,8 @@ import { ErrorMessage } from '../errors';
 
 const styles = theme => ({
   button: {
-    margin: theme.spacing.unit
+    margin: theme.spacing.unit,
+    minWidth: 100
   },
   buttonProgress: {
     color: green[500],
@@ -84,6 +85,7 @@ class Login extends Component {
               helperText={<ErrorMessage error={errors.username}></ErrorMessage>}
               fullWidth
               margin="dense"
+              variant="outlined"
               autoFocus
               inputProps={inputProps.username}
               value={username}
@@ -99,6 +101,7 @@ class Login extends Component {
               helperText={<ErrorMessage error={errors.password}></ErrorMessage>}
               fullWidth
               margin="dense"
+              variant="outlined"
               onChange={this.handleChange('password')}
               autoComplete="kopano-account current-password"
             />
@@ -107,6 +110,7 @@ class Login extends Component {
                 <Button
                   type="submit"
                   color="primary"
+                  variant="contained"
                   className={classes.button}
                   disabled={!!loading}
                   onClick={(event) => this.logon(event)}

@@ -13,6 +13,10 @@ import ResponsiveScreen from './ResponsiveScreen';
 import { executeLogoff } from '../actions/common-actions';
 
 const styles = theme => ({
+  button: {
+    margin: theme.spacing.unit,
+    minWidth: 100
+  },
   subHeader: {
     marginBottom: theme.spacing.unit * 5
   }
@@ -45,6 +49,7 @@ class Welcomescreen extends React.PureComponent {
           <Button
             color="secondary"
             className={classes.button}
+            variant="contained"
             onClick={(event) => this.logoff(event)}
           >
             <FormattedMessage id="konnect.welcome.signoutButton.label" defaultMessage="Sign out"></FormattedMessage>
