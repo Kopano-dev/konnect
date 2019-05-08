@@ -37,8 +37,10 @@ json:
 .PHONY: merge
 merge: $(POS)
 
-$(POS): $(POT)
+$(POS): FORCE $(POT)
 	$(MSGMERGE) -U \
 		--backup=none \
 		--no-wrap \
 		$@ $(POT)
+
+FORCE:
