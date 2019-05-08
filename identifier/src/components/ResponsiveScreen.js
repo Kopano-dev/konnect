@@ -5,6 +5,8 @@ import classNames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
 import Grid from '@material-ui/core/Grid';
 import DialogContent from '@material-ui/core/DialogContent';
+import DialogActions from '@material-ui/core/DialogActions';
+import LocaleSelect from 'kpop/es/IntlContainer/LocaleSelect';
 
 import ResponsiveDialog from './ResponsiveDialog';
 import KopanoLogo from '../images/kopano-logo.svg';
@@ -24,6 +26,12 @@ const styles = theme => ({
   logo: {
     height: 18,
     marginBottom: theme.spacing.unit * 2
+  },
+  actions: {
+    marginTop: -40,
+    justifyContent: 'flex-start',
+    paddingLeft: theme.spacing.unit,
+    paddingRight: theme.spacing.unit
   }
 });
 
@@ -57,6 +65,7 @@ function ResponsiveScreen(props) {
           {logo}
           {content}
         </div>
+        <DialogActions className={classes.actions} disableActionSpacing><LocaleSelect disableUnderline/></DialogActions>
       </ResponsiveDialog>
     </Grid>
   );
