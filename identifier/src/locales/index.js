@@ -13,6 +13,7 @@ import nl from './nl.json';
 import ptPT from './pt_PT.json';
 import ru from './ru.json';
 
+// Locales must follow BCP 47 format (https://tools.ietf.org/html/rfc5646).
 export default {
   de,
   es,
@@ -22,7 +23,6 @@ export default {
   ja,
   nb,
   nl,
-  pt: ptPT,
-  'pt-pt': ptPT,
+  'pt-PT': ptPT,
   ru
 };
