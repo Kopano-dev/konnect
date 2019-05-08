@@ -2,16 +2,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
-"PO-Revision-Date: 2018-10-31 10:50+0000\n"
-"Last-Translator: Felix <f.bartels@kopano.com>\n"
-"Language-Team: German "
-"<http://translate.kopano.io/projects/kopano/konnect/de/>\n"
+"PO-Revision-Date: 2019-05-08 17:30+0200\n"
+"Last-Translator: Simon Eisenmann <simon@longsleep.org>\n"
+"Language-Team: German <http://translate.kopano.io/projects/kopano/konnect/de/>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2.4\n"
+"X-Generator: Poedit 1.8.7.1\n"
 
 #. [konnect.chooseaccount.useOther.persona.label]
 #. defaultMessage is:
@@ -67,8 +66,7 @@ msgstr "Konto auswählen"
 #: i18n/src/messages.json
 msgctxt "konnect.consent.tooltip.client"
 msgid "Clicking \"Allow\" will redirect you to: {redirectURI}"
-msgstr ""
-"Wenn Sie \"Einverstanden\" klicken werden Sie zu {redirectURI} weitergeleitet"
+msgstr "Wenn Sie \"Einverstanden\" klicken werden Sie zu {redirectURI} weitergeleitet"
 
 #. [konnect.error.login.validate.missingPassword]
 #. defaultMessage is:
@@ -84,7 +82,7 @@ msgstr "Geben Sie ein Passwort ein"
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.validate.missingUsername"
 msgid "Enter an username"
-msgstr "Geben Sie einen Benutzernamen ein"
+msgstr "Geben Sie einen Benutzername ein"
 
 #. [konnect.loading.error.headline]
 #. defaultMessage is:
@@ -92,7 +90,7 @@ msgstr "Geben Sie einen Benutzernamen ein"
 #: i18n/src/messages.json
 msgctxt "konnect.loading.error.headline"
 msgid "Failed to connect to server"
-msgstr "Serververbindung fehlgeschlagen"
+msgstr "Verbindung zum Server fehlgeschlagen"
 
 #. [konnect.goodbye.headline]
 #. defaultMessage is:
@@ -124,7 +122,7 @@ msgstr "Hi {displayName}"
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.failed"
 msgid "Logon failed. Please verify your credentials and try again."
-msgstr "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es nocheinmal."
+msgstr "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es noch einmal."
 
 #. [konnet.error.http.networkError]
 #. defaultMessage is:
@@ -156,7 +154,7 @@ msgstr "Passwort"
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.confirm"
 msgid "Press the button below, to sign out from your Kopano account now."
-msgstr "Klichen Sie auf die Schaltfläche unten um sich aus Ihrem Kopano Konto abzumelden."
+msgstr "Klicken Sie auf die Schaltfläche unten um sich aus Ihrem Kopano Konto abzumelden."
 
 #. [konnect.login.retryButton.label]
 #. defaultMessage is:

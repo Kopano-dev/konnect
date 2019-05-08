@@ -4,8 +4,7 @@ msgstr ""
 "POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
 "PO-Revision-Date: 2018-11-16 12:29+0000\n"
 "Last-Translator: Nuno Jerónimo <nuno.jeronimo@valsousa.pt>\n"
-"Language-Team: Portuguese (Portugal) "
-"<http://translate.kopano.io/projects/kopano/konnect/pt_PT/>\n"
+"Language-Team: Portuguese (Portugal) <http://translate.kopano.io/projects/kopano/konnect/pt_PT/>\n"
 "Language: pt_PT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -43,8 +42,7 @@ msgstr "Permitir que {clientDisplayName} faça isto?"
 #: i18n/src/messages.json
 msgctxt "konnect.consent.consequence"
 msgid "By clicking Allow, you allow this app to use your information."
-msgstr ""
-"Ao carregar em Permitir, está a permitir que esta app use os seus dados."
+msgstr "Ao carregar em Permitir, está a permitir que esta app use os seus dados."
 
 #. [konnect.consent.cancelButton.label]
 #. defaultMessage is:
@@ -124,9 +122,7 @@ msgstr "Olá {displayName}"
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.failed"
 msgid "Logon failed. Please verify your credentials and try again."
-msgstr ""
-"Falhou início de sessão. Por favor verifique as suas credenciais e tente "
-"novamente."
+msgstr "Falhou início de sessão. Por favor verifique as suas credenciais e tente novamente."
 
 #. [konnet.error.http.networkError]
 #. defaultMessage is:
@@ -158,8 +154,7 @@ msgstr "Palavra-passe"
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.confirm"
 msgid "Press the button below, to sign out from your Kopano account now."
-msgstr ""
-"Carregue no botão abaixo para terminar sessão na sua conta Kopano agora."
+msgstr "Carregue no botão abaixo para terminar sessão na sua conta Kopano agora."
 
 #. [konnect.login.retryButton.label]
 #. defaultMessage is:
@@ -199,9 +194,7 @@ msgstr "Terminar sessão"
 #: i18n/src/messages.json
 msgctxt "konnect.error.http.unexpectedResponseStatus"
 msgid "Unexpected HTTP response: {status}. Please check your connection and try again."
-msgstr ""
-"Resposta HTTP inesperada: {status}. Por favor verifique a sua ligação e "
-"tente novamente."
+msgstr "Resposta HTTP inesperada: {status}. Por favor verifique a sua ligação e tente novamente."
 
 #. [konnect.error.http.unexpectedResponseState]
 #. defaultMessage is:
