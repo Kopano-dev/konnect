@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
+"POT-Creation-Date: 2019-05-08T16:18:01.848Z\n"
 "PO-Revision-Date: 2018-11-16 12:29+0000\n"
 "Last-Translator: Nuno Jerónimo <nuno.jeronimo@valsousa.pt>\n"
 "Language-Team: Portuguese (Portugal) <http://translate.kopano.io/projects/kopano/konnect/pt_PT/>\n"
@@ -19,6 +19,14 @@ msgstr ""
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
 msgstr "?"
+
+#. [konnect.scopeDescription.aliasBasic]
+#. defaultMessage is:
+#. Access your basic account information
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.aliasBasic"
+msgid "Access your basic account information"
+msgstr ""
 
 #. [konnect.consent.allowButton.label]
 #. defaultMessage is:
@@ -116,6 +124,14 @@ msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
 msgstr "Olá {displayName}"
 
+#. [konnect.scopeDescription.offlineAccess]
+#. defaultMessage is:
+#. Keep the allowed access persistently and forever
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.offlineAccess"
+msgid "Keep the allowed access persistently and forever"
+msgstr ""
+
 #. [konnect.error.login.failed]
 #. defaultMessage is:
 #. Logon failed. Please verify your credentials and try again.
@@ -163,6 +179,14 @@ msgstr "Carregue no botão abaixo para terminar sessão na sua conta Kopano agor
 msgctxt "konnect.login.retryButton.label"
 msgid "Retry"
 msgstr "Tentar novamente"
+
+#. [konnect.scopeDescription.scope]
+#. defaultMessage is:
+#. Scope: {scope}
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.scope"
+msgid "Scope: {scope}"
+msgstr ""
 
 #. [konnect.login.headline]
 #. defaultMessage is:

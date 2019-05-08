@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
-"PO-Revision-Date: 2019-05-08 17:30+0200\n"
+"POT-Creation-Date: 2019-05-08T16:18:01.848Z\n"
+"PO-Revision-Date: 2019-05-08 18:23+0200\n"
 "Last-Translator: Simon Eisenmann <simon@longsleep.org>\n"
 "Language-Team: German <http://translate.kopano.io/projects/kopano/konnect/de/>\n"
 "Language: de\n"
@@ -19,6 +19,14 @@ msgstr ""
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
 msgstr "?"
+
+#. [konnect.scopeDescription.aliasBasic]
+#. defaultMessage is:
+#. Access your basic account information
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.aliasBasic"
+msgid "Access your basic account information"
+msgstr "Zugriff auf Ihre grundlegenden Benutzerinformationen"
 
 #. [konnect.consent.allowButton.label]
 #. defaultMessage is:
@@ -116,6 +124,14 @@ msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
 msgstr "Hi {displayName}"
 
+#. [konnect.scopeDescription.offlineAccess]
+#. defaultMessage is:
+#. Keep the allowed access persistently and forever
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.offlineAccess"
+msgid "Keep the allowed access persistently and forever"
+msgstr "Dauerhaften Zugriff (läuft nicht ab)"
+
 #. [konnect.error.login.failed]
 #. defaultMessage is:
 #. Logon failed. Please verify your credentials and try again.
@@ -163,6 +179,14 @@ msgstr "Klicken Sie auf die Schaltfläche unten um sich aus Ihrem Kopano Konto a
 msgctxt "konnect.login.retryButton.label"
 msgid "Retry"
 msgstr "Wiederholen"
+
+#. [konnect.scopeDescription.scope]
+#. defaultMessage is:
+#. Scope: {scope}
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.scope"
+msgid "Scope: {scope}"
+msgstr "Geltungsbereich: {scope}"
 
 #. [konnect.login.headline]
 #. defaultMessage is:

@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
+"POT-Creation-Date: 2019-05-08T16:18:01.848Z\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "MIME-Version: 1.0\n"
@@ -13,6 +13,14 @@ msgstr ""
 #. ?
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
+msgstr ""
+
+#: ./i18n/src/messages.json
+#. [konnect.scopeDescription.aliasBasic]
+#. defaultMessage is:
+#. Access your basic account information
+msgctxt "konnect.scopeDescription.aliasBasic"
+msgid "Access your basic account information"
 msgstr ""
 
 #: ./i18n/src/messages.json
@@ -112,6 +120,14 @@ msgid "Hi {displayName}"
 msgstr ""
 
 #: ./i18n/src/messages.json
+#. [konnect.scopeDescription.offlineAccess]
+#. defaultMessage is:
+#. Keep the allowed access persistently and forever
+msgctxt "konnect.scopeDescription.offlineAccess"
+msgid "Keep the allowed access persistently and forever"
+msgstr ""
+
+#: ./i18n/src/messages.json
 #. [konnect.error.login.failed]
 #. defaultMessage is:
 #. Logon failed. Please verify your credentials and try again.
@@ -157,6 +173,14 @@ msgstr ""
 #. Retry
 msgctxt "konnect.login.retryButton.label"
 msgid "Retry"
+msgstr ""
+
+#: ./i18n/src/messages.json
+#. [konnect.scopeDescription.scope]
+#. defaultMessage is:
+#. Scope: {scope}
+msgctxt "konnect.scopeDescription.scope"
+msgid "Scope: {scope}"
 msgstr ""
 
 #: ./i18n/src/messages.json
