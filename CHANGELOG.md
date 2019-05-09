@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Add stats target for i18n
+- Rebuild translations and translate to German
+- Make it possible to translate built in scope descriptions
+- Always allow merge to run
+- Add language selector
+- Only leave actually translated languages enabled in production builds
+- Merge translation files and fix German typos
+- Update kpop
+- Correctly register pt-PT
+- Update kpop and react-scripts
+- Slightly imporve Material-UI styles
+- Update react-router to 5.0.0
+- Update Material-UI dependency to latest
+- Update React to 18.8.6
+- Do not start browser when in dev mode
+- Replace __PATH_PREFIX__ with sane value in dev mode
 - Change license to Apache License 2.0
 
 
