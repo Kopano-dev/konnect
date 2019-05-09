@@ -21,6 +21,8 @@ const styles = theme => ({
     paddingTop: 24,
     paddingBottom: 12,
     minHeight: 500,
+    paddingLeft: 2 * theme.spacing.unit,
+    paddingRight: 2 * theme.spacing.unit,
     position: 'relative'
   },
   logo: {
@@ -30,8 +32,8 @@ const styles = theme => ({
   actions: {
     marginTop: -40,
     justifyContent: 'flex-start',
-    paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit
+    paddingLeft: 3 * theme.spacing.unit,
+    paddingRight: 3 * theme.spacing.unit
   }
 });
 

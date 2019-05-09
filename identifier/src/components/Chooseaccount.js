@@ -16,7 +16,7 @@ import { ErrorMessage } from '../errors';
 
 const styles = theme => ({
   subHeader: {
-    marginBottom: theme.spacing.unit * 5
+    marginBottom: theme.spacing.unit * 2
   },
   message: {
     marginTop: theme.spacing.unit * 2

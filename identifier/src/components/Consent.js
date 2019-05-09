@@ -39,12 +39,13 @@ const styles = theme => ({
     marginBottom: theme.spacing.unit * 2
   },
   wrapper: {
-    marginTop: theme.spacing.unit * 5,
+    marginTop: theme.spacing.unit * 2,
     position: 'relative',
     display: 'inline-block'
   },
   message: {
-    marginTop: theme.spacing.unit * 2
+    marginTop: theme.spacing.unit * 2,
+    marginBottom: theme.spacing.unit * 2
   }
 });
 
@@ -165,7 +166,7 @@ class Consent extends Component {
           </DialogActions>
 
           {renderIf(errors.http)(() => (
-            <Typography color="error" className={classes.message}>
+            <Typography variant="subtitle2" color="error" className={classes.message}>
               <ErrorMessage error={errors.http}></ErrorMessage>
             </Typography>
           ))}

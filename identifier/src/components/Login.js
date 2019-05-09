@@ -30,15 +30,15 @@ const styles = theme => ({
     marginLeft: -12
   },
   subHeader: {
-    marginBottom: theme.spacing.unit * 5
+    marginBottom: theme.spacing.unit * 3
   },
   wrapper: {
-    marginTop: theme.spacing.unit * 5,
     position: 'relative',
     display: 'inline-block'
   },
   message: {
-    marginTop: theme.spacing.unit * 2
+    marginTop: theme.spacing.unit * 2,
+    marginBottom: theme.spacing.unit * 2
   }
 });
 
@@ -123,7 +123,7 @@ class Login extends Component {
           </div>
 
           {renderIf(errors.http)(() => (
-            <Typography color="error" className={classes.message}>
+            <Typography variant="subtitle2" color="error" className={classes.message}>
               <ErrorMessage error={errors.http}></ErrorMessage>
             </Typography>
           ))}
