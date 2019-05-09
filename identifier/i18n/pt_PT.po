@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2019-05-08T16:18:01.848Z\n"
+"POT-Creation-Date: 2019-05-09T14:09:27.715Z\n"
 "PO-Revision-Date: 2018-11-16 12:29+0000\n"
 "Last-Translator: Nuno Jerónimo <nuno.jeronimo@valsousa.pt>\n"
 "Language-Team: Portuguese (Portugal) <http://translate.kopano.io/projects/kopano/konnect/pt_PT/>\n"

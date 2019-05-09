@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2019-05-08T16:18:01.848Z\n"
+"POT-Creation-Date: 2019-05-09T14:09:27.715Z\n"
 "PO-Revision-Date: 2018-11-08 16:18+0000\n"
 "Last-Translator: Klaus <klaus@linuxavdelingen.no>\n"
 "Language-Team: Norwegian Bokmål <http://translate.kopano.io/projects/kopano/konnect/nb/>\n"

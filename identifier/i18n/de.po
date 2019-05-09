@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2019-05-08T16:18:01.848Z\n"
+"POT-Creation-Date: 2019-05-09T14:09:27.715Z\n"
 "PO-Revision-Date: 2019-05-08 18:23+0200\n"
 "Last-Translator: Simon Eisenmann <simon@longsleep.org>\n"
 "Language-Team: German <http://translate.kopano.io/projects/kopano/konnect/de/>\n"
