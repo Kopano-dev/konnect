@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+
+
+## v0.23.0 (2019-05-09)
+
+- Update js license ranger to include notices
+- Optimize use of visual white space
+- Update kpop and migrage typography to new variants
+- Enable nl and ru languages in production build
+- Translated using Weblate (Dutch)
+- Rebuild translation catalogs
 - Add stats target for i18n
 - Rebuild translations and translate to German
 - Make it possible to translate built in scope descriptions
