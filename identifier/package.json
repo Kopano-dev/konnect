@@ -28,7 +28,7 @@
     "build": "react-scripts build && rm -f build/service-worker.js",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "licenses": "./js-license-ranger.js",
+    "licenses": "NODE_PATH=./node_modules node ../scripts/js-license-ranger.js",
     "deduplicate": "yarn-deduplicate -s fewer yarn.lock"
   },
   "devDependencies": {

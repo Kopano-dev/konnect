@@ -23,13 +23,14 @@
 'use strict';
 
 /* eslint-disable no-console */
+/* global require */
 
 const fs = require('fs'),
   glob = require('glob'),
   path = require('path'),
   sourcemapExplorer = require('source-map-explorer');
 
-const version = '20181031-1'; // eslint-disable-line
+const version = '20190509-1'; // eslint-disable-line
 
 const licenseFilenames = [
   'LICENSE',
@@ -39,7 +40,16 @@ const licenseFilenames = [
   'COPYING',
   'license',
   'license.md',
-  'license.txt'
+  'license.txt',
+];
+
+const noticeFilenames = [
+  'NOTICE',
+  'NOTICE.txt',
+  'NOTICES',
+  'NOTICES.txt',
+  '3rdparty-LICENSES.md',
+  '3rdparty-LICENSES.txt',
 ];
 
 function findModuleViaPackageJSON(mp) {
@@ -64,7 +74,7 @@ function findLicense(mp) {
     name: json.name,
     url: url,
     description: json.description,
-    license: json.license
+    license: json.license || json.licenses,
   };
 
   // Search for license file.
@@ -72,12 +82,20 @@ function findLicense(mp) {
     const fn = mp + '/' + licenseFilenames[i];
     if (fs.existsSync(fn)) {
       result.licenseFile = fn;
-      return result;
+      break;
+    }
+  }
+  // Search for notice file.
+  for (let i=0; i < noticeFilenames.length; i++) {
+    const fn = mp + '/' + noticeFilenames[i];
+    if (fs.existsSync(fn)) {
+      result.noticeFile = fn;
+      break;
     }
   }
 
-  // Ensure package json has a license if no file was found.
-  if (!result.license) {
+  // Ensure we have a license.
+  if (!result.license && !result.licenseFile) {
     throw new Error('no license found: ' + mp);
   }
 
@@ -141,15 +159,24 @@ function printLicensesDocument(modules) {
 
     console.log('### ' + headline);
     if (entry.description) {
-      console.log('\n> ' + entry.description + '\n');
+      console.log('\n> ' + entry.description);
     }
     if (entry.license) {
-      console.log('License: ' + entry.license + '\n');
+      console.log('\nLicense: ' + entry.license);
     }
     if (entry.licenseFile) {
+      if (!entry.license) {
+        console.log('\nLicense:');
+      }
       const license = fs.readFileSync(entry.licenseFile, 'utf-8');
-      console.log('```');
+      console.log('\n```');
       console.log(license);
+      console.log('```\n');
+    }
+    if (entry.noticeFile) {
+      const notice = fs.readFileSync(entry.noticeFile, 'utf-8');
+      console.log('```');
+      console.log(notice);
       console.log('```\n');
     }
   }
