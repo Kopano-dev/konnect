@@ -4,6 +4,13 @@
 
 
 
+## v0.23.1 (2019-05-09)
+
+- Use correct dep download URL
+- Ensure JSON translations are not empty on fresh build
+- Build with Go 1.12 and use latest dep tool
+
+
 ## v0.23.0 (2019-05-09)
 
 - Update js license ranger to include notices
