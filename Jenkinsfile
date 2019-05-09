@@ -3,12 +3,12 @@
 pipeline {
 	agent {
 		docker {
-			image 'golang:1.11'
+			image 'golang:1.12'
 			args '-u 0'
 		 }
 	}
 	environment {
-		DEP_RELEASE_TAG = 'v0.5.0'
+		DEP_RELEASE_TAG = 'v0.5.2'
 		GOBIN = '/usr/local/bin'
 		DEBIAN_FRONTEND = 'noninteractive'
 	}
