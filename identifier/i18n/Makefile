@@ -2,6 +2,7 @@
 
 YARN ?= yarn
 MSGMERGE ?= msgmerge
+MSGFMT ?= msgfmt
 
 # Variables
 
@@ -36,6 +37,11 @@ json:
 
 .PHONY: merge
 merge: $(POS)
+
+.PHONY: stats
+stats:
+	$(foreach po, $(POS), $(shell $(MSGFMT) -v --statistics $(po)))
+	@- true
 
 $(POS): FORCE $(POT)
 	$(MSGMERGE) -U \
