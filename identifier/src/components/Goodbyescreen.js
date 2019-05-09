@@ -37,10 +37,10 @@ class Goodbyescreen extends React.PureComponent {
       <ResponsiveScreen loading={loading}>
         {renderIf(hello !== null && !hello.state)(() => (
           <div>
-            <Typography variant="headline" component="h3">
+            <Typography variant="h5" component="h3">
               <FormattedMessage id="konnect.goodbye.headline" defaultMessage="Goodbye"></FormattedMessage>
             </Typography>
-            <Typography variant="subheading" className={classes.subHeader}>
+            <Typography variant="subtitle1" className={classes.subHeader}>
               <FormattedMessage id="konnect.goodbye.subHeader"
                 defaultMessage="you have been signed out from your Kopano account">
               </FormattedMessage>
@@ -54,14 +54,14 @@ class Goodbyescreen extends React.PureComponent {
         ))}
         {renderIf(hello !== null && hello.state === true)(() => (
           <div>
-            <Typography variant="headline" component="h3">
+            <Typography variant="h5" component="h3">
               <FormattedMessage
                 id="konnect.goodbye.confirm.headline"
                 defaultMessage="Hello {displayName}"
                 values={{displayName: hello.displayName}}>
               </FormattedMessage>
             </Typography>
-            <Typography variant="subheading" className={classes.subHeader}>
+            <Typography variant="subtitle1" className={classes.subHeader}>
               <FormattedMessage id="konnect.goodbye.confirm.subHeader"
                 defaultMessage="please confirm sign out">
               </FormattedMessage>

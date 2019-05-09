@@ -68,10 +68,10 @@ class Login extends Component {
 
     return (
       <div>
-        <Typography variant="headline" component="h3">
+        <Typography variant="h5" component="h3">
           <FormattedMessage id="konnect.login.headline" defaultMessage="Sign in"></FormattedMessage>
         </Typography>
-        <Typography variant="subheading" className={classes.subHeader}>
+        <Typography variant="subtitle1" className={classes.subHeader}>
           <FormattedMessage id="konnect.login.subHeader" defaultMessage="with your Kopano account"></FormattedMessage>
         </Typography>
 
@@ -123,7 +123,7 @@ class Login extends Component {
           </div>
 
           {renderIf(errors.http)(() => (
-            <Typography variant="body1" color="error" className={classes.message}>
+            <Typography color="error" className={classes.message}>
               <ErrorMessage error={errors.http}></ErrorMessage>
             </Typography>
           ))}

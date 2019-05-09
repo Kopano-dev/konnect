@@ -86,18 +86,18 @@ class Consent extends Component {
 
     return (
       <div>
-        <Typography variant="headline" component="h3">
+        <Typography variant="h5" component="h3">
           <FormattedMessage
             id="konnect.consent.headline"
             defaultMessage="Hi {displayName}"
             values={{displayName: hello.displayName}}>
           </FormattedMessage>
         </Typography>
-        <Typography variant="subheading" className={classes.subHeader}>
+        <Typography variant="subtitle1" className={classes.subHeader}>
           {hello.username}
         </Typography>
 
-        <Typography variant="subheading" gutterBottom>
+        <Typography variant="subtitle1" gutterBottom>
           <FormattedMessage
             id="konnect.consent.message"
             defaultMessage="{clientDisplayName} wants to"
@@ -119,7 +119,7 @@ class Consent extends Component {
         </Typography>
         <ScopesList dense disablePadding className={classes.scopesList} scopes={scopes} meta={meta.scopes}></ScopesList>
 
-        <Typography variant="subheading" gutterBottom>
+        <Typography variant="subtitle1" gutterBottom>
           <FormattedMessage
             id="konnect.consent.question"
             defaultMessage="Allow {clientDisplayName} to do this?"
@@ -165,7 +165,7 @@ class Consent extends Component {
           </DialogActions>
 
           {renderIf(errors.http)(() => (
-            <Typography variant="body1" color="error" className={classes.message}>
+            <Typography color="error" className={classes.message}>
               <ErrorMessage error={errors.http}></ErrorMessage>
             </Typography>
           ))}

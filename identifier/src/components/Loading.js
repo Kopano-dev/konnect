@@ -44,11 +44,11 @@ class Loading extends Component {
           ))}
           {renderIf(error !== null)(() => (
             <div>
-              <Typography variant="headline" gutterBottom align="center">
+              <Typography variant="h5" gutterBottom align="center">
                 <FormattedMessage id="konnect.loading.error.headline" defaultMessage="Failed to connect to server">
                 </FormattedMessage>
               </Typography>
-              <Typography variant="body1" gutterBottom align="center" color="error">
+              <Typography  gutterBottom align="center" color="error">
                 <ErrorMessage error={error}></ErrorMessage>
               </Typography>
               <Button

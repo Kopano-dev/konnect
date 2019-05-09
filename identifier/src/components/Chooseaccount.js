@@ -44,7 +44,7 @@ class Chooseaccount extends Component {
 
     let errorMessage = null;
     if (errors.http) {
-      errorMessage = <Typography variant="body1" color="error" className={classes.message}>
+      errorMessage = <Typography color="error" className={classes.message}>
         <ErrorMessage error={errors.http}></ErrorMessage>
       </Typography>;
     }
@@ -56,10 +56,10 @@ class Chooseaccount extends Component {
 
     return (
       <div>
-        <Typography variant="headline" component="h3">
+        <Typography variant="h5" component="h3">
           <FormattedMessage id="konnect.chooseaccount.headline" defaultMessage="Choose an account"></FormattedMessage>
         </Typography>
-        <Typography variant="subheading" className={classes.subHeader}>
+        <Typography variant="subtitle1" className={classes.subHeader}>
           <FormattedMessage id="konnect.chooseaccount.subHeader" defaultMessage="to sign in to Kopano">
           </FormattedMessage>
         </Typography>
