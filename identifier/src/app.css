@@ -2,10 +2,8 @@
 
 /* Register animations to allow JavaScript hooks to react on browser auto fill. */
 @keyframes onAutoFillStart {
-  from {/* nothing here */}
-  to {/* nothing here */}
+  kopano { keepme: 0 /* hack needed to avoid getting removed since empty */ }
 }
 @keyframes onAutoFillCancel {
-  from {/* nothing here */}
-  to {/* nothing here*/}
+  kopano { keepme: 0 /* hack needed to avoid getting removed since empty */ }
 }
