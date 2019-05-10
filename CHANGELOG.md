@@ -4,6 +4,12 @@
 
 
 
+## v0.23.2 (2019-05-10)
+
+- Avoid remove of empty keyframes for autoFill detection
+- Properly detect Chrome auto fill in login form fields
+
+
 ## v0.23.1 (2019-05-09)
 
 - Use correct dep download URL
