@@ -4,6 +4,11 @@
 
 
 
+## v0.23.3 (2019-05-10)
+
+- Fix a problem where welcome page would not display
+
+
 ## v0.23.2 (2019-05-10)
 
 - Avoid remove of empty keyframes for autoFill detection
