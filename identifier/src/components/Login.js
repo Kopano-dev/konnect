@@ -78,6 +78,9 @@ class Login extends Component {
   }
 
   bindAutoFill = fieldName => element => {
+    if (!element || !element.addEventListener) {
+      return;
+    }
     element.addEventListener('animationstart', (e) => {
       switch (e.animationName) {
         case 'onAutoFillStart':
