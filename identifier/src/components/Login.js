@@ -39,10 +39,25 @@ const styles = theme => ({
   message: {
     marginTop: theme.spacing.unit * 2,
     marginBottom: theme.spacing.unit * 2
+  },
+  input: {
+    // NOTE(longsleep): These styles here allow JavaScript events to trigger
+    // when the browser auto fills form elements. They require additional
+    // keyframe styles for the animation names to be registerd as well.
+    '&:-webkit-autofill': {
+      // JavaScript hook when auto fill is shown.
+      animationName: 'onAutoFillStart'
+    },
+    '&:not(:-webkit-autofill)': {
+      // JavaScript hook when auto fill is removed.
+      animationName: 'onAutoFillCancel'
+    }
   }
 });
 
 class Login extends Component {
+  state = {};
+
   componentDidMount() {
     const { hello, query, dispatch, history } = this.props;
     if (hello && hello.state && history.action !== 'PUSH') {
@@ -56,13 +71,36 @@ class Login extends Component {
     }
   }
 
+  onAutoFill = (fieldName, autoFill) => {
+    this.setState({
+      [`autoFill-${fieldName}`]: autoFill ? true : undefined
+    });
+  }
+
+  bindAutoFill = fieldName => element => {
+    element.addEventListener('animationstart', (e) => {
+      switch (e.animationName) {
+        case 'onAutoFillStart':
+          return this.onAutoFill(fieldName, true);
+        case 'onAutoFillCancel':
+          return this.onAutoFill(fieldName, false);
+      }
+    });
+  }
+
   render() {
     const { loading, errors, classes, username } = this.props;
 
     const inputProps = {
       username: {
         autoCapitalize: 'off',
-        spellCheck: 'false'
+        spellCheck: 'false',
+        className: classes.input,
+        ref: this.bindAutoFill('username')
+      },
+      password: {
+        className: classes.input,
+        ref: this.bindAutoFill('password')
       }
     };
 
@@ -86,6 +124,9 @@ class Login extends Component {
               fullWidth
               margin="dense"
               variant="outlined"
+              InputLabelProps={{
+                shrink: this.state['autoFill-username']
+              }}
               autoFocus
               inputProps={inputProps.username}
               value={username}
@@ -101,6 +142,10 @@ class Login extends Component {
               helperText={<ErrorMessage error={errors.password}></ErrorMessage>}
               fullWidth
               margin="dense"
+              InputLabelProps={{
+                shrink: this.state['autoFill-password']
+              }}
+              inputProps={inputProps.password}
               variant="outlined"
               onChange={this.handleChange('password')}
               autoComplete="kopano-account current-password"
