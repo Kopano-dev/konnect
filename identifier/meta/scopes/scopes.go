@@ -130,8 +130,12 @@ func NewScopesFromFile(scopesConfFilepath string, logger logrus.FieldLogger) (*S
 
 			logger.WithFields(fields).Debugln("registered scope mapping")
 		}
-	} else {
+	}
+
+	if scopes.Mapping == nil {
 		scopes.Mapping = make(map[string]string)
+	}
+	if scopes.Definitions == nil {
 		scopes.Definitions = make(map[string]*Definition)
 	}
 
