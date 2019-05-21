@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+
+
+## v0.23.4 (2019-05-20)
+
 - Avoid breaking on startup when starting with empty scopes definitions
 
 
