@@ -6,7 +6,7 @@
   "dependencies": {
     "@material-ui/core": "^3.9.3",
     "@material-ui/icons": "^3.0.2",
-    "axios": "^0.16.2",
+    "axios": "^0.18.1",
     "kpop": "https://download.kopano.io/community/kapp:/kpop-0.18.0.tgz",
     "query-string": "^5.0.1",
     "react": "^16.8.0",
