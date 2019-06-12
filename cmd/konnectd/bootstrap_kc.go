@@ -102,7 +102,10 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		if globalSessionClientPrivateKey == "" {
 			return nil, fmt.Errorf("invalid or empty KOPANO_CLIENT_PRIVATE_KEY value")
 		}
-		if err := kopanoStorageServerClient.LoadX509KeyPair(globalSessionClientCertificate, globalSessionClientPrivateKey); err != nil {
+		if tlsClientConfig == nil {
+			return nil, fmt.Errorf("no TLS client config - this should not happen")
+		}
+		if _, err := kcc.SetX509KeyPairToTLSConfig(globalSessionClientCertificate, globalSessionClientPrivateKey, tlsClientConfig); err != nil {
 			return nil, fmt.Errorf("failed to load/set kc client x509 certificate: %v", err)
 		}
 		logger.Infoln("kc server identifier backend initialized client for TLS authentication")

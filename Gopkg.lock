@@ -50,12 +50,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:d5f97fc268267ec1b61c3453058c738246fc3e746f14b1ae25161513b7367b0c"
+  digest = "1:3af6be4fee7c08f81f13d36f04ffb63ad4b6b5aaba12cce96095c7c2863d4912"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c5c6c98bc25355028a63748a498942a6398ccd22"
-  version = "v1.7.1"
+  revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
+  version = "v1.7.2"
 
 [[projects]]
   digest = "1:345ad428d03cc89fa5498d61383d0d7f39afbe8731ca135c0ec92782285121d3"
@@ -136,20 +136,20 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
+  digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
-  version = "v1.4.1"
+  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
+  version = "v1.4.2"
 
 [[projects]]
-  digest = "1:645cabccbb4fa8aab25a956cbcbdf6a6845ca736b2c64e197ca7cbb9d210b939"
+  digest = "1:e096613fb7cf34743d49af87d197663cfccd61876e2219853005a57baedfa562"
   name = "github.com/spf13/cobra"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
-  version = "v0.0.3"
+  revision = "f2b07da1e2c38d5f12845a4f607e2e1018cbb1f5"
+  version = "v0.0.5"
 
 [[projects]]
   digest = "1:c1b1102241e7f645bc8e0c22ae352e8f0dc6484b6cb4d132fa9f24174e0119e2"
@@ -161,7 +161,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7c8547d77159d7c58496615be7d03e20a9c139b9384e382dd60e194c6a6b0534"
+  digest = "1:92d42c79e673abba4e4a4dc8497b94b3bd30bd03d87927822aaa468b8dd4f82e"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -174,11 +174,11 @@
     "salsa20/salsa",
   ]
   pruneopts = "UT"
-  revision = "c05e17bb3b2dca130fc919668a96b4bec9eb9442"
+  revision = "5c40567a22f818bd14a1ea7245dad9f8ef0691aa"
 
 [[projects]]
   branch = "master"
-  digest = "1:01831e6da6dfda2ea208bc4a153f6fb2fe02b0baec3af50f3b61c0d87d99a3f7"
+  digest = "1:ac3a95fb47a3b5ad909204de06eed59b019252203c18d3747b0090723c3fc4b7"
   name = "golang.org/x/net"
   packages = [
     "http/httpguts",
@@ -187,18 +187,18 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "4829fb13d2c62012c17688fa7f629f371014946d"
+  revision = "3f473d35a33aa6fdd203e306dc439b797820e3f1"
 
 [[projects]]
   branch = "master"
-  digest = "1:ef6f5a1afcf6996c2a9871649ac6ed5a4ae9f4baea7fd004b8b10aed97ff53d8"
+  digest = "1:0beb3839ca69f4a32c40d753a8cd60b273c2ba266329d1a9957731fc4cdb5478"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "16072639606ea9e22c7d86e4cbd6af6314f4193c"
+  revision = "93c9922d18aeb82498a065f07aec7ad7fa60dfb7"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -271,12 +271,12 @@
   version = "v2.1.1"
 
 [[projects]]
-  digest = "1:9a67ac025ac0bed60f6c84d2bcefd4abd40a15c8b5be3d32d1bcaa8bcd8f0d6a"
+  digest = "1:f17a2cb234ebb0273faa7ab0f3df17a8aea3038b15b1fa905f052921c93fab91"
   name = "stash.kopano.io/kgol/kcc-go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "022a268e55daaeb14ae0e27ce0d8ecd91ec347b0"
-  version = "v3.0.0"
+  revision = "e7a3eee46f7360a56456d743b99102515068d743"
+  version = "v4.0.0"
 
 [[projects]]
   digest = "1:3cbf6c7fe4df8116b3660a9aabbd8b035a27b45d3c03d0f8fecacd25fd7eaff3"
