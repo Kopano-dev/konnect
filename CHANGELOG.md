@@ -4,7 +4,18 @@
 
 
 
-## v0.23.4 (2019-05-20)
+## v0.23.5 (2019-06-12)
+
+- Update kcc-go to 4.0.0 (and dependencies)
+- Use Apache-2.0 license
+- Deduplicate yarn.lock
+- Bump handlebars from 4.0.11 to 4.1.2 in /identifier
+- Bump clean-css from 4.1.9 to 4.1.11 in /identifier
+- Bump axios from 0.16.2 to 0.18.1 in /identifier
+- Bump sshpk from 1.13.1 to 1.16.1 in /identifier
+
+
+## v0.23.4 (2019-05-21)
 
 - Avoid breaking on startup when starting with empty scopes definitions
 
