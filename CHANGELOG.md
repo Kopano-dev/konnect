@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Handle redirect_uri parse error in client registration
 
 
 ## v0.23.5 (2019-06-12)
