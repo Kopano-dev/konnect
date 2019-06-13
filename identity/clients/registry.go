@@ -115,7 +115,9 @@ func (r *Registry) Register(client *ClientRegistration) error {
 		for _, urlString := range client.RedirectURIs {
 			// http://openid.net/specs/openid-connect-registration-1_0.html#ClientMetadata
 			parsed, _ := url.Parse(urlString)
-			if (!client.Insecure && parsed.Scheme != "https") || parsed.Host == "" {
+			if parsed == nil || parsed.Host == "" {
+				return fmt.Errorf("invalid redirect_uri %v - invalid or no hostname", urlString)
+			} else if !client.Insecure && parsed.Scheme != "https" {
 				return fmt.Errorf("invalid redirect_uri %v - make sure to use https when application_type is web", parsed)
 			} else if parsed.Host == "localhost" {
 				return fmt.Errorf("invalid redirect_uri %v - host must not be localhost", parsed)
@@ -137,7 +139,9 @@ func (r *Registry) Register(client *ClientRegistration) error {
 		for _, urlString := range client.RedirectURIs {
 			// http://openid.net/specs/openid-connect-registration-1_0.html#ClientMetadata
 			parsed, _ := url.Parse(urlString)
-			if parsed.Scheme == "https" {
+			if parsed == nil || parsed.Host == "" {
+				return fmt.Errorf("invalid redirect_uri %v - invalid uri or no hostname", urlString)
+			} else if parsed.Scheme == "https" {
 				return fmt.Errorf("invalid redirect_uri %v - scheme must not be https when application_type is native", parsed)
 			} else if parsed.Scheme == "http" && parsed.Hostname() != "localhost" {
 				return fmt.Errorf("invalid redirect_uri %v = http host must be localhost when application_type is native", parsed)
