@@ -27,6 +27,7 @@ import (
 func main() {
 	cmd.RootCmd.AddCommand(commandServe())
 	cmd.RootCmd.AddCommand(commandUtils())
+	cmd.RootCmd.AddCommand(commandHealthcheck())
 
 	if err := cmd.RootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
