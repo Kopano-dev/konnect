@@ -263,7 +263,12 @@ func (bs *bootstrap) initialize() error {
 
 	signingKeyFns, _ := cmd.Flags().GetStringArray("signing-private-key")
 	if len(signingKeyFns) == 0 {
-		signingKeyFns = strings.Split(os.Getenv("KONNECTD_SIGNING_PRIVATE_KEY"), " ")
+		for _, keyFn := range strings.Split(os.Getenv("KONNECTD_SIGNING_PRIVATE_KEY"), " ") {
+			keyFn = strings.TrimSpace(keyFn)
+			if keyFn != "" {
+				signingKeyFns = append(signingKeyFns, keyFn)
+			}
+		}
 	}
 	if len(signingKeyFns) > 0 {
 		first := true
