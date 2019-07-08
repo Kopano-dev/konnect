@@ -15,12 +15,11 @@
 # limitations under the License.
 #
 
-FROM alpine:3.9
-MAINTAINER Kopano Development <development@kopano.io>
+FROM alpine:3.10
+LABEL maintainer="development@kopano.io"
 
-RUN apk add --update \
-	su-exec \
-	&& rm -rf /var/cache/apk/*
+RUN apk add --no-cache \
+	su-exec=0.2-r0
 
 # Expose ports.
 EXPOSE 8777
@@ -39,13 +38,13 @@ ENV KONNECTD_LDAP_BIND_PASSWORD_FILE=konnectd_ldap_bind_password
 
 # Defaults which can be overwritten.
 ENV KOPANO_SERVER_DEFAULT_URI=file:///run/kopano/server.sock
-ENV KOPANO_SERVER_USERNAME=
-ENV KOPANO_SERVER_PASSWORD=
-ENV KOPANO_SERVER_SESSION_TIMEOUT=
-ENV LDAP_URI=
-ENV LDAP_BINDDN=
-ENV LDAP_BINDPW=
-ENV ARGS=
+ENV KOPANO_SERVER_USERNAME=""
+ENV KOPANO_SERVER_PASSWORD=""
+ENV KOPANO_SERVER_SESSION_TIMEOUT=""
+ENV LDAP_URI=""
+ENV LDAP_BINDDN=""
+ENV LDAP_BINDPW=""
+ENV ARGS=""
 
 # User and group defaults.
 ENV KONNECTD_USER=nobody
@@ -92,7 +91,7 @@ setup_secrets\n\
 ' > /etc/defaults/docker-env
 
 # Add project resources.
-ADD identifier/build /var/lib/konnectd-docker/identifier-webapp
+COPY identifier/build /var/lib/konnectd-docker/identifier-webapp
 
 # Add project main binary.
 COPY bin/konnectd /usr/local/bin/${EXE}
@@ -104,5 +103,5 @@ CMD [ \
 	]
 
 # Health check support is cool too.
-HEALTHCHECK --interval=30s --timeout=5s \
-	CMD healthcheck.sh
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
+	CMD healthcheck.sh --hostname="${KONNECTD_LISTEN}" || exit 1
