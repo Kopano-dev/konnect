@@ -89,6 +89,8 @@ func healthcheck(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, string(bodyBytes))
 
 		return fmt.Errorf("healthcheck failed with status: %v", response.StatusCode)
+	} else {
+		fmt.Fprintf(os.Stdout, "healthcheck successfull\n")
 	}
 
 	return nil
