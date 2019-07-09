@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+
+
+## v0.23.6 (2019-07-09)
+
+- Add healthcheck success output
+- Update Dockerfiles for best practices
+- Avoid trying to load a key with empty filename
+- Add healthcheck sub command
+- Bump diff from 3.4.0 to 3.5.0 in /identifier
 - Handle redirect_uri parse error in client registration
 
 
