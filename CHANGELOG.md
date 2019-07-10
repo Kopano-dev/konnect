@@ -4,6 +4,12 @@
 
 
 
+## v0.24.0 (2019-07-10)
+
+- Update dep to v0.5.4
+- Update kcc-go and dependencies
+
+
 ## v0.23.6 (2019-07-09)
 
 - Add healthcheck success output
