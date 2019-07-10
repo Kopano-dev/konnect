@@ -50,12 +50,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:3af6be4fee7c08f81f13d36f04ffb63ad4b6b5aaba12cce96095c7c2863d4912"
+  digest = "1:cbec35fe4d5a4fba369a656a8cd65e244ea2c743007d8f6c1ccb132acf9d1296"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
-  version = "v1.7.2"
+  revision = "00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15"
+  version = "v1.7.3"
 
 [[projects]]
   digest = "1:345ad428d03cc89fa5498d61383d0d7f39afbe8731ca135c0ec92782285121d3"
@@ -161,7 +161,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:92d42c79e673abba4e4a4dc8497b94b3bd30bd03d87927822aaa468b8dd4f82e"
+  digest = "1:4c4ec04a53689d0e891722563056d97cee13c3c829cb8d5477a9bdecdfb48039"
   name = "golang.org/x/crypto"
   packages = [
     "blake2b",
@@ -174,7 +174,7 @@
     "salsa20/salsa",
   ]
   pruneopts = "UT"
-  revision = "5c40567a22f818bd14a1ea7245dad9f8ef0691aa"
+  revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
 [[projects]]
   branch = "master"
@@ -187,18 +187,18 @@
     "idna",
   ]
   pruneopts = "UT"
-  revision = "3f473d35a33aa6fdd203e306dc439b797820e3f1"
+  revision = "da137c7871d730100384dbcf36e6f8fa493aef5b"
 
 [[projects]]
   branch = "master"
-  digest = "1:0beb3839ca69f4a32c40d753a8cd60b273c2ba266329d1a9957731fc4cdb5478"
+  digest = "1:6f7b102dfe61016b45aa051b96413e36cc2eff446b61249fdf723dd8e24d308b"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "93c9922d18aeb82498a065f07aec7ad7fa60dfb7"
+  revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -271,12 +271,12 @@
   version = "v2.1.1"
 
 [[projects]]
-  digest = "1:f17a2cb234ebb0273faa7ab0f3df17a8aea3038b15b1fa905f052921c93fab91"
+  digest = "1:3f836df93eeb57d9d48b379bacfa35285e0d0d513a59eb6d9d4f151038bd8633"
   name = "stash.kopano.io/kgol/kcc-go"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e7a3eee46f7360a56456d743b99102515068d743"
-  version = "v4.0.0"
+  revision = "1b474fb9e948ddcbaf67833faf3c4ecdb4577991"
+  version = "v4.1.0"
 
 [[projects]]
   digest = "1:3cbf6c7fe4df8116b3660a9aabbd8b035a27b45d3c03d0f8fecacd25fd7eaff3"
