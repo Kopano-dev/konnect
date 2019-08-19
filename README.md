@@ -105,7 +105,7 @@ file. Without any explicitly registered clients, Konnect will only accept client
 which redirect to an URI which starts with the value provided with the `--iss`
 parameter.
 
-## Konnect cryptography and validation
+### Konnect cryptography and validation
 
 A tool can be used to create keys for Konnect and also to validate tokens to
 ensure correct operation is [Step CLI](https://github.com/smallstep/cli). This
@@ -134,7 +134,7 @@ echo $TOKEN_VALUE | step crypto jwt verify --iss $ISS \
   --aud playground-trusted.js --jwks $ISS/konnect/v1/jwks.json
 ```
 
-## URL endpoints
+### URL endpoints
 
 Take a look at `Caddyfile.example` on the URL endpoints provided by Konnect and
 how to expose them through a TLS proxy.
@@ -246,7 +246,7 @@ bin/konnectd serve --listen=127.0.0.1:8777 \
   cookie https://mykopano.local/webapp/?load=custom&name=oidcuser "KOPANO_WEBAPP encryption-store-key"
 ```
 
-### Run with Docker
+## Run with Docker
 
 Kopano Konnect supports Docker to easily be run inside a container. Running with
 Docker supports all features of Kopano Konnect and can make use of Docker
@@ -258,7 +258,7 @@ Kopano provides [official Docker images for Konnect](https://hub.docker.com/r/ko
 docker pull kopano/konnectd
 ```
 
-#### Run Konnect with Docker Swarm
+### Run Konnect with Docker Swarm
 
 Setup the Docker container in swarm mode like this:
 
@@ -285,7 +285,7 @@ docker service create \
 This example assumes the local system has a user `kopano` which can access
 the Kopano Groupware Core unix socket as admin user `SYSTEM`.
 
-#### Run Konnect from Docker image
+### Run Konnect from Docker image
 
 ```
 openssl rand 32 -out /etc/kopano/konnectd-encryption-secret.key
@@ -310,7 +310,7 @@ you adapt the parameters and environment variables. The above example assumes
 the local system has a user `kopano` which can access the Kopano Groupware Core
 unix socket as admin user `SYSTEM`.
 
-#### Build Konnect Docker image
+### Build Konnect Docker image
 
 This project includes a `Dockerfile` which can be used to build a Docker
 container from the locally build version. Similarly the `Dockerfile.release`
