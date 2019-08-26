@@ -1,11 +1,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
-"PO-Revision-Date: 2018-11-08 16:18+0000\n"
+"POT-Creation-Date: 2019-05-09T14:09:27.715Z\n"
+"PO-Revision-Date: 2019-08-26 16:21+0000\n"
 "Last-Translator: Klaus <klaus@linuxavdelingen.no>\n"
-"Language-Team: Norwegian Bokmål "
-"<http://translate.kopano.io/projects/kopano/konnect/nb/>\n"
+"Language-Team: Norwegian Bokmål <http://translate.kopano.io/projects/kopano/konnect/nb/>\n"
 "Language: nb\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -20,6 +19,14 @@ msgstr ""
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
 msgstr "?"
+
+#. [konnect.scopeDescription.aliasBasic]
+#. defaultMessage is:
+#. Access your basic account information
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.aliasBasic"
+msgid "Access your basic account information"
+msgstr "Tilgang til informasjon om basiskonto"
 
 #. [konnect.consent.allowButton.label]
 #. defaultMessage is:
@@ -43,8 +50,7 @@ msgstr "Tillatt {clientDisplayName} å gjøre dette?"
 #: i18n/src/messages.json
 msgctxt "konnect.consent.consequence"
 msgid "By clicking Allow, you allow this app to use your information."
-msgstr ""
-"Ved å klikke på Aksepter, så tillater du at appen bruker din informasjon."
+msgstr "Ved å klikke på Aksepter, så tillater du at appen bruker din informasjon."
 
 #. [konnect.consent.cancelButton.label]
 #. defaultMessage is:
@@ -118,6 +124,14 @@ msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
 msgstr "Hei {displayName}"
 
+#. [konnect.scopeDescription.offlineAccess]
+#. defaultMessage is:
+#. Keep the allowed access persistently and forever
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.offlineAccess"
+msgid "Keep the allowed access persistently and forever"
+msgstr "Behold den tillate tilgangen for alltid"
+
 #. [konnect.error.login.failed]
 #. defaultMessage is:
 #. Logon failed. Please verify your credentials and try again.
@@ -156,7 +170,7 @@ msgstr "Passord"
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.confirm"
 msgid "Press the button below, to sign out from your Kopano account now."
-msgstr ""
+msgstr "Trykk på knappen under, for å logge ut av din Kopano konto."
 
 #. [konnect.login.retryButton.label]
 #. defaultMessage is:
@@ -164,7 +178,15 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.retryButton.label"
 msgid "Retry"
-msgstr ""
+msgstr "Prøv igjen"
+
+#. [konnect.scopeDescription.scope]
+#. defaultMessage is:
+#. Scope: {scope}
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.scope"
+msgid "Scope: {scope}"
+msgstr "Omfang: {scope}"
 
 #. [konnect.login.headline]
 #. defaultMessage is:
@@ -196,7 +218,7 @@ msgstr "Logg ut"
 #: i18n/src/messages.json
 msgctxt "konnect.error.http.unexpectedResponseStatus"
 msgid "Unexpected HTTP response: {status}. Please check your connection and try again."
-msgstr ""
+msgstr "Uventet HTTP respons:  {status}. Sjekk tilkoblingen din og prøv igjen."
 
 #. [konnect.error.http.unexpectedResponseState]
 #. defaultMessage is:
@@ -204,7 +226,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.http.unexpectedResponseState"
 msgid "Unexpected response state: {state}"
-msgstr ""
+msgstr "Uventet svar-status: {state}"
 
 #. [konnect.chooseaccount.useOther.label]
 #. defaultMessage is:
@@ -236,7 +258,7 @@ msgstr "Velkommen {displayName}"
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.message"
 msgid "You are signed in - awesome!"
-msgstr ""
+msgstr "Du er logget på!"
 
 #. [konnect.goodbye.message.close]
 #. defaultMessage is:
@@ -260,7 +282,7 @@ msgstr "vennligst bekreft utlogging"
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.subHeader"
 msgid "to sign in to Kopano"
-msgstr ""
+msgstr "for å logge inn i Kopano"
 
 #. [konnect.login.subHeader]
 #. defaultMessage is:
@@ -268,7 +290,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.subHeader"
 msgid "with your Kopano account"
-msgstr ""
+msgstr "med din Kopano konto"
 
 #. [konnect.goodbye.subHeader]
 #. defaultMessage is:
@@ -276,7 +298,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.subHeader"
 msgid "you have been signed out from your Kopano account"
-msgstr ""
+msgstr "du har blitt logget ut fra din Kopano konto"
 
 #. [konnect.consent.message]
 #. defaultMessage is:
