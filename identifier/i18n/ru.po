@@ -1,17 +1,15 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-10-30T16:08:29.860Z\n"
-"PO-Revision-Date: 2018-11-01 15:36+0000\n"
+"POT-Creation-Date: 2019-05-09T14:09:27.715Z\n"
+"PO-Revision-Date: 2019-08-27 08:46+0000\n"
 "Last-Translator: Sotneo <kerovsot@gmail.com>\n"
-"Language-Team: Russian "
-"<http://translate.kopano.io/projects/kopano/konnect/ru/>\n"
+"Language-Team: Russian <http://translate.kopano.io/projects/kopano/konnect/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<="
-"4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Weblate 2.4\n"
 
 #. [konnect.chooseaccount.useOther.persona.label]
@@ -21,6 +19,14 @@ msgstr ""
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
 msgstr "?"
+
+#. [konnect.scopeDescription.aliasBasic]
+#. defaultMessage is:
+#. Access your basic account information
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.aliasBasic"
+msgid "Access your basic account information"
+msgstr "Доступ к вашей основной учетной записи"
 
 #. [konnect.consent.allowButton.label]
 #. defaultMessage is:
@@ -44,9 +50,7 @@ msgstr "Разрешить {clientDisplayName} сделать это?"
 #: i18n/src/messages.json
 msgctxt "konnect.consent.consequence"
 msgid "By clicking Allow, you allow this app to use your information."
-msgstr ""
-"Нажимая Разрешить, ты даёте разрешение этому приложению использовать вашу "
-"информацию."
+msgstr "Нажимая Разрешить, ты даёте разрешение этому приложению использовать вашу информацию."
 
 #. [konnect.consent.cancelButton.label]
 #. defaultMessage is:
@@ -120,15 +124,21 @@ msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
 msgstr "Привет,  {displayName}"
 
+#. [konnect.scopeDescription.offlineAccess]
+#. defaultMessage is:
+#. Keep the allowed access persistently and forever
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.offlineAccess"
+msgid "Keep the allowed access persistently and forever"
+msgstr "Сохраните разрешение на доступ как постоянное"
+
 #. [konnect.error.login.failed]
 #. defaultMessage is:
 #. Logon failed. Please verify your credentials and try again.
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.failed"
 msgid "Logon failed. Please verify your credentials and try again."
-msgstr ""
-"Не удалось войти. Пожалуйста, проверьте ваши учетные данные и попробуйте "
-"снова."
+msgstr "Не удалось войти. Пожалуйста, проверьте ваши учетные данные и попробуйте снова."
 
 #. [konnet.error.http.networkError]
 #. defaultMessage is:
@@ -136,8 +146,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnet.error.http.networkError"
 msgid "Network error. Please check your connection and try again."
-msgstr ""
-"Сетевая ошибка. Пожалуйста, проверьте ваше соединение и попробуйте снова."
+msgstr "Сетевая ошибка. Пожалуйста, проверьте ваше соединение и попробуйте снова."
 
 #. [konnect.login.nextButton.label]
 #. defaultMessage is:
@@ -171,6 +180,14 @@ msgctxt "konnect.login.retryButton.label"
 msgid "Retry"
 msgstr "Повторить"
 
+#. [konnect.scopeDescription.scope]
+#. defaultMessage is:
+#. Scope: {scope}
+#: i18n/src/messages.json
+msgctxt "konnect.scopeDescription.scope"
+msgid "Scope: {scope}"
+msgstr "Охват: {scope}"
+
 #. [konnect.login.headline]
 #. defaultMessage is:
 #. Sign in
@@ -201,8 +218,7 @@ msgstr "Выход"
 #: i18n/src/messages.json
 msgctxt "konnect.error.http.unexpectedResponseStatus"
 msgid "Unexpected HTTP response: {status}. Please check your connection and try again."
-msgstr ""
-"Неожиданный ответ HTTP: {status}. Проверьте подключение и повторите попытку."
+msgstr "Неожиданный ответ HTTP: {status}. Проверьте подключение и повторите попытку."
 
 #. [konnect.error.http.unexpectedResponseState]
 #. defaultMessage is:
