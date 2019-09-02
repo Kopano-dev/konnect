@@ -17,6 +17,7 @@ CHGLOG ?= git-chglog
 CGO_ENABLED ?= 0
 
 # Variables
+ARGS    ?=
 PWD     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2>/dev/null | sed 's/^v//' || \
@@ -162,7 +163,7 @@ dist: 3rdparty-LICENSES.md ; $(info building dist tarball ...)
 
 .PHONE: changelog
 changelog: ; $(info updating changelog ...)
-	$(CHGLOG) --output CHANGELOG.md
+	$(CHGLOG) --output CHANGELOG.md $(ARGS)
 
 # Rest
 
