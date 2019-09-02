@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Update kpop to 0.20.4
+- Update list of enabled languages
+- Add Hindi
+- rename language
+- Translated using Weblate (Dutch)
+- Translated using Weblate (Russian)
+- Translated using Weblate (Norwegian Bokmål)
+- Translated using Weblate (French)
+- Translated using Weblate (Portuguese (Portugal))
+- Translated using Weblate (Portuguese (Portugal))
+- Translated using Weblate (Norwegian Bokmål)
+- Translated using Weblate (Russian)
+- Cleanup Dockerfile
+- Fixup headlines
 
 
 ## v0.24.0 (2019-07-10)
