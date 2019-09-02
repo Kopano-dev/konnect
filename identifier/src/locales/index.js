@@ -5,6 +5,7 @@
 import de from './de.json';
 import es from './es.json';
 import fr from './fr.json';
+import hi from './hi.json';
 import hu from './hu.json';
 import it from './it.json';
 import ja from './ja.json';
@@ -30,6 +31,7 @@ const locales = enableLocales({
   'en-US': {},
   es,
   fr,
+  hi,
   hu,
   it,
   ja,
@@ -42,6 +44,8 @@ const locales = enableLocales({
   'de',
   'en-GB',
   'en-US',
+  'fr',
+  'hi',
   'nb',
   'nl',
   'pt-PT',
