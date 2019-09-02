@@ -21,8 +21,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
+	"runtime"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 
 	"stash.kopano.io/kc/konnect/config"
@@ -71,6 +74,10 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().Bool("allow-dynamic-client-registration", false, "Allow dynamic OAuth2 client registration")
 	serveCmd.Flags().Bool("log-timestamp", true, "Prefix each log line with timestamp")
 	serveCmd.Flags().String("log-level", "info", "Log level (one of panic, fatal, error, warn, info or debug)")
+	serveCmd.Flags().Bool("with-pprof", false, "With pprof enabled")
+	serveCmd.Flags().String("pprof-listen", "127.0.0.1:6060", "TCP listen address for pprof")
+	serveCmd.Flags().Bool("with-metrics", false, "Enable metrics")
+	serveCmd.Flags().String("metrics-listen", "127.0.0.1:6777", "TCP listen address for metrics")
 
 	return serveCmd
 }
@@ -87,12 +94,29 @@ func serve(cmd *cobra.Command, args []string) error {
 	}
 	logger.Infoln("serve start")
 
+	// Metrics support.
+	withMetrics, _ := cmd.Flags().GetBool("with-metrics")
+	metricsListenAddr, _ := cmd.Flags().GetString("metrics-listen")
+	if withMetrics && metricsListenAddr != "" {
+		go func() {
+			metricsListen := metricsListenAddr
+			handler := http.NewServeMux()
+			logger.WithField("listenAddr", metricsListen).Infoln("metrics enabled, starting listener")
+			handler.Handle("/metrics", promhttp.Handler())
+			err := http.ListenAndServe(metricsListen, handler)
+			if err != nil {
+				logger.WithError(err).Errorln("unable to start metrics listener")
+			}
+		}()
+	}
+
 	bs := &bootstrap{
 		cmd:  cmd,
 		args: args,
 
 		cfg: &config.Config{
-			Logger: logger,
+			WithMetrics: withMetrics,
+			Logger:      logger,
 		},
 	}
 	err = bs.initialize()
@@ -112,6 +136,21 @@ func serve(cmd *cobra.Command, args []string) error {
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
+	}
+
+	// Profiling support.
+	withPprof, _ := cmd.Flags().GetBool("with-pprof")
+	pprofListenAddr, _ := cmd.Flags().GetString("pprof-listen")
+	if withPprof && pprofListenAddr != "" {
+		runtime.SetMutexProfileFraction(5)
+		go func() {
+			pprofListen := pprofListenAddr
+			logger.WithField("listenAddr", pprofListen).Infoln("pprof enabled, starting listener")
+			err := http.ListenAndServe(pprofListen, nil)
+			if err != nil {
+				logger.WithError(err).Errorln("unable to start pprof listener")
+			}
+		}()
 	}
 
 	logger.Infoln("serve started")

@@ -28,6 +28,8 @@ import (
 type Config struct {
 	ListenAddr string
 
+	WithMetrics bool
+
 	Logger        logrus.FieldLogger
 	HTTPTransport http.RoundTripper
 
