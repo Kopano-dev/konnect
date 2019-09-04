@@ -3,12 +3,9 @@
 
 // Please keep imports and exports alphabetically sorted.
 import de from './de.json';
-import es from './es.json';
 import fr from './fr.json';
 import hi from './hi.json';
-import hu from './hu.json';
-import it from './it.json';
-import ja from './ja.json';
+import is from './is.json';
 import nb from './nb.json';
 import nl from './nl.json';
 import ptPT from './pt_PT.json';
@@ -29,12 +26,9 @@ const locales = enableLocales({
   de,
   'en-GB': {},
   'en-US': {},
-  es,
   fr,
   hi,
-  hu,
-  it,
-  ja,
+  is,
   nb,
   nl,
   'pt-PT': ptPT,
@@ -46,6 +40,7 @@ const locales = enableLocales({
   'en-US',
   'fr',
   'hi',
+  'is',
   'nb',
   'nl',
   'pt-PT',
