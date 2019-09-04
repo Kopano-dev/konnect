@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+
+
+## v0.24.1 (2019-09-04)
+
+- Enable Icelandic translation, and avoid loading untranslated catalogs
+- Update kpop to 0.24.5
+- Translated using Weblate (Icelandic)
+- Add args to changelog target
 - Update kpop to 0.20.4
 - Update list of enabled languages
 - Add Hindi
