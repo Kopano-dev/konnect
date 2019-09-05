@@ -4,6 +4,11 @@
 
 
 
+## v0.24.2 (2019-09-05)
+
+- Merge pull request [#112](https://stash.kopano.io/projects/KC/repos/konnect/issues/112/) in KC/konnect from ~GITCOMMIT/konnect:master to master
+
+
 ## v0.24.1 (2019-09-04)
 
 - Enable Icelandic translation, and avoid loading untranslated catalogs
