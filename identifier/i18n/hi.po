@@ -1,15 +1,16 @@
 msgid ""
 msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2019-05-09T14:09:27.715Z\n"
+"PO-Revision-Date: 2019-09-04 09:55+0000\n"
+"Last-Translator: Mayank <m.dabhi@kopano.com>\n"
+"Language-Team: Hindi <http://translate.kopano.io/projects/kopano/konnect/hi/>\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"MIME-Version: 1.0\n"
-"X-Generator: react-intl-po\n"
-"Project-Id-Version: PACKAGE VERSION\n"
-"PO-Revision-Date: 2019-09-02 11:13+0200\n"
-"Last-Translator: Simon Eisenmann <s.eisenmann@kopano.com>\n"
-"Language-Team: Hindi\n"
-"Language: hi\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2.4\n"
 
 #. [konnect.chooseaccount.useOther.persona.label]
 #. defaultMessage is:
@@ -17,7 +18,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.useOther.persona.label"
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #. [konnect.scopeDescription.aliasBasic]
 #. defaultMessage is:
@@ -25,7 +26,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.scopeDescription.aliasBasic"
 msgid "Access your basic account information"
-msgstr ""
+msgstr "अपनी मूल खाता जानकारी देखे"
 
 #. [konnect.consent.allowButton.label]
 #. defaultMessage is:
@@ -33,7 +34,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.allowButton.label"
 msgid "Allow"
-msgstr ""
+msgstr "अनुमति दीजिये"
 
 #. [konnect.consent.question]
 #. defaultMessage is:
@@ -41,7 +42,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.question"
 msgid "Allow {clientDisplayName} to do this?"
-msgstr ""
+msgstr "क्या {clientDisplayName} को ये करने की अनुमति देना चाहते है?"
 
 #. [konnect.consent.consequence]
 #. defaultMessage is:
@@ -49,7 +50,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.consequence"
 msgid "By clicking Allow, you allow this app to use your information."
-msgstr ""
+msgstr "अनुमति पर क्लिक करके, आप इस एप्लिकेशन को आपकी जानकारी का उपयोग करने की अनुमति देते हैं."
 
 #. [konnect.consent.cancelButton.label]
 #. defaultMessage is:
@@ -57,7 +58,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.cancelButton.label"
 msgid "Cancel"
-msgstr ""
+msgstr "रद्द करें"
 
 #. [konnect.chooseaccount.headline]
 #. defaultMessage is:
@@ -65,7 +66,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.headline"
 msgid "Choose an account"
-msgstr ""
+msgstr "खाता चुनें"
 
 #. [konnect.consent.tooltip.client]
 #. defaultMessage is:
@@ -73,7 +74,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.tooltip.client"
 msgid "Clicking \"Allow\" will redirect you to: {redirectURI}"
-msgstr ""
+msgstr "\"अनुमति\" पर क्लिक करने से आपको {redirecturI} पे पुनर्निर्देशित किया जायेगा"
 
 #. [konnect.error.login.validate.missingPassword]
 #. defaultMessage is:
@@ -81,7 +82,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.validate.missingPassword"
 msgid "Enter a password"
-msgstr ""
+msgstr "पासवर्ड डालिए"
 
 #. [konnect.error.login.validate.missingUsername]
 #. defaultMessage is:
@@ -89,7 +90,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.validate.missingUsername"
 msgid "Enter an username"
-msgstr ""
+msgstr "उपयोगकर्ता नाम डालिये"
 
 #. [konnect.loading.error.headline]
 #. defaultMessage is:
@@ -97,7 +98,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.loading.error.headline"
 msgid "Failed to connect to server"
-msgstr ""
+msgstr "सर्वर से कनेक्ट करने में विफल"
 
 #. [konnect.goodbye.headline]
 #. defaultMessage is:
@@ -105,7 +106,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.headline"
 msgid "Goodbye"
-msgstr ""
+msgstr "अलविदा"
 
 #. [konnect.goodbye.confirm.headline]
 #. defaultMessage is:
@@ -113,7 +114,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.confirm.headline"
 msgid "Hello {displayName}"
-msgstr ""
+msgstr "नमस्ते {displayName}"
 
 #. [konnect.consent.headline]
 #. defaultMessage is:
@@ -121,7 +122,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.headline"
 msgid "Hi {displayName}"
-msgstr ""
+msgstr "नमस्ते {displayName}"
 
 #. [konnect.scopeDescription.offlineAccess]
 #. defaultMessage is:
@@ -129,7 +130,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.scopeDescription.offlineAccess"
 msgid "Keep the allowed access persistently and forever"
-msgstr ""
+msgstr "अनुमत पहुंच को लगातार और हमेशा बनाए रखें"
 
 #. [konnect.error.login.failed]
 #. defaultMessage is:
@@ -137,7 +138,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.login.failed"
 msgid "Logon failed. Please verify your credentials and try again."
-msgstr ""
+msgstr "लोगऑन नाकाम रहा. कृपया अपने क्रेडेंशियल्स जांचे और पुनः प्रयास करें."
 
 #. [konnet.error.http.networkError]
 #. defaultMessage is:
@@ -145,7 +146,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnet.error.http.networkError"
 msgid "Network error. Please check your connection and try again."
-msgstr ""
+msgstr "नेटवर्क त्रुटि। कृपया अपने संपर्क की जांच करे और फिर से प्रयास करें."
 
 #. [konnect.login.nextButton.label]
 #. defaultMessage is:
@@ -153,7 +154,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.nextButton.label"
 msgid "Next"
-msgstr ""
+msgstr "अगला"
 
 #. [konnect.login.passwordField.label]
 #. defaultMessage is:
@@ -161,7 +162,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.passwordField.label"
 msgid "Password"
-msgstr ""
+msgstr "पासवर्ड"
 
 #. [konnect.goodbye.message.confirm]
 #. defaultMessage is:
@@ -169,7 +170,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.confirm"
 msgid "Press the button below, to sign out from your Kopano account now."
-msgstr ""
+msgstr "अपने Kopano खाते से साइन आउट करने के लिए नीचे दिए गए बटन को दबाएं."
 
 #. [konnect.login.retryButton.label]
 #. defaultMessage is:
@@ -177,7 +178,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.retryButton.label"
 msgid "Retry"
-msgstr ""
+msgstr "पुन: प्रयास करें"
 
 #. [konnect.scopeDescription.scope]
 #. defaultMessage is:
@@ -185,7 +186,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.scopeDescription.scope"
 msgid "Scope: {scope}"
-msgstr ""
+msgstr "क्षेत्र: {scope}"
 
 #. [konnect.login.headline]
 #. defaultMessage is:
@@ -193,7 +194,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.headline"
 msgid "Sign in"
-msgstr ""
+msgstr "साइन इन"
 
 #. [konnect.goodbye.signoutButton.label]
 #. defaultMessage is:
@@ -201,7 +202,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.signoutButton.label"
 msgid "Sign out"
-msgstr ""
+msgstr "साइन आउट"
 
 #. [konnect.welcome.signoutButton.label]
 #. defaultMessage is:
@@ -209,17 +210,15 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.signoutButton.label"
 msgid "Sign out"
-msgstr ""
+msgstr "साइन आउट"
 
 #. [konnect.error.http.unexpectedResponseStatus]
 #. defaultMessage is:
 #. Unexpected HTTP response: {status}. Please check your connection and try again.
 #: i18n/src/messages.json
 msgctxt "konnect.error.http.unexpectedResponseStatus"
-msgid ""
-"Unexpected HTTP response: {status}. Please check your connection and try "
-"again."
-msgstr ""
+msgid "Unexpected HTTP response: {status}. Please check your connection and try again."
+msgstr "अनपेक्षित HTTP प्रतिक्रिया: {status}. कृपया अपने संपर्क की जांच करे और फिर से प्रयास करें."
 
 #. [konnect.error.http.unexpectedResponseState]
 #. defaultMessage is:
@@ -227,7 +226,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.error.http.unexpectedResponseState"
 msgid "Unexpected response state: {state}"
-msgstr ""
+msgstr "अनपेक्षित प्रतिक्रिया अवस्था: {state}"
 
 #. [konnect.chooseaccount.useOther.label]
 #. defaultMessage is:
@@ -235,7 +234,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.useOther.label"
 msgid "Use another account"
-msgstr ""
+msgstr "दूसरे खाते का उपयोग करें"
 
 #. [konnect.login.usernameField.label]
 #. defaultMessage is:
@@ -243,7 +242,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.usernameField.label"
 msgid "Username"
-msgstr ""
+msgstr "उपयोगकर्ता नाम"
 
 #. [konnect.welcome.headline]
 #. defaultMessage is:
@@ -251,7 +250,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.headline"
 msgid "Welcome {displayName}"
-msgstr ""
+msgstr "स्वागत हे {displayName}"
 
 #. [konnect.welcome.message]
 #. defaultMessage is:
@@ -259,7 +258,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.welcome.message"
 msgid "You are signed in - awesome!"
-msgstr ""
+msgstr "आप साइंड इन हैं - अद्भुत!"
 
 #. [konnect.goodbye.message.close]
 #. defaultMessage is:
@@ -267,7 +266,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.message.close"
 msgid "You can close this window now."
-msgstr ""
+msgstr "अब आप इस विंडो को बंद कर सकते हैं."
 
 #. [konnect.goodbye.confirm.subHeader]
 #. defaultMessage is:
@@ -275,7 +274,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.confirm.subHeader"
 msgid "please confirm sign out"
-msgstr ""
+msgstr "कृपया साइन आउट की पुष्टि करें"
 
 #. [konnect.chooseaccount.subHeader]
 #. defaultMessage is:
@@ -283,7 +282,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.chooseaccount.subHeader"
 msgid "to sign in to Kopano"
-msgstr ""
+msgstr "Kopano में साइन इन करने के लिए"
 
 #. [konnect.login.subHeader]
 #. defaultMessage is:
@@ -291,7 +290,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.login.subHeader"
 msgid "with your Kopano account"
-msgstr ""
+msgstr "अपने Kopano खाते के साथ"
 
 #. [konnect.goodbye.subHeader]
 #. defaultMessage is:
@@ -299,7 +298,7 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.goodbye.subHeader"
 msgid "you have been signed out from your Kopano account"
-msgstr ""
+msgstr "आपको अपने Kopano खाते से साइन आउट कर दिया गया है"
 
 #. [konnect.consent.message]
 #. defaultMessage is:
@@ -307,4 +306,4 @@ msgstr ""
 #: i18n/src/messages.json
 msgctxt "konnect.consent.message"
 msgid "{clientDisplayName} wants to"
-msgstr ""
+msgstr "{clientDisplayName} चाहते है की"
