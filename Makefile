@@ -41,8 +41,8 @@ DLV_ATTACH_PID ?= $(shell pgrep -f $(DLV_EXECUTABLE))
 # Build
 
 LDFLAGS  ?= -s -w
-ASMFLAGS ?= -trimpath=$(GOPATH)
-GCFLAGS  ?= -trimpath=$(GOPATH)
+ASMFLAGS ?=
+GCFLAGS  ?=
 
 .PHONY: all
 all: fmt vendor | $(CMDS) identifier-webapp
@@ -54,10 +54,12 @@ $(BASE): ; $(info creating local GOPATH ...)
 .PHONY: $(CMDS)
 $(CMDS): vendor | $(BASE) ; $(info building $@ ...) @
 	cd $(BASE) && $(GO) build \
+		-trimpath \
 		-tags release \
+		-buildmode=exe \
 		-asmflags '$(ASMFLAGS)' \
 		-gcflags '$(GCFLAGS)' \
-		-ldflags '$(LDFLAGS) -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -extldflags -static' \
+		-ldflags '$(LDFLAGS) -buildid=reproducible/$(VERSION) -X $(PACKAGE)/version.Version=$(VERSION) -X $(PACKAGE)/version.BuildDate=$(DATE) -extldflags -static' \
 		-o bin/$(notdir $@) $(PACKAGE)/$@
 
 .PHONY: identifier-webapp
@@ -80,7 +82,7 @@ vet: vendor | $(BASE) ; $(info running go vet ...)	@
 
 .PHONY: fmt
 fmt: ; $(info running gofmt ...)	@
-	@ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... | grep -v /vendor/); do \
+	@cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... | grep -v /vendor/); do \
 		$(GOFMT) -l -w $$d/*.go || ret=$$? ; \
 	done ; exit $$ret
 

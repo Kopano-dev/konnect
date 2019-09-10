@@ -3,7 +3,7 @@
 pipeline {
 	agent {
 		docker {
-			image 'golang:1.12'
+			image 'golang:1.13'
 			args '-u 0'
 		 }
 	}
@@ -42,8 +42,8 @@ pipeline {
 		stage('Build') {
 			steps {
 				echo 'Building..'
-				sh 'make'
-				sh './bin/konnectd version'
+				sh 'make DATE=reproducible'
+				sh './bin/konnectd version && sha256sum ./bin/konnectd'
 			}
 		}
 		stage('Test') {
