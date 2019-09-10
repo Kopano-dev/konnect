@@ -425,3 +425,21 @@ debugger.
 
 See https://github.com/go-delve/delve/blob/master/Documentation/EditorIntegration.md
 for further examples and details.
+
+## Usage survey
+
+By default, any running konnectd regularly transmits survey data to a Kopano
+user survey service at https://stats.kopano.io . To disable participation, set
+the environment variable `KOPANO_SURVEYCLIENT_AUTOSURVEY` to `no`.
+
+The survey data includes system and platform information and the following
+specific settings:
+
+ - Identify manager name (as selected when starting konnectd)
+
+See [here](https://stash.kopano.io/projects/KGOL/repos/ksurveyclient-go) for further
+documentation and customization possibilities.
+
+## License
+
+See `LICENSE.txt` for licensing information of this project.
