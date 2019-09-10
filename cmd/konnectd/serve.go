@@ -27,10 +27,13 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
+	"stash.kopano.io/kgol/ksurveyclient-go"
+	"stash.kopano.io/kgol/ksurveyclient-go/autosurvey"
 
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/server"
+	"stash.kopano.io/kc/konnect/version"
 )
 
 // Defaults.
@@ -151,6 +154,25 @@ func serve(cmd *cobra.Command, args []string) error {
 				logger.WithError(err).Errorln("unable to start pprof listener")
 			}
 		}()
+	}
+
+	// Survey support.
+	var guid []byte
+	if bs.issuerIdentifierURI.Hostname() != "localhost" {
+		guid = []byte(bs.issuerIdentifierURI.String())
+	}
+	err = autosurvey.Start(ctx,
+		"konnectd",
+		version.Version,
+		guid,
+		ksurveyclient.MustNewConstMap("userplugin", map[string]interface{}{
+			"desc":  "Identity manager",
+			"type":  "string",
+			"value": bs.args[0],
+		}),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to start auto survey: %v", err)
 	}
 
 	logger.Infoln("serve started")

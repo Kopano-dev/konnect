@@ -348,6 +348,17 @@
   version = "v4.1.0"
 
 [[projects]]
+  digest = "1:0b0c7c62b2c365789c53d5371c2ec768d59c8fd2736dae171af51d95fde05a9b"
+  name = "stash.kopano.io/kgol/ksurveyclient-go"
+  packages = [
+    ".",
+    "autosurvey",
+  ]
+  pruneopts = "UT"
+  revision = "308da2df2453456a9406fae0428f07cab61202ee"
+  version = "v0.6.0"
+
+[[projects]]
   digest = "1:3cbf6c7fe4df8116b3660a9aabbd8b035a27b45d3c03d0f8fecacd25fd7eaff3"
   name = "stash.kopano.io/kgol/oidc-go"
   packages = ["."]
@@ -392,6 +403,8 @@
     "gopkg.in/square/go-jose.v2/jwt",
     "gopkg.in/yaml.v2",
     "stash.kopano.io/kgol/kcc-go",
+    "stash.kopano.io/kgol/ksurveyclient-go",
+    "stash.kopano.io/kgol/ksurveyclient-go/autosurvey",
     "stash.kopano.io/kgol/oidc-go",
     "stash.kopano.io/kgol/rndm",
   ]
