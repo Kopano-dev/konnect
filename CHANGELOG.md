@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Build with Go 1.13 and update minimal Go version to 1.13
+- Add usage survey block to README
+- Add automatic survey reporting
+- Add basic metrics
 
 
 ## v0.24.2 (2019-09-05)
