@@ -4,6 +4,12 @@
 
 
 
+## v0.25.1 (2019-09-11)
+
+- Update Docker entrypoint for metrics listener
+- Expose metrics port for Docker containers
+
+
 ## v0.25.0 (2019-09-11)
 
 - Build with Go 1.13 and update minimal Go version to 1.13
