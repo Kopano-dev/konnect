@@ -23,6 +23,7 @@ RUN apk add --no-cache \
 
 # Expose ports.
 EXPOSE 8777
+EXPOSE 6777
 
 # Define basic environment variables.
 ENV EXE=konnectd

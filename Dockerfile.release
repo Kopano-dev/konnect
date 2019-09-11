@@ -22,6 +22,7 @@ RUN apk add --no-cache \
 
 # Expose ports.
 EXPOSE 8777
+EXPOSE 6777
 
 # Version to include in this Docker image. Default to latest.
 ENV VERSION latest
