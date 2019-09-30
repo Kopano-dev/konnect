@@ -4,6 +4,11 @@
 
 
 
+## v0.25.2 (2019-09-30)
+
+- Build with Go 1.13.1
+
+
 ## v0.25.1 (2019-09-11)
 
 - Update Docker entrypoint for metrics listener
