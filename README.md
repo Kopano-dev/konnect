@@ -5,6 +5,11 @@ Kopano Konnect implements an [OpenID provider](http://openid.net/specs/openid-co
 
 [![Go Report Card](https://goreportcard.com/badge/stash.kopano.io/kc/konnect)](https://goreportcard.com/report/stash.kopano.io/kc/konnect)
 
+## Technologies
+
+- Go
+- React
+
 ## Quickstart
 
 Either download a Konnect binary release from https://download.kopano.io/community/konnect:/
