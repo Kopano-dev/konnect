@@ -81,13 +81,13 @@ vet: vendor | $(BASE) ; $(info running go vet ...)	@
 	done ; exit $$ret
 
 .PHONY: fmt
-fmt: ; $(info running gofmt ...)	@
+fmt: $(BASE) ; $(info running gofmt ...)	@
 	@cd $(BASE) && ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./... | grep -v /vendor/); do \
 		$(GOFMT) -l -w $$d/*.go || ret=$$? ; \
 	done ; exit $$ret
 
 .PHONY: check
-check: ; $(info checking dependencies ...) @
+check: $(BASE) ; $(info checking dependencies ...) @
 	@cd $(BASE) && $(DEP) check && echo OK
 
 # Tests
