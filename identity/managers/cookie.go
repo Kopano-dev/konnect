@@ -383,14 +383,21 @@ func (im *CookieIdentityManager) Fetch(ctx context.Context, userID string, sessi
 
 	if user == nil {
 		// Try claims from context.
-		identityClaims, _ := konnect.FromClaimsContext(ctx)
-		if identityClaims != nil {
-			var err error
-			var encodedCookies string
-			identityClaimsMap, ok := identityClaims.(jwt.MapClaims)
-			if !ok {
+		claims, _ := konnect.FromClaimsContext(ctx)
+		if claims != nil {
+			var identityClaimsMap jwt.MapClaims
+			switch c := claims.(type) {
+			case *konnect.AccessTokenClaims:
+				identityClaimsMap = c.IdentityClaims
+			case *konnect.RefreshTokenClaims:
+				identityClaimsMap = c.IdentityClaims
+			case jwt.MapClaims:
+				identityClaimsMap = c
+			default:
 				return nil, false, fmt.Errorf("CookieIdentityManager: unknown identity claims type")
 			}
+			var err error
+			var encodedCookies string
 			encryptedCookies, _ := identityClaimsMap["cookie.v"].(string)
 			if encryptedCookies != "" {
 				encodedCookies, err = im.encryptionManager.DecryptHexToString(encryptedCookies)
