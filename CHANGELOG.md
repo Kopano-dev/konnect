@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fix cookie backend claims context
+- Ensure BASE in fmt and check targets
+- Add a list of technologies used
 
 
 ## v0.25.2 (2019-09-30)
