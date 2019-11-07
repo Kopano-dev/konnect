@@ -795,6 +795,7 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 	uri, _ := url.Parse(i.authorizationEndpointURI.String())
 	query, _ := url.ParseQuery(sd.RawQuery)
 	query.Del("flow")
+	query.Set("prompt", oidc.PromptNone)
 
 	switch typedErr := err.(type) {
 	case nil:
