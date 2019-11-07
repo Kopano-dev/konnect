@@ -174,6 +174,10 @@ func (i *Identifier) resolveUser(ctx context.Context, username string) (*Identif
 		return nil, err
 	}
 
+	if u == nil {
+		return nil, nil
+	}
+
 	// Construct user from resolved result.
 	user := &IdentifiedUser{
 		sub: u.Subject(),
