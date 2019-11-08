@@ -173,7 +173,10 @@ func (p *Provider) makeIssURL(path string) string {
 	if path == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s%s", p.issuerIdentifier, path)
+	u, _ := url.Parse(p.issuerIdentifier)
+	u.Path = "" // Strip path from issuer, whatever prefix must already be applied.
+
+	return fmt.Sprintf("%s%s", u.String(), path)
 }
 
 // SetSigningMethod sets the provided signing method as default signing method
