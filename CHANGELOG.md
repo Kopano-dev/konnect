@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+
+
+## v0.26.0 (2019-11-11)
+
 - Strip issuer subpath for OIDC url endpoints
 - Force prompt=none for sencodary authorize after external authority auth
 - Avoid error when identifier backend resolve cannot find a user
