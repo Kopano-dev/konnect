@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Strip issuer subpath for OIDC url endpoints
+- Force prompt=none for sencodary authorize after external authority auth
+- Avoid error when identifier backend resolve cannot find a user
+- Update curl to fix building of container image
+- Build with Go 1.13.3
 
 
 ## v0.25.3 (2019-10-23)
