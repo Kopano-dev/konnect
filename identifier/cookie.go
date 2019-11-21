@@ -32,6 +32,7 @@ func (i *Identifier) setLogonCookie(rw http.ResponseWriter, value string) error 
 		Path:     i.pathPrefix + "/identifier/_/",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(rw, &cookie)
 
@@ -49,6 +50,7 @@ func (i *Identifier) removeLogonCookie(rw http.ResponseWriter) error {
 		Path:     i.pathPrefix + "/identifier/_/",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 
 		Expires: farPastExpiryTime,
 	}
@@ -71,6 +73,7 @@ func (i *Identifier) setConsentCookie(rw http.ResponseWriter, cr *ConsentRequest
 		Path:     i.pathPrefix + "/identifier/_/",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(rw, &cookie)
 
@@ -98,6 +101,7 @@ func (i *Identifier) removeConsentCookie(rw http.ResponseWriter, req *http.Reque
 		Path:     i.pathPrefix + "/identifier/_/",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 
 		Expires: farPastExpiryTime,
 	}
@@ -141,6 +145,7 @@ func (i *Identifier) setOAuth2Cookie(rw http.ResponseWriter, state string, value
 		Path:     i.pathPrefix + "/identifier/oauth2/cb",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(rw, &cookie)
 
@@ -168,6 +173,7 @@ func (i *Identifier) removeOAuth2Cookie(rw http.ResponseWriter, req *http.Reques
 		Path:     i.pathPrefix + "/identifier/oauth2/cb",
 		Secure:   true,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 
 		Expires: farPastExpiryTime,
 	}
