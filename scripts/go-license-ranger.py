@@ -5,7 +5,7 @@
 # [dep](https://golang.github.io/dep/) to find the dependencies.
 #
 #
-# Copyright 2018 Kopano and its licensors
+# Copyright 2018-2019 Kopano and its licensors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 
 from __future__ import print_function
 
-import glob
 import json
 import os
 from os import listdir
@@ -31,7 +30,7 @@ from os.path import abspath, isdir, join
 import subprocess
 import sys
 
-version = "20180214-1"
+version = "20190906-1"
 
 # Default configuration. Override possible with `.license-ranger.json` or with
 # a custom name if environment variable is set to a different value.
@@ -44,7 +43,8 @@ config = {
     "footer": "",
     "glide": os.environ.get("GLIDE", "glide"),
     "dep": os.environ.get("DEP", "dep"),
-    "mode": os.environ.get("LICENSE_RANGER_MODE", "dep"),
+    "go": os.environ.get("GO", "go"),
+    "mode": os.environ.get("LICENSE_RANGER_MODE", "mod"),
     "header": "",
     "licenseFilenames": [
         'LICENSE',
@@ -55,14 +55,6 @@ config = {
         'license.md',
         'license.txt'
     ],
-    "noticeFilenames": [
-        'NOTICE',
-        'NOTICE.md',
-        'NOTICE.txt',
-        'notice',
-        'notice.md',
-        'notice.txt'
-    ]
     # "manual": {
     #     "github.com/kopano-dev/example": "README.txt"
     # }
@@ -73,15 +65,18 @@ config = {
 
 def main():
     loadConfigFromFile()
-    if config.get("mode", None) == "dep":
+    if config.get("mode", None) == "mod":
+        dependencyFolders = getDependenciesWithMod(config["go"])
+    elif config.get("mode", None) == "dep":
         dependencyFolders = getDependenciesWithDep(config["dep"])
     elif config.get("mode", None) == "glide":
         dependencyFolders = getDependenciesWithGlide(config["glide"])
     else:
         print("Error: Invalid mode %s", config.get("mode"))
         sys.exit(1)
+    dependencyFolders.sort()
     missing = run(config["base"], dependencyFolders,
-                  config["licenseFilenames"], config["noticeFilenames"])
+                  config["licenseFilenames"])
     if len(missing) > config["allowMissing"]:
         print("Failed: Missing licenses: %d" % len(missing), file=sys.stderr)
         for m in missing:
@@ -97,6 +92,18 @@ def loadConfigFromFile(configFilename=defaultConfigFilename):
                 config[k] = v
     except FileNotFoundError:
         pass
+
+
+def getDependenciesWithMod(go="go"):
+    installed = []
+    with open("go.sum", "r") as f:
+        for line in f.readlines():
+            line = line.strip()
+            if line:
+                name = line.split(" ", 1)[0].strip()
+                if name:
+                    installed.append(name)
+    return installed
 
 
 def getDependenciesWithGlide(glide="glide"):
@@ -117,13 +124,11 @@ def getDependenciesWithDep(dep="dep"):
     return installed
 
 
-def run(base, relativeFolderPaths, licenseFileNames, noticeFileNames):
+def run(base, relativeFolderPaths, licenseFileNames):
     relativeFolderPaths.sort()
-    missing, licenseTable = getLicenseTable(base, relativeFolderPaths,
-                                            licenseFileNames)
-    _, noticeTable = getLicenseTable(base, relativeFolderPaths,
-                                     noticeFileNames)
-    concatLicenses(licenseTable, noticeTable)
+    missing, table = getLicenseTable(base, relativeFolderPaths,
+                                     licenseFileNames)
+    concatLicenses(table)
     return missing
 
 
@@ -138,7 +143,7 @@ def getLicenseTable(base, relativeFolderPaths, licenseFileNames):
         licenses = findLicenseFile(base, table, abspath(folderPath),
                                    licenseFileNames)
 
-        if len(licenses) == 0 and folder in config.get("manual", ()):
+        if len(licenses) == 0 and folder in config.get("manual"):
             if config["debug"]:
                 print("> Using manual license definition: %s" % folderPath,
                       file=sys.stderr)
@@ -175,16 +180,14 @@ def findLicenseFile(base, table, folderPath, licenseFileNames):
     return result
 
 
-def concatLicenses(table, noticeTable):
+def concatLicenses(table):
     seen = {}
     tableValues = list(table.values())
     tableValues.sort()
-    notices = dict((module, notice) for module, notice in noticeTable.values())
 
     print(config.get("header", ""))
     for v in tableValues:
         module, licenses = v
-        notice = notices.get(module)
         for license in licenses:
             if license in seen:
                 if config["debug"]:
@@ -196,13 +199,6 @@ def concatLicenses(table, noticeTable):
                 print("> Licens %s" % license, file=sys.stderr)
 
             print("### %s\n" % module)
-            if notice:
-                with open(notice[0], 'r') as noticeFile:
-                    for line in noticeFile.readlines():
-                        print("> %s" % line.rstrip())
-                    print("")
-
-            print("License:\n")
             with open(license, 'r') as licenseFile:
                 print("```\n%s\n```\n" % licenseFile.read())
     print(config.get("footer", ""))

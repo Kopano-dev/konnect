@@ -4,6 +4,7 @@
 /.vscode
 /cmd/konnectd/debug
 /test/tests.*
+/test/coverage.*
 /golint.txt
 /govet.txt
 /dist

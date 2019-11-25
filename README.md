@@ -43,9 +43,7 @@ combine the implementation details.
 
 ## Build dependencies
 
-Make sure you have Go 1.13 or later installed. This assumes your GOPATH is `~/go` and
-you have `~/go/bin` in your $PATH and you have [Dep](https://golang.github.io/dep/)
-installed as well.
+Make sure you have Go 1.13 or later installed. This project uses Go Modules.
 
 Konnect also includes a modern web app which requires a couple of additional
 build dependencies which are furthermore also assumed to be in your $PATH.
@@ -62,8 +60,6 @@ if not there already.
 ## Building from source
 
 ```
-mkdir -p ~/go/src/stash.kopano.io/kc
-cd ~/go/src/stash.kopano.io/kc
 git clone <THIS-PROJECT> konnect
 cd konnect
 make
@@ -75,8 +71,18 @@ Some optional build dependencies are required for linting and continous
 integration. Those tools are mostly used by make to perform various tasks and
 are expected to be found in your $PATH.
 
-  - golint - [Golint](https://github.com/golang/lint)
+  - golangci-lint - [golangci-lint](https://github.com/golangci/golangci-lint)
   - go2xunit - [go2xunit](https://github.com/tebeka/go2xunit)
+  - gocov - [gocov](https://github.com/axw/gocov)
+  - gocov-xml - [gocov-xml](https://github.com/AlekSi/gocov-xml)
+  - gocovmerge - [gocovmerge](https://github.com/wadey/gocovmerge)
+
+### Build with Docker
+
+```
+docker build -t konnectd-builder -f Dockerfile.build .
+docker run -it --rm -u $(id -u):$(id -g) -v $(pwd):/build kapid-konnectd
+```
 
 ## Running Konnect
 
