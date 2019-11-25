@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Relax linting requirement
+- Update dependencies to their latest minor releases
+- Update 3rd party dependencies
+- Use Go modules instead of Go dep
 - Set SameSite=None for all cookies
 - Build with Go 1.13.4
 
