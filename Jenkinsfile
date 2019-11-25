@@ -19,7 +19,7 @@ pipeline {
 			steps {
 				echo 'Linting..'
 				sh 'make lint-checkstyle'
-				checkstyle pattern: 'test/tests.lint.xml', canComputeNew: false, unstableTotalHigh: '200'
+				checkstyle pattern: 'test/tests.lint.xml', canComputeNew: false, unstableTotalHigh: '400'
 			}
 		}
 		stage('Test') {
