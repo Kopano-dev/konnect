@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+
+
+## v0.27.0 (2019-11-25)
+
 - Relax linting requirement
 - Update dependencies to their latest minor releases
 - Update 3rd party dependencies
