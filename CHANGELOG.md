@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Set SameSite=None for all cookies
+- Build with Go 1.13.4
 
 
 ## v0.26.0 (2019-11-11)
