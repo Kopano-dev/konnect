@@ -28,7 +28,7 @@ import (
 
 	"github.com/orcaman/concurrent-map"
 	"github.com/sirupsen/logrus"
-	"stash.kopano.io/kgol/kcc-go"
+	"stash.kopano.io/kgol/kcc-go/v5"
 	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect"

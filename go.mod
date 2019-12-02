@@ -6,7 +6,6 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/eternnoir/gncp v0.0.0-20170707042257-c70df2d0cd68 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-querystring v1.0.0
 	github.com/gorilla/mux v1.7.3
@@ -31,7 +30,7 @@ require (
 	gopkg.in/ldap.v2 v2.5.1
 	gopkg.in/square/go-jose.v2 v2.4.0
 	gopkg.in/yaml.v2 v2.2.7
-	stash.kopano.io/kgol/kcc-go v4.1.0+incompatible
+	stash.kopano.io/kgol/kcc-go/v5 v5.0.1
 	stash.kopano.io/kgol/ksurveyclient-go v0.6.0
 	stash.kopano.io/kgol/oidc-go v0.2.1
 	stash.kopano.io/kgol/rndm v1.0.0

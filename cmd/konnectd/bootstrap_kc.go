@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	kcc "stash.kopano.io/kgol/kcc-go"
+	kcc "stash.kopano.io/kgol/kcc-go/v5"
 
 	"stash.kopano.io/kc/konnect/identifier"
 	identifierBackends "stash.kopano.io/kc/konnect/identifier/backends"
