@@ -28,10 +28,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-ldap/ldap/v3"
 	"github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
-	"gopkg.in/ldap.v2"
 	"stash.kopano.io/kgol/oidc-go"
 
 	"stash.kopano.io/kc/konnect"
