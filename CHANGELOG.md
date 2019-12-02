@@ -4,6 +4,12 @@
 
 
 
+## v0.28.0 (2019-12-02)
+
+- Update third party modules
+- Update kcc-go to v5
+
+
 ## v0.27.0 (2019-11-25)
 
 - Relax linting requirement
