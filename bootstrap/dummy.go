@@ -15,7 +15,7 @@
  *
  */
 
-package main
+package bootstrap
 
 import (
 	"stash.kopano.io/kc/konnect/identity"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 Kopano and its licensors
+ * Copyright 2017-2020 Kopano and its licensors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,21 +18,29 @@
 package main
 
 import (
-	"github.com/spf13/cobra"
 	"os"
+	"strings"
 )
 
-func commandUtils() *cobra.Command {
-	jwkCmd := &cobra.Command{
-		Use:   "utils",
-		Short: "Konnect related utilities",
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
-			os.Exit(2)
-		},
+// envOrDefault returns the value of an env-variable or the default if the env-var is not set
+func envOrDefault(name string, def string) string {
+	v := os.Getenv(name)
+	if v == "" {
+		return def
 	}
 
-	jwkCmd.AddCommand(commandJwkFromPem())
+	return v
+}
 
-	return jwkCmd
+// listEnvArg parses an env-arg which has a space separated list as value
+func listEnvArg(name string) []string {
+	list := make([]string, 0)
+	for _, keyFn := range strings.Split(os.Getenv(name), " ") {
+		keyFn = strings.TrimSpace(keyFn)
+		if keyFn != "" {
+			list = append(list, keyFn)
+		}
+	}
+
+	return list
 }

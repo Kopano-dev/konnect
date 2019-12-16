@@ -15,12 +15,11 @@
  *
  */
 
-package main
+package bootstrap
 
 import (
 	"context"
 	"fmt"
-
 	"stash.kopano.io/kc/konnect/managers"
 
 	identityAuthorities "stash.kopano.io/kc/konnect/identity/authorities"
