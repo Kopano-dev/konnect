@@ -43,7 +43,7 @@ const styles = theme => ({
   input: {
     // NOTE(longsleep): These styles here allow JavaScript events to trigger
     // when the browser auto fills form elements. They require additional
-    // keyframe styles for the animation names to be registerd as well.
+    // keyframe styles for the animation names to be registered as well.
     '&:-webkit-autofill': {
       // JavaScript hook when auto fill is shown.
       animationName: 'onAutoFillStart'

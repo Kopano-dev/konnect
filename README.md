@@ -67,7 +67,7 @@ make
 
 ### Optional build dependencies
 
-Some optional build dependencies are required for linting and continous
+Some optional build dependencies are required for linting and continuous
 integration. Those tools are mostly used by make to perform various tasks and
 are expected to be found in your $PATH.
 

@@ -89,7 +89,7 @@ var DefaultHTTPClient = &http.Client{
 }
 
 // InsecureHTTPClient is a http.Client with a timeout set and with TLS
-// varification disabled.
+// verification disabled.
 var InsecureHTTPClient = &http.Client{
 	Timeout:   defaultHTTPTimeout,
 	Transport: HTTPTransportWithTLSClientConfig(InsecureSkipVerifyTLSConfig()),

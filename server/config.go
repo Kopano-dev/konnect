@@ -34,7 +34,7 @@ type Config struct {
 	Routes  []WithRoutes
 }
 
-// WithRoutes provide http routing withing a context.
+// WithRoutes provide http routing within a context.
 type WithRoutes interface {
 	AddRoutes(ctx context.Context, router *mux.Router)
 }

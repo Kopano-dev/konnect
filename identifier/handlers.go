@@ -198,10 +198,10 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// Params is an array like this [$username, $password, $mode], definig a
+	// Params is an array like this [$username, $password, $mode], defining a
 	// extensible way to extend login modes over time. The minimal length of
 	// the params array is 1 with only [$username]. Second field is the password
-	// but its intepretation depends on the third field ($mode). The rest of the
+	// but its interpretation depends on the third field ($mode). The rest of the
 	// fields are mode specific.
 	params := r.Params
 	for {

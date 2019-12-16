@@ -59,7 +59,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().String("iss", "", "OIDC issuer URL")
 	serveCmd.Flags().StringArray("signing-private-key", nil, "Full path to PEM encoded private key file (must match the --signing-method algorithm)")
 	serveCmd.Flags().String("signing-kid", "", "Value of kid field to use in created tokens (uniquely identifying the signing-private-key)")
-	serveCmd.Flags().String("validation-keys-path", "", "Full path to a folder containg PEM encoded private or public key files used for token validaton (file name without extension is used as kid)")
+	serveCmd.Flags().String("validation-keys-path", "", "Full path to a folder containing PEM encoded private or public key files used for token validaton (file name without extension is used as kid)")
 	serveCmd.Flags().String("encryption-secret", "", fmt.Sprintf("Full path to a file containing a %d bytes secret key", encryption.KeySize))
 	serveCmd.Flags().String("signing-method", "PS256", "JWT default signing method")
 	serveCmd.Flags().String("uri-base-path", "", "Custom base path for URI endpoints")

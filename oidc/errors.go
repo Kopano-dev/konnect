@@ -47,7 +47,7 @@ func NewOAuth2Error(id string, description string) utils.ErrorWithDescription {
 
 // WriteWWWAuthenticateError writes the provided error with the provided
 // http status code to the provided http response writer as a
-// WWW-Authenticate header with comma seperated fields for id and
+// WWW-Authenticate header with comma separated fields for id and
 // description.
 func WriteWWWAuthenticateError(rw http.ResponseWriter, code int, err error) {
 	if code == 0 {

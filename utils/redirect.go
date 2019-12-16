@@ -40,18 +40,18 @@ func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interf
 			return err
 		}
 
-		seperator := "#"
+		separator := "#"
 		if !asFragment {
-			seperator = "?"
+			separator = "?"
 		}
 
-		if strings.Contains(uriString, seperator) {
-			// Avoid generating invalid URLs if the seperator is already part
+		if strings.Contains(uriString, separator) {
+			// Avoid generating invalid URLs if the separator is already part
 			// of the target URL - instead append it in the most likely way.
-			seperator = "&"
+			separator = "&"
 		}
 		queryStringEncoded := strings.Replace(queryString.Encode(), "+", "%20", -1) // NOTE(longsleep): Ensure we use %20 instead of +.
-		uriString = fmt.Sprintf("%s%s%s", uriString, seperator, queryStringEncoded)
+		uriString = fmt.Sprintf("%s%s%s", uriString, separator, queryStringEncoded)
 	}
 
 	rw.Header().Set("Location", uriString)

@@ -85,7 +85,7 @@ func (u *IdentifiedUser) GivenName() string {
 
 // ID returns the associated users numeric user id. If it is 0, it means that
 // this user does not have a numeric ID. Do not use this field to identify a
-// user - always use the subject instead. The numeric ID is kept for compatibilty
+// user - always use the subject instead. The numeric ID is kept for compatibility
 // with systems which require user identification to be numeric.
 func (u *IdentifiedUser) ID() int64 {
 	return u.id

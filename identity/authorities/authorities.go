@@ -51,7 +51,7 @@ type Details struct {
 	validationKeys map[string]crypto.PublicKey
 }
 
-// IsReady returns wether or not the assosiated registration entry was ready
+// IsReady returns wether or not the associated registration entry was ready
 // at time of creation of the associated details.
 func (d *Details) IsReady() bool {
 	return d.ready
