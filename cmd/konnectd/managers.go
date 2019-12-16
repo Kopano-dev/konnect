@@ -40,7 +40,8 @@ func newManagers(ctx context.Context, bs *bootstrap) (*managers.Managers, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create encryption manager: %v", err)
 	}
-	encryption.SetKey(bs.encryptionSecret)
+
+	err = encryption.SetKey(bs.encryptionSecret)
 	if err != nil {
 		return nil, fmt.Errorf("invalid --encryption-secret parameter value for encryption: %v", err)
 	}
