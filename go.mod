@@ -31,6 +31,6 @@ require (
 	gopkg.in/yaml.v2 v2.2.7
 	stash.kopano.io/kgol/kcc-go/v5 v5.0.1
 	stash.kopano.io/kgol/ksurveyclient-go v0.6.0
-	stash.kopano.io/kgol/oidc-go v0.3.0
+	stash.kopano.io/kgol/oidc-go v0.3.1
 	stash.kopano.io/kgol/rndm v1.1.0
 )

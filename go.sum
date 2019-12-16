@@ -205,7 +205,7 @@ stash.kopano.io/kgol/kcc-go/v5 v5.0.1 h1:urR9hOR6TnTKjGkzZKac/a9cA8ws1WecWLTgiYu
 stash.kopano.io/kgol/kcc-go/v5 v5.0.1/go.mod h1:0ZmjWapy3zp+TAjZI6iCrcfh+BthZbB2WM1VfhDgNB4=
 stash.kopano.io/kgol/ksurveyclient-go v0.6.0 h1:bn0efssMZZyqC7T0WAmi1t5oD68FxAMT9litCbnRD3U=
 stash.kopano.io/kgol/ksurveyclient-go v0.6.0/go.mod h1:LJMDQBROS2oXxBN04eSI6j1KhgWlqMFd8xKjXV4Irtw=
-stash.kopano.io/kgol/oidc-go v0.3.0 h1:jQw9tDn4/i6Wdn6KdQhDch7zIEeRPhui5u0tKRk4ijQ=
-stash.kopano.io/kgol/oidc-go v0.3.0/go.mod h1:roVKz8FVmPcdL4pUu+Gzk+GH2kOhz1UvnuMNTkjHyH8=
+stash.kopano.io/kgol/oidc-go v0.3.1 h1:tIEZV4WMFFlUe2AS06GrG3qrS6uSfJFFGJSkV+jGJP8=
+stash.kopano.io/kgol/oidc-go v0.3.1/go.mod h1:roVKz8FVmPcdL4pUu+Gzk+GH2kOhz1UvnuMNTkjHyH8=
 stash.kopano.io/kgol/rndm v1.1.0 h1:Yyr92qtm3NENoCru56phnGv9z5mgFxiNKxzNZahm0w4=
 stash.kopano.io/kgol/rndm v1.1.0/go.mod h1:CBvpAHlOwyu/XipxfLGk02UN3K3P6hQ8E2JoTbNWfJU=
