@@ -4,6 +4,11 @@
 
 
 
+## v0.28.1 (2019-12-16)
+
+- Update oidc-go to fix pkce Base64URL padding
+
+
 ## v0.28.0 (2019-12-02)
 
 - Update third party modules
