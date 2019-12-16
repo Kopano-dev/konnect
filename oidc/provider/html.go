@@ -100,6 +100,8 @@ c.u(b.B());c.u(n.substr(0,64-(d.f[1]+8&63)));c.c(d.f[0]<<3|d.f[0]>>>28);c.c(d.f[
 // This implements OpenID Connect Session Managament 1.0 OP IFrame as specified
 // in https://openid.net/specs/openid-connect-session-1_0.html#OPiframe
 (function() {
+	var cache = {};
+
 	// Get cookie name.
 	var cookieNameElem = document.getElementById('cookie-name');
 	if (cookieNameElem) {
@@ -166,7 +168,19 @@ c.u(b.B());c.u(n.substr(0,64-(d.f[1]+8&63)));c.c(d.f[0]<<3|d.f[0]>>>28);c.c(d.f[
 		var expectedStateHash = makeSessionState(clientID, origin, browserState, salt);
 
 		// Compare.
-		return clientStateHash === expectedStateHash ? 'unchanged' : 'changed';
+		var status = clientStateHash === expectedStateHash ? 'unchanged' : 'changed';
+
+		// Cache.
+		if (cache.browserState === browserState && status === 'changed' && cache.status === status) {
+			// If the browser state remains unchanged, something with the cookie
+			// did not work properly. To avoid a fast repeating loop, it is
+			// better to fail with error.
+			return 'error';
+		}
+		cache.status = status;
+		cache.browserState = browserState;
+
+		return status;
 	}
 
 	// Register event.
