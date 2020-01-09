@@ -95,7 +95,11 @@ func NewRegistry(ctx context.Context, registrationConfFilepath string, logger lo
 			logger.Warnln("non-default additional authorities are not supported yet")
 		}
 
-		go authority.Initialize(ctx, logger)
+		go func() {
+			if initializeErr := authority.Initialize(ctx, logger); initializeErr != nil {
+				logger.WithError(initializeErr).WithFields(fields).Warnln("failed to initialize authority")
+			}
+		}()
 
 		logger.WithFields(fields).Debugln("registered authority")
 	}
