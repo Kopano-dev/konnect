@@ -7,7 +7,7 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-ldap/ldap/v3 v3.1.3
+	github.com/go-ldap/ldap/v3 v3.1.5
 	github.com/google/go-querystring v1.0.0
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/schema v1.1.0
@@ -27,7 +27,7 @@ require (
 	golang.org/x/sys v0.0.0-20191128015809-6d18c012aee9 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
-	gopkg.in/square/go-jose.v2 v2.4.0
+	gopkg.in/square/go-jose.v2 v2.4.1
 	gopkg.in/yaml.v2 v2.2.7
 	stash.kopano.io/kgol/kcc-go/v5 v5.0.1
 	stash.kopano.io/kgol/ksurveyclient-go v0.6.0
