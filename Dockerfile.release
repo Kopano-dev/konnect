@@ -25,7 +25,9 @@ EXPOSE 8777
 EXPOSE 6777
 
 # Version to include in this Docker image. Default to latest.
-ENV VERSION latest
+ARG build_version=latest
+ENV VERSION=$build_version
+RUN echo Build version: ${VERSION}
 
 # Define basic environment variables.
 ENV EXE=konnectd
