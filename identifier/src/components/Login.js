@@ -125,7 +125,7 @@ class Login extends Component {
               error={!!errors.username}
               helperText={<ErrorMessage error={errors.username}></ErrorMessage>}
               fullWidth
-              margin="dense"
+              margin="normal"
               variant="outlined"
               InputLabelProps={{
                 shrink: this.state['autoFill-username']
@@ -144,7 +144,7 @@ class Login extends Component {
               error={!!errors.password}
               helperText={<ErrorMessage error={errors.password}></ErrorMessage>}
               fullWidth
-              margin="dense"
+              margin="normal"
               InputLabelProps={{
                 shrink: this.state['autoFill-password']
               }}

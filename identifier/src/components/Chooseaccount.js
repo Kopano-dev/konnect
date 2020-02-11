@@ -8,6 +8,7 @@ import { withStyles } from '@material-ui/core/styles';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
+import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import Avatar from '@material-ui/core/Avatar';
 import Typography from '@material-ui/core/Typography';
 
@@ -72,7 +73,7 @@ class Chooseaccount extends Component {
               className={classes.accountListItem}
               disabled={!!loading}
               onClick={(event) => this.logon(event)}
-            ><Avatar>{username.substr(0, 1)}</Avatar>
+            ><ListItemAvatar><Avatar>{username.substr(0, 1)}</Avatar></ListItemAvatar>
               <ListItemText primary={username} />
             </ListItem>
             <ListItem
@@ -82,10 +83,12 @@ class Chooseaccount extends Component {
               disabled={!!loading}
               onClick={(event) => this.logoff(event)}
             >
-              <Avatar>
-                <FormattedMessage id="konnect.chooseaccount.useOther.persona.label" defaultMessage="?">
-                </FormattedMessage>
-              </Avatar>
+              <ListItemAvatar>
+                <Avatar>
+                  <FormattedMessage id="konnect.chooseaccount.useOther.persona.label" defaultMessage="?">
+                  </FormattedMessage>
+                </Avatar>
+              </ListItemAvatar>
               <ListItemText
                 primary={
                   <FormattedMessage

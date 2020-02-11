@@ -67,7 +67,7 @@ function ResponsiveScreen(props) {
           {logo}
           {content}
         </div>
-        <DialogActions className={classes.actions} disableActionSpacing><LocaleSelect disableUnderline/></DialogActions>
+        <DialogActions className={classes.actions} disableSpacing><LocaleSelect disableUnderline/></DialogActions>
       </ResponsiveDialog>
     </Grid>
   );
