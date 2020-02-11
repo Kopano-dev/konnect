@@ -9,15 +9,17 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
-	"stash.kopano.io/kc/konnect/signing"
 	"strings"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/square/go-jose.v2"
+
+	"stash.kopano.io/kc/konnect/signing"
 )
 
 func parseJSONWebKey(jsonBytes []byte) (*jose.JSONWebKey, error) {

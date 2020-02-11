@@ -1,6 +1,9 @@
 package clients
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestRedirectUriWithDynamicPort(t *testing.T) {
 	redirectURIs := []struct {
@@ -17,7 +20,7 @@ func TestRedirectUriWithDynamicPort(t *testing.T) {
 		{"http://host-with-port:123/callback", true},
 	}
 
-	registry, _ := NewRegistry(nil, nil, "", nil)
+	registry, _ := NewRegistry(context.Background(), nil, "", nil)
 	clientRegistration := ClientRegistration{
 		ID:              "native",
 		Secret:          "secret",

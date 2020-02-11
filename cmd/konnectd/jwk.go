@@ -23,12 +23,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"stash.kopano.io/kc/konnect/bootstrap"
 	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	"gopkg.in/square/go-jose.v2"
+
+	"stash.kopano.io/kc/konnect/bootstrap"
 )
 
 func commandJwkFromPem() *cobra.Command {

@@ -20,6 +20,7 @@ package main
 import (
 	"fmt"
 	"os"
+
 	"stash.kopano.io/kc/konnect/cmd"
 )
 

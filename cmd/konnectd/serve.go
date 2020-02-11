@@ -166,12 +166,12 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	// Survey support.
 	var guid []byte
-	issUrl, err := url.Parse(bootstrapConfig.Iss)
+	issURL, err := url.Parse(bootstrapConfig.Iss)
 	if err != nil {
 		logger.WithError(err).Errorln("unable to start survey-client")
 	}
-	if issUrl.Hostname() != "localhost" {
-		guid = []byte(issUrl.String())
+	if issURL.Hostname() != "localhost" {
+		guid = []byte(issURL.String())
 	}
 	err = autosurvey.Start(ctx,
 		"konnectd",

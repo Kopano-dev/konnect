@@ -20,11 +20,11 @@ package bootstrap
 import (
 	"context"
 	"fmt"
-	"stash.kopano.io/kc/konnect/managers"
 
 	identityAuthorities "stash.kopano.io/kc/konnect/identity/authorities"
 	identityClients "stash.kopano.io/kc/konnect/identity/clients"
 	identityManagers "stash.kopano.io/kc/konnect/identity/managers"
+	"stash.kopano.io/kc/konnect/managers"
 	codeManagers "stash.kopano.io/kc/konnect/oidc/code/managers"
 )
 
