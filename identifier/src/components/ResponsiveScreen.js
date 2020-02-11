@@ -83,6 +83,7 @@ ResponsiveScreen.propTypes = {
   classes: PropTypes.object.isRequired,
   withoutLogo: PropTypes.bool,
   withoutPadding: PropTypes.bool,
+  loading: PropTypes.bool,
   children: PropTypes.node.isRequired,
   className: PropTypes.string,
   PaperProps: PropTypes.object,

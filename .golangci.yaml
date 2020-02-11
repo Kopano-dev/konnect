@@ -25,7 +25,7 @@ linters-settings:
   misspell:
     locale: US
   lll:
-    line-length: 140
+    line-length: 200
   goimports:
     local-prefixes: stash.kopano.io/kc/kapi
   gocritic:

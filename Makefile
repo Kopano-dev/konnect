@@ -37,6 +37,8 @@ TESTPKGS = $(shell $(GO) list -mod=readonly -f '{{ if or .TestGoFiles .XTestGoFi
 CMDS     = $(or $(CMD),$(addprefix cmd/,$(notdir $(shell find "$(PWD)/cmd/" -type d))))
 TIMEOUT  = 30
 
+GOLINT_ARGS ?= --new
+
 # Debug variables
 
 DLV_APIVERSION ?= 2
@@ -73,12 +75,14 @@ identifier-webapp:
 
 .PHONY: lint
 lint: vendor ; $(info running $(GOLINT) ...)	@
-	$(GOLINT) run
+	$(GOLINT) run $(GOLINT_ARGS)
+	$(MAKE) -C identifier lint
 
 .PHONY: lint-checkstyle
 lint-checkstyle: vendor ; $(info running $(GOLINT) checkstyle ...)     @
 	@mkdir -p test
-	$(GOLINT) run --out-format checkstyle --issues-exit-code 0 > test/tests.lint.xml
+	$(GOLINT) run $(GOLINT_ARGS) --out-format checkstyle --issues-exit-code 0 > test/tests.lint.xml
+	$(MAKE) -C identifier lint-checkstyle
 
 .PHONY: fmt
 fmt: ; $(info running gofmt ...)	@
