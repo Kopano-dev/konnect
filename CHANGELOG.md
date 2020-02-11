@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Clean up linter warnings
+- Merge branch 'embedding' of https://github.com/IljaN/konnect
+- Merge branch 'bugfix/dynamic-port-redirect-native-clients' of https://github.com/DeepDiver1975/konnect
+- Make konnect usable as library
+- Only lint changes, to increase visibility of newly introduced issues
+- Allow dynamic ports in redirect uri for native clients
+- Add build arg for explict version selection for Docker build
+- Update third party dependencies
+- Fix unhandled error
+- Log initialiation error when external auth fails to initialize
+- Fix spelling mistakes
 
 
 ## v0.28.1 (2019-12-16)
