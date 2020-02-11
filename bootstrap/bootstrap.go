@@ -15,7 +15,7 @@
  *
  */
 
-package main
+package bootstrap
 
 import (
 	"context"
@@ -34,7 +34,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect/config"
@@ -59,12 +58,48 @@ const (
 	apiTypeSignin  = "signin"
 )
 
-// bootstrap is a data structure to hold configuration required to start
-// konnectd.
-type bootstrap struct {
-	cmd  *cobra.Command
-	args []string
+// Defaults.
+const (
+	defaultSigningKeyID   = "default"
+	defaultSigningKeyBits = 2048
+)
 
+// Config is a typed application config which represents the user accessible config params
+type Config struct {
+	Iss                            string
+	IdentityManager                string
+	URIBasePath                    string
+	SignInURI                      string
+	SignedOutURI                   string
+	AuthorizationEndpointURI       string
+	EndsessionEndpointURI          string
+	Insecure                       bool
+	TrustedProxy                   []string
+	AllowScope                     []string
+	AllowClientGuests              bool
+	AllowDynamicClientRegistration bool
+	EncryptionSecretFile           string
+	Listen                         string
+	IdentifierClientPath           string
+	IdentifierRegistrationConf     string
+	IdentifierScopesConf           string
+	SigningKid                     string
+	SigningMethod                  string
+	SigningPrivateKeyFiles         []string
+	ValidationKeysPath             string
+	CookieBackendURI               string
+	CookieNames                    []string
+}
+
+// Bootstrap is a data structure to hold configuration required to start
+// konnectd.
+type Bootstrap interface {
+	Config() *config.Config
+	Managers() *managers.Managers
+}
+
+// Implementation of the bootstrap interface
+type bootstrap struct {
 	signInFormURI            *url.URL
 	signedOutURI             *url.URL
 	authorizationEndpointURI *url.URL
@@ -91,7 +126,21 @@ type bootstrap struct {
 	managers *managers.Managers
 }
 
-func init() {
+// Config returns the server configuration
+func (bs *bootstrap) Config() *config.Config {
+	return bs.cfg
+}
+
+// Managers returns bootstrapped identity-managers
+func (bs *bootstrap) Managers() *managers.Managers {
+	return bs.managers
+}
+
+// Boot is the main entry point to  bootstrap the konnectd service after validating the given configuration. The resulting
+// Bootstrap struct can be used to retrieve configured identity-managers and their respective http-handlers and config.
+//
+// This function should be used by consumers which want to embed konnect as a library.
+func Boot(ctx context.Context, bsConf *Config, serverConf *config.Config) (Bootstrap, error) {
 	// NOTE(longsleep): Ensure to use same salt length as the hash size.
 	// See https://www.ietf.org/mail-archive/web/jose/current/msg02901.html for
 	// reference and https://github.com/dgrijalva/jwt-go/issues/285 for
@@ -102,24 +151,38 @@ func init() {
 			signingMethodRSAPSS.Options.SaltLength = rsa.PSSSaltLengthEqualsHash
 		}
 	}
+
+	bs := &bootstrap{
+		cfg: serverConf,
+	}
+
+	err := bs.initialize(bsConf)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bs.setup(ctx, bsConf)
+	if err != nil {
+		return nil, err
+	}
+
+	return bs, nil
 }
 
 // initialize, parsed parameters from commandline with validation and adds them
-// to the accociated bootstrap data.
-func (bs *bootstrap) initialize() error {
-	cmd := bs.cmd
+// to the associated Bootstrap data.
+func (bs *bootstrap) initialize(cfg *Config) error {
 	logger := bs.cfg.Logger
 	var err error
 
-	if len(bs.args) == 0 {
+	if cfg.IdentityManager == "" {
 		return fmt.Errorf("identity-manager argument missing, use one of kc, ldap, cookie, dummy")
 	}
 
-	issuerIdentifier, _ := cmd.Flags().GetString("iss")
-	bs.issuerIdentifierURI, err = url.Parse(issuerIdentifier)
+	bs.issuerIdentifierURI, err = url.Parse(cfg.Iss)
 	if err != nil {
 		return fmt.Errorf("invalid iss value, iss is not a valid URL), %v", err)
-	} else if issuerIdentifier == "" {
+	} else if cfg.Iss == "" {
 		return fmt.Errorf("missing iss value, did you provide the --iss parameter?")
 	} else if bs.issuerIdentifierURI.Scheme != "https" {
 		return fmt.Errorf("invalid iss value, URL must start with https://")
@@ -127,34 +190,29 @@ func (bs *bootstrap) initialize() error {
 		return fmt.Errorf("invalid iss value, URL must have a host")
 	}
 
-	bs.uriBasePath, _ = cmd.Flags().GetString("uri-base-path")
+	bs.uriBasePath = cfg.URIBasePath
 
-	signInFormURIString, _ := cmd.Flags().GetString("sign-in-uri")
-	bs.signInFormURI, err = url.Parse(signInFormURIString)
+	bs.signInFormURI, err = url.Parse(cfg.SignInURI)
 	if err != nil {
 		return fmt.Errorf("invalid sign-in URI, %v", err)
 	}
 
-	signedOutURIString, _ := cmd.Flags().GetString("signed-out-uri")
-	bs.signedOutURI, err = url.Parse(signedOutURIString)
+	bs.signedOutURI, err = url.Parse(cfg.SignedOutURI)
 	if err != nil {
 		return fmt.Errorf("invalid signed-out URI, %v", err)
 	}
 
-	authorizationEndpointURIString, _ := cmd.Flags().GetString("authorization-endpoint-uri")
-	bs.authorizationEndpointURI, err = url.Parse(authorizationEndpointURIString)
+	bs.authorizationEndpointURI, err = url.Parse(cfg.AuthorizationEndpointURI)
 	if err != nil {
 		return fmt.Errorf("invalid authorization-endpoint-uri, %v", err)
 	}
 
-	endSessionEndpointURIString, _ := cmd.Flags().GetString("endsession-endpoint-uri")
-	bs.endSessionEndpointURI, err = url.Parse(endSessionEndpointURIString)
+	bs.endSessionEndpointURI, err = url.Parse(cfg.EndsessionEndpointURI)
 	if err != nil {
 		return fmt.Errorf("invalid endsession-endpoint-uri, %v", err)
 	}
 
-	tlsInsecureSkipVerify, _ := cmd.Flags().GetBool("insecure")
-	if tlsInsecureSkipVerify {
+	if cfg.Insecure {
 		// NOTE(longsleep): This disable http2 client support. See https://github.com/golang/go/issues/14275 for reasons.
 		bs.tlsClientConfig = utils.InsecureSkipVerifyTLSConfig()
 		logger.Warnln("insecure mode, TLS client connections are susceptible to man-in-the-middle attacks")
@@ -162,8 +220,7 @@ func (bs *bootstrap) initialize() error {
 		bs.tlsClientConfig = utils.DefaultTLSConfig()
 	}
 
-	trustedProxies, _ := cmd.Flags().GetStringArray("trusted-proxy")
-	for _, trustedProxy := range trustedProxies {
+	for _, trustedProxy := range cfg.TrustedProxy {
 		if ip := net.ParseIP(trustedProxy); ip != nil {
 			bs.cfg.TrustedProxyIPs = append(bs.cfg.TrustedProxyIPs, &ip)
 			continue
@@ -180,26 +237,23 @@ func (bs *bootstrap) initialize() error {
 		logger.Infoln("trusted proxy networks", bs.cfg.TrustedProxyNets)
 	}
 
-	allowedScopes, _ := cmd.Flags().GetStringArray("allow-scope")
-	if len(allowedScopes) > 0 {
-		bs.cfg.AllowedScopes = allowedScopes
+	if len(cfg.AllowScope) > 0 {
+		bs.cfg.AllowedScopes = cfg.AllowScope
 		logger.Infoln("using custom allowed OAuth 2 scopes", bs.cfg.AllowedScopes)
 	}
 
-	bs.cfg.AllowClientGuests, _ = cmd.Flags().GetBool("allow-client-guests")
+	bs.cfg.AllowClientGuests = cfg.AllowClientGuests
 	if bs.cfg.AllowClientGuests {
 		logger.Infoln("client controlled guests are enabled")
 	}
 
-	bs.cfg.AllowDynamicClientRegistration, _ = cmd.Flags().GetBool("allow-dynamic-client-registration")
+	bs.cfg.AllowDynamicClientRegistration = cfg.AllowDynamicClientRegistration
 	if bs.cfg.AllowDynamicClientRegistration {
 		logger.Infoln("dynamic client registration is enabled")
 	}
 
-	encryptionSecretFn, _ := cmd.Flags().GetString("encryption-secret")
-	if encryptionSecretFn == "" {
-		encryptionSecretFn = os.Getenv("KONNECTD_ENCRYPTION_SECRET")
-	}
+	encryptionSecretFn := cfg.EncryptionSecretFile
+
 	if encryptionSecretFn != "" {
 		logger.WithField("file", encryptionSecretFn).Infoln("loading encryption secret from file")
 		bs.encryptionSecret, err = ioutil.ReadFile(encryptionSecretFn)
@@ -214,23 +268,11 @@ func (bs *bootstrap) initialize() error {
 		bs.encryptionSecret = rndm.GenerateRandomBytes(encryption.KeySize)
 	}
 
-	bs.cfg.ListenAddr, _ = cmd.Flags().GetString("listen")
-	if bs.cfg.ListenAddr == "" {
-		bs.cfg.ListenAddr = os.Getenv("KONNECTD_LISTEN")
-	}
-	if bs.cfg.ListenAddr == "" {
-		bs.cfg.ListenAddr = defaultListenAddr
-	}
+	bs.cfg.ListenAddr = cfg.Listen
 
-	bs.identifierClientPath, _ = cmd.Flags().GetString("identifier-client-path")
-	if bs.identifierClientPath == "" {
-		bs.identifierClientPath = os.Getenv("KONNECTD_IDENTIFIER_CLIENT_PATH")
-	}
-	if bs.identifierClientPath == "" {
-		bs.identifierClientPath = defaultIdentifierClientPath
-	}
+	bs.identifierClientPath = cfg.IdentifierClientPath
 
-	bs.identifierRegistrationConf, _ = cmd.Flags().GetString("identifier-registration-conf")
+	bs.identifierRegistrationConf = cfg.IdentifierRegistrationConf
 	if bs.identifierRegistrationConf != "" {
 		bs.identifierRegistrationConf, _ = filepath.Abs(bs.identifierRegistrationConf)
 		if _, errStat := os.Stat(bs.identifierRegistrationConf); errStat != nil {
@@ -239,7 +281,7 @@ func (bs *bootstrap) initialize() error {
 		bs.identifierAuthoritiesConf = bs.identifierRegistrationConf
 	}
 
-	bs.identifierScopesConf, _ = cmd.Flags().GetString("identifier-scopes-conf")
+	bs.identifierScopesConf = cfg.IdentifierScopesConf
 	if bs.identifierScopesConf != "" {
 		bs.identifierScopesConf, _ = filepath.Abs(bs.identifierScopesConf)
 		if _, errStat := os.Stat(bs.identifierScopesConf); errStat != nil {
@@ -247,29 +289,17 @@ func (bs *bootstrap) initialize() error {
 		}
 	}
 
-	bs.signingKeyID, _ = cmd.Flags().GetString("signing-kid")
-	if bs.signingKeyID == "" {
-		bs.signingKeyID = os.Getenv("KONNECTD_SIGNING_KID")
-	}
-
+	bs.signingKeyID = cfg.SigningKid
 	bs.signers = make(map[string]crypto.Signer)
 	bs.validators = make(map[string]crypto.PublicKey)
 
-	signingMethodString, _ := cmd.Flags().GetString("signing-method")
+	signingMethodString := cfg.SigningMethod
 	bs.signingMethod = jwt.GetSigningMethod(signingMethodString)
 	if bs.signingMethod == nil {
 		return fmt.Errorf("unknown signing method: %s", signingMethodString)
 	}
 
-	signingKeyFns, _ := cmd.Flags().GetStringArray("signing-private-key")
-	if len(signingKeyFns) == 0 {
-		for _, keyFn := range strings.Split(os.Getenv("KONNECTD_SIGNING_PRIVATE_KEY"), " ") {
-			keyFn = strings.TrimSpace(keyFn)
-			if keyFn != "" {
-				signingKeyFns = append(signingKeyFns, keyFn)
-			}
-		}
-	}
+	signingKeyFns := cfg.SigningPrivateKeyFiles
 	if len(signingKeyFns) > 0 {
 		first := true
 		for _, signingKeyFn := range signingKeyFns {
@@ -302,10 +332,7 @@ func (bs *bootstrap) initialize() error {
 		return err
 	}
 
-	validationKeysPath, _ := cmd.Flags().GetString("validation-keys-path")
-	if validationKeysPath == "" {
-		validationKeysPath = os.Getenv("KONNECTD_VALIDATION_KEYS_PATH")
-	}
+	validationKeysPath := cfg.ValidationKeysPath
 	if validationKeysPath != "" {
 		logger.WithField("path", validationKeysPath).Infoln("loading validation keys")
 		err = addValidatorsFromPath(validationKeysPath, bs)
@@ -315,21 +342,20 @@ func (bs *bootstrap) initialize() error {
 	}
 
 	bs.cfg.HTTPTransport = utils.HTTPTransportWithTLSClientConfig(bs.tlsClientConfig)
-
 	bs.accessTokenDurationSeconds = 10 * 60 // 10 Minutes.
 
 	return nil
 }
 
-// setup takes care of setting up the managers based on the accociated
-// bootstrap's data.
-func (bs *bootstrap) setup(ctx context.Context) error {
+// setup takes care of setting up the managers based on the associated
+// Bootstrap's data.
+func (bs *bootstrap) setup(ctx context.Context, cfg *Config) error {
 	managers, err := newManagers(ctx, bs)
 	if err != nil {
 		return err
 	}
 
-	identityManager, err := bs.setupIdentity(ctx)
+	identityManager, err := bs.setupIdentity(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -376,21 +402,21 @@ func (bs *bootstrap) makeURIPath(api string, subpath string) string {
 	}
 }
 
-func (bs *bootstrap) setupIdentity(ctx context.Context) (identity.Manager, error) {
+func (bs *bootstrap) setupIdentity(ctx context.Context, cfg *Config) (identity.Manager, error) {
 	var err error
 	logger := bs.cfg.Logger
 
-	if len(bs.args) == 0 {
+	if cfg.IdentityManager == "" {
 		return nil, fmt.Errorf("identity-manager argument missing")
 	}
 
-	identityManagerName := bs.args[0]
+	identityManagerName := cfg.IdentityManager
 
 	// Identity manager.
 	var identityManager identity.Manager
 	switch identityManagerName {
 	case identityManagerNameCookie:
-		identityManager, err = newCookieIdentityManager(bs)
+		identityManager, err = newCookieIdentityManager(bs, cfg)
 
 	case identityManagerNameKC:
 		identityManager, err = newKCIdentityManager(bs)

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"stash.kopano.io/kc/konnect/bootstrap"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -61,14 +62,14 @@ func jwkFromPem(cmd *cobra.Command, args []string) error {
 	fn := args[0]
 
 	key, err := func() (interface{}, error) {
-		signerKid, signer, err := loadSignerFromFile(fn)
+		signerKid, signer, err := bootstrap.LoadSignerFromFile(fn)
 		if err == nil {
 			if kid == "" {
 				kid = signerKid
 			}
 			return signer, nil
 		}
-		validatorKid, validator, err := loadValidatorFromFile(fn)
+		validatorKid, validator, err := bootstrap.LoadValidatorFromFile(fn)
 		if err == nil {
 			if kid == "" {
 				kid = validatorKid

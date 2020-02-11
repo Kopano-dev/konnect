@@ -56,7 +56,7 @@ func NewServer(c *Config) (*Server, error) {
 	return s, nil
 }
 
-// AddContext adds the accociated server context with cancel to the the provided
+// AddContext adds the associated server context with cancel to the the provided
 // httprouter.Handle. When the handler is done, the per Request context is
 // cancelled.
 func (s *Server) AddContext(parent context.Context, next http.Handler) http.Handler {
@@ -93,7 +93,7 @@ func (s *Server) AddContext(parent context.Context, next http.Handler) http.Hand
 	})
 }
 
-// AddRoutes add the accociated Servers URL routes to the provided router with
+// AddRoutes add the associated Servers URL routes to the provided router with
 // the provided context.Context.
 func (s *Server) AddRoutes(ctx context.Context, router *mux.Router) {
 	// TODO(longsleep): Add subpath support to all handlers and paths.

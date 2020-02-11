@@ -22,32 +22,46 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"net/url"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"stash.kopano.io/kgol/ksurveyclient-go"
 	"stash.kopano.io/kgol/ksurveyclient-go/autosurvey"
 
+	"stash.kopano.io/kc/konnect/bootstrap"
 	"stash.kopano.io/kc/konnect/config"
 	"stash.kopano.io/kc/konnect/encryption"
 	"stash.kopano.io/kc/konnect/server"
 	"stash.kopano.io/kc/konnect/version"
 )
 
-// Defaults.
-const (
-	defaultListenAddr           = "127.0.0.1:8777"
-	defaultIdentifierClientPath = "./identifier-webapp"
-	defaultSigningKeyID         = "default"
-	defaultSigningKeyBits       = 2048
-)
+var bootstrapConfig = &bootstrap.Config{}
 
 func commandServe() *cobra.Command {
 	serveCmd := &cobra.Command{
 		Use:   "serve <identity-manager> [...args]",
 		Short: "Start server and listen for requests",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("identity-manager argument missing, use one of kc, ldap, cookie, dummy")
+			}
+
+			bootstrapConfig.IdentityManager = args[0]
+			if bootstrapConfig.IdentityManager == "cookie" {
+				if len(args) < 2 {
+					return fmt.Errorf("cookie-url required")
+				}
+				bootstrapConfig.CookieBackendURI = args[1]
+				cookieNames := args[2]
+				bootstrapConfig.CookieNames = strings.Split(cookieNames, " ")
+			}
+
+			return nil
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := serve(cmd, args); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -55,33 +69,36 @@ func commandServe() *cobra.Command {
 			}
 		},
 	}
-	serveCmd.Flags().String("listen", "", fmt.Sprintf("TCP listen address (default \"%s\")", defaultListenAddr))
-	serveCmd.Flags().String("iss", "", "OIDC issuer URL")
-	serveCmd.Flags().StringArray("signing-private-key", nil, "Full path to PEM encoded private key file (must match the --signing-method algorithm)")
-	serveCmd.Flags().String("signing-kid", "", "Value of kid field to use in created tokens (uniquely identifying the signing-private-key)")
-	serveCmd.Flags().String("validation-keys-path", "", "Full path to a folder containing PEM encoded private or public key files used for token validaton (file name without extension is used as kid)")
-	serveCmd.Flags().String("encryption-secret", "", fmt.Sprintf("Full path to a file containing a %d bytes secret key", encryption.KeySize))
-	serveCmd.Flags().String("signing-method", "PS256", "JWT default signing method")
-	serveCmd.Flags().String("uri-base-path", "", "Custom base path for URI endpoints")
-	serveCmd.Flags().String("sign-in-uri", "", "Custom redirection URI to sign-in form")
-	serveCmd.Flags().String("signed-out-uri", "", "Custom redirection URI to signed-out goodbye page")
-	serveCmd.Flags().String("authorization-endpoint-uri", "", "Custom authorization endpoint URI")
-	serveCmd.Flags().String("endsession-endpoint-uri", "", "Custom endsession endpoint URI")
-	serveCmd.Flags().String("identifier-client-path", "", fmt.Sprintf("Path to the identifier web client base folder (default \"%s\")", defaultIdentifierClientPath))
-	serveCmd.Flags().String("identifier-registration-conf", "", "Path to a identifier-registration.yaml configuration file")
-	serveCmd.Flags().String("identifier-scopes-conf", "", "Path to a scopes.yaml configuration file")
-	serveCmd.Flags().Bool("insecure", false, "Disable TLS certificate and hostname validation")
-	serveCmd.Flags().StringArray("trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
-	serveCmd.Flags().StringArray("allow-scope", nil, "Allow OAuth 2 scope (can be used multiple times, if not set default scopes are allowed)")
-	serveCmd.Flags().Bool("allow-client-guests", false, "Allow sign in of client controlled guest users")
-	serveCmd.Flags().Bool("allow-dynamic-client-registration", false, "Allow dynamic OAuth2 client registration")
+
+	cfg := bootstrapConfig
+
+	serveCmd.Flags().StringVar(&cfg.Listen, "listen", envOrDefault("KONNECTD_LISTEN", defaultListenAddr), fmt.Sprintf("TCP listen address (default \"%s\")", defaultListenAddr))
+	serveCmd.Flags().StringVar(&cfg.Iss, "iss", "", "OIDC issuer URL")
+	serveCmd.Flags().StringArrayVar(&cfg.SigningPrivateKeyFiles, "signing-private-key", listEnvArg("KONNECTD_SIGNING_PRIVATE_KEY"), "Full path to PEM encoded private key file (must match the --signing-method algorithm)")
+	serveCmd.Flags().StringVar(&cfg.SigningKid, "signing-kid", os.Getenv("KONNECTD_SIGNING_KID"), "Value of kid field to use in created tokens (uniquely identifying the signing-private-key)")
+	serveCmd.Flags().StringVar(&cfg.ValidationKeysPath, "validation-keys-path", os.Getenv("KONNECTD_VALIDATION_KEYS_PATH"), "Full path to a folder containing PEM encoded private or public key files used for token validaton (file name without extension is used as kid)")
+	serveCmd.Flags().StringVar(&cfg.EncryptionSecretFile, "encryption-secret", os.Getenv("KONNECTD_ENCRYPTION_SECRET"), fmt.Sprintf("Full path to a file containing a %d bytes secret key", encryption.KeySize))
+	serveCmd.Flags().StringVar(&cfg.SigningMethod, "signing-method", "PS256", "JWT default signing method")
+	serveCmd.Flags().StringVar(&cfg.URIBasePath, "uri-base-path", "", "Custom base path for URI endpoints")
+	serveCmd.Flags().StringVar(&cfg.SignInURI, "sign-in-uri", "", "Custom redirection URI to sign-in form")
+	serveCmd.Flags().StringVar(&cfg.SignedOutURI, "signed-out-uri", "", "Custom redirection URI to signed-out goodbye page")
+	serveCmd.Flags().StringVar(&cfg.AuthorizationEndpointURI, "authorization-endpoint-uri", "", "Custom authorization endpoint URI")
+	serveCmd.Flags().StringVar(&cfg.EndsessionEndpointURI, "endsession-endpoint-uri", "", "Custom endsession endpoint URI")
+	serveCmd.Flags().StringVar(&cfg.IdentifierClientPath, "identifier-client-path", envOrDefault("KONNECTD_IDENTIFIER_CLIENT_PATH", defaultIdentifierClientPath), fmt.Sprintf("Path to the identifier web client base folder (default \"%s\")", defaultIdentifierClientPath))
+	serveCmd.Flags().StringVar(&cfg.IdentifierRegistrationConf, "identifier-registration-conf", "", "Path to a identifier-registration.yaml configuration file")
+	serveCmd.Flags().StringVar(&cfg.IdentifierScopesConf, "identifier-scopes-conf", "", "Path to a scopes.yaml configuration file")
+	serveCmd.Flags().BoolVar(&cfg.Insecure, "insecure", false, "Disable TLS certificate and hostname validation")
+	serveCmd.Flags().StringArrayVar(&cfg.TrustedProxy, "trusted-proxy", nil, "Trusted proxy IP or IP network (can be used multiple times)")
+	serveCmd.Flags().StringArrayVar(&cfg.AllowScope, "allow-scope", nil, "Allow OAuth 2 scope (can be used multiple times, if not set default scopes are allowed)")
+	serveCmd.Flags().BoolVar(&cfg.AllowClientGuests, "allow-client-guests", false, "Allow sign in of client controlled guest users")
+	serveCmd.Flags().BoolVar(&cfg.AllowDynamicClientRegistration, "allow-dynamic-client-registration", false, "Allow dynamic OAuth2 client registration")
+
 	serveCmd.Flags().Bool("log-timestamp", true, "Prefix each log line with timestamp")
 	serveCmd.Flags().String("log-level", "info", "Log level (one of panic, fatal, error, warn, info or debug)")
 	serveCmd.Flags().Bool("with-pprof", false, "With pprof enabled")
 	serveCmd.Flags().String("pprof-listen", "127.0.0.1:6060", "TCP listen address for pprof")
 	serveCmd.Flags().Bool("with-metrics", false, "Enable metrics")
 	serveCmd.Flags().String("metrics-listen", "127.0.0.1:6777", "TCP listen address for metrics")
-
 	return serveCmd
 }
 
@@ -113,29 +130,20 @@ func serve(cmd *cobra.Command, args []string) error {
 		}()
 	}
 
-	bs := &bootstrap{
-		cmd:  cmd,
-		args: args,
+	bs, err := bootstrap.Boot(ctx, bootstrapConfig, &config.Config{
+		WithMetrics: withMetrics,
+		Logger:      logger,
+	})
 
-		cfg: &config.Config{
-			WithMetrics: withMetrics,
-			Logger:      logger,
-		},
-	}
-	err = bs.initialize()
-	if err != nil {
-		return err
-	}
-	err = bs.setup(ctx)
 	if err != nil {
 		return err
 	}
 
 	srv, err := server.NewServer(&server.Config{
-		Config: bs.cfg,
+		Config: bs.Config(),
 
-		Handler: bs.managers.Must("handler").(http.Handler),
-		Routes:  []server.WithRoutes{bs.managers.Must("identity").(server.WithRoutes)},
+		Handler: bs.Managers().Must("handler").(http.Handler),
+		Routes:  []server.WithRoutes{bs.Managers().Must("identity").(server.WithRoutes)},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create server: %v", err)
@@ -158,8 +166,12 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	// Survey support.
 	var guid []byte
-	if bs.issuerIdentifierURI.Hostname() != "localhost" {
-		guid = []byte(bs.issuerIdentifierURI.String())
+	issUrl, err := url.Parse(bootstrapConfig.Iss)
+	if err != nil {
+		logger.WithError(err).Errorln("unable to start survey-client")
+	}
+	if issUrl.Hostname() != "localhost" {
+		guid = []byte(issUrl.String())
 	}
 	err = autosurvey.Start(ctx,
 		"konnectd",
@@ -168,7 +180,7 @@ func serve(cmd *cobra.Command, args []string) error {
 		ksurveyclient.MustNewConstMap("userplugin", map[string]interface{}{
 			"desc":  "Identity manager",
 			"type":  "string",
-			"value": bs.args[0],
+			"value": bootstrapConfig.IdentityManager,
 		}),
 	)
 	if err != nil {

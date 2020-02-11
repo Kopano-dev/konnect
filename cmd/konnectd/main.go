@@ -20,8 +20,13 @@ package main
 import (
 	"fmt"
 	"os"
-
 	"stash.kopano.io/kc/konnect/cmd"
+)
+
+// Defaults.
+const (
+	defaultListenAddr           = "127.0.0.1:8777"
+	defaultIdentifierClientPath = "./identifier-webapp"
 )
 
 func main() {
