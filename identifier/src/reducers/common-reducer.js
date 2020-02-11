@@ -11,8 +11,9 @@ const flow = query.flow || '';
 delete query.flow;
 
 const defaultPathPrefix = (() => {
-  let pathPrefix = document.getElementById('root').getAttribute('data-path-prefix');
-  if (pathPrefix === '__PATH_PREFIX__') {
+  const root = document.getElementById('root');
+  let pathPrefix = root ? root.getAttribute('data-path-prefix') : null;
+  if (!pathPrefix || pathPrefix === '__PATH_PREFIX__') {
     // Not replaced, probably we are running in debug mode or whatever. Use sane default.
     pathPrefix = '/signin/v1';
   }

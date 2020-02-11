@@ -12,4 +12,4 @@ console.info(`Kopano Identifier build version: ${version.build}`); // eslint-dis
 console.info(`Kopano Kpop build version: ${kpop.build}`); // eslint-disable-line no-console
 
 // NOTE(longsleep): Load async, this enables code splitting via Webpack.
-import(/* webpackChunkName: "identifier-app" */ './identifier');
+import(/* webpackChunkName: "identifier-app" */ './app');

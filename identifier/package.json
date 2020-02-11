@@ -30,7 +30,8 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "licenses": "NODE_PATH=./node_modules node ../scripts/js-license-ranger.js",
-    "deduplicate": "yarn-deduplicate -s fewer yarn.lock"
+    "deduplicate": "yarn-deduplicate -s fewer yarn.lock",
+    "analyze": "source-map-explorer 'build/static/js/*.js'"
   },
   "devDependencies": {
     "@babel/runtime": "7.0.0-beta.55",
@@ -51,6 +52,14 @@
     "**/@material-ui/core": "4.8.0",
     "**/@material-ui/icons": "4.5.1",
     "**/react-intl": "2.9.0"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "transformIgnorePatterns": [
+        "node_modules/?!(kpop)"
+    ]
   },
   "browserslist": [
     ">0.2%",

@@ -2,15 +2,12 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
-import { BrowserRouter, Switch, Route } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import { enhanceBodyBackground } from '../utils';
-import Loginscreen from '../components/Loginscreen';
-import Welcomescreen from '../components/Welcomescreen';
-import Goodbyescreen from '../components/Goodbyescreen';
-import PrivateRoute from '../components/PrivateRoute';
+import { enhanceBodyBackground } from './utils';
+import Routes from './Routes';
 
 // Trigger loading of background image.
 enhanceBodyBackground();
@@ -23,18 +20,14 @@ const styles = () => ({
   }
 });
 
-class Identifier extends PureComponent {
+class App extends PureComponent {
   render() {
     const { classes, hello, pathPrefix } = this.props;
 
     return (
       <div className={classes.root}>
         <BrowserRouter basename={pathPrefix}>
-          <Switch>
-            <PrivateRoute path="/welcome" exact component={Welcomescreen} hello={hello}></PrivateRoute>
-            <Route path="/goodbye" exact component={Goodbyescreen}></Route>
-            <Route path="/" component={Loginscreen}></Route>
-          </Switch>
+          <Routes hello={hello}/>
         </BrowserRouter>
       </div>
     );
@@ -47,7 +40,7 @@ class Identifier extends PureComponent {
   }
 }
 
-Identifier.propTypes = {
+App.propTypes = {
   classes: PropTypes.object.isRequired,
 
   hello: PropTypes.object,
@@ -65,4 +58,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(withStyles(styles)(Identifier));
+export default connect(mapStateToProps)(withStyles(styles)(App));

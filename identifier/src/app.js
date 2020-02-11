@@ -19,7 +19,7 @@ const onLocaleChanged = async locale => {
 
 // NOTE(longsleep): Load async with loader, this enables code splitting via Webpack.
 const LoadableApp = Loadable({
-  loader: () => import(/* webpackChunkName: "identifier-container" */ './containers/Identifier'),
+  loader: () => import(/* webpackChunkName: "identifier-main" */ './Main'),
   loading: Loading,
   timeout: 20000
 });
