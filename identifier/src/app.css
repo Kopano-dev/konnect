@@ -1,9 +1,1 @@
 /* additional css on top of kpop */
-
-/* Register animations to allow JavaScript hooks to react on browser auto fill. */
-@keyframes onAutoFillStart {
-  kopano { keepme: 0 /* hack needed to avoid getting removed since empty */ }
-}
-@keyframes onAutoFillCancel {
-  kopano { keepme: 0 /* hack needed to avoid getting removed since empty */ }
-}
