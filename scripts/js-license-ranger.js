@@ -23,14 +23,13 @@
 'use strict';
 
 /* eslint-disable no-console */
-/* global require */
 
 const fs = require('fs'),
   glob = require('glob'),
   path = require('path'),
   sourcemapExplorer = require('source-map-explorer');
 
-const version = '20190509-1'; // eslint-disable-line
+const version = '20191220-1'; // eslint-disable-line
 
 const licenseFilenames = [
   'LICENSE',
@@ -45,7 +44,6 @@ const licenseFilenames = [
 
 const noticeFilenames = [
   'NOTICE',
-  'NOTICE.txt',
   'NOTICES',
   'NOTICES.txt',
   '3rdparty-LICENSES.md',
@@ -66,6 +64,13 @@ function findModuleViaPackageJSON(mp) {
 
 function findLicense(mp) {
   const json = JSON.parse(fs.readFileSync(mp + '/package.json', 'utf-8'));
+  if (json.type === 'module' && Object.keys(json).length === 1) {
+    return;
+  }
+  if (json.module && json.module.indexOf('../') === 0) {
+    return;
+  }
+
   let url = json.repository;
   if (url && url.url) {
     url = url.url;
@@ -151,6 +156,11 @@ function printLicensesDocument(modules) {
   for (let i=0; i< keys.length; i++) {
     const key = keys[i];
     const entry = modules[key];
+    if (!entry) {
+      console.error('> skipped: ' + key);
+      continue;
+    }
+
     const name = entry.name ? entry.name : key;
     let headline = name;
     if (entry.url) {
@@ -159,17 +169,14 @@ function printLicensesDocument(modules) {
 
     console.log('### ' + headline);
     if (entry.description) {
-      console.log('\n> ' + entry.description);
+      console.log('\n> ' + entry.description + '\n');
     }
     if (entry.license) {
-      console.log('\nLicense: ' + entry.license);
+      console.log('License: ' + entry.license + '\n');
     }
     if (entry.licenseFile) {
-      if (!entry.license) {
-        console.log('\nLicense:');
-      }
       const license = fs.readFileSync(entry.licenseFile, 'utf-8');
-      console.log('\n```');
+      console.log('```');
       console.log(license);
       console.log('```\n');
     }
