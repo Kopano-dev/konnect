@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+
+## v0.29.0 (2020-02-13)
+
+- Detect browser state change issues
 - Add fulllint helper to lint from the start
 - Update 3rd party Go dependencies
 - Update javascript 3rd party dependencies
