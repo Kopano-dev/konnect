@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Add fulllint helper to lint from the start
+- Update 3rd party Go dependencies
+- Update javascript 3rd party dependencies
+- Reorganize component folder structure
+- Remove webkit autofill hack
+- Update license parser to support esm sub modules
+- Reorganize identifier webapp
+- Update c-r-a, kpop and dependencies
 - Clean up linter warnings
 - Merge branch 'embedding' of https://github.com/IljaN/konnect
 - Merge branch 'bugfix/dynamic-port-redirect-native-clients' of https://github.com/DeepDiver1975/konnect
