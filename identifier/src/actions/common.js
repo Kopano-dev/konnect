@@ -1,14 +1,15 @@
 import axios from 'axios';
 
-import * as types from './action-types';
 import { newHelloRequest } from '../models/hello';
 import { withClientRequestState } from '../utils';
-import { handleAxiosError } from './utils';
 import {
   ExtendedError,
   ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS,
   ERROR_HTTP_UNEXPECTED_RESPONSE_STATE
 } from '../errors';
+
+import { handleAxiosError } from './utils';
+import * as types from './types';
 
 export function receiveError(error) {
   return {

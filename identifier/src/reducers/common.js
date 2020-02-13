@@ -3,7 +3,7 @@ import {
   RESET_HELLO,
   RECEIVE_HELLO,
   SERVICE_WORKER_NEW_CONTENT
-} from '../actions/action-types';
+} from '../actions/types';
 import queryString from 'query-string';
 
 const query = queryString.parse(document.location.search);

@@ -6,13 +6,13 @@ import { Route, Switch } from 'react-router-dom';
 
 import { withStyles } from '@material-ui/core/styles';
 
-import ResponsiveScreen from './ResponsiveScreen';
+import ResponsiveScreen from '../../components/ResponsiveScreen';
+import RedirectWithQuery from '../../components/RedirectWithQuery';
+import { executeHello } from '../../actions/common';
+
 import Login from './Login';
 import Chooseaccount from './Chooseaccount';
 import Consent from './Consent';
-import RedirectWithQuery from './RedirectWithQuery';
-
-import { executeHello } from '../actions/common-actions';
 
 const styles = () => ({
 });

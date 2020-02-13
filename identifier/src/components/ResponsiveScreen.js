@@ -37,7 +37,7 @@ const styles = theme => ({
   }
 });
 
-function ResponsiveScreen(props) {
+const ResponsiveScreen = (props) => {
   const {
     classes,
     withoutLogo,
@@ -71,7 +71,7 @@ function ResponsiveScreen(props) {
       </ResponsiveDialog>
     </Grid>
   );
-}
+};
 
 ResponsiveScreen.defaultProps = {
   withoutLogo: false,

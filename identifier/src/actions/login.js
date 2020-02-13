@@ -1,11 +1,8 @@
 import axios from 'axios';
 import queryString from 'query-string';
 
-import * as types from './action-types';
-import { receiveHello } from './common-actions';
 import { newHelloRequest } from '../models/hello';
 import { withClientRequestState } from '../utils';
-import { handleAxiosError } from './utils';
 import {
   ExtendedError,
   ERROR_LOGIN_VALIDATE_MISSINGUSERNAME,
@@ -14,6 +11,10 @@ import {
   ERROR_HTTP_UNEXPECTED_RESPONSE_STATUS,
   ERROR_HTTP_UNEXPECTED_RESPONSE_STATE
 } from '../errors';
+
+import * as types from './types';
+import { receiveHello } from './common';
+import { handleAxiosError } from './utils';
 
 // Modes for logon.
 export const ModeLogonUsernameEmptyPasswordCookie = '0';

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
@@ -12,8 +12,8 @@ import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import Avatar from '@material-ui/core/Avatar';
 import Typography from '@material-ui/core/Typography';
 
-import { executeLogonIfFormValid, advanceLogonFlow } from '../actions/login-actions';
-import { ErrorMessage } from '../errors';
+import { executeLogonIfFormValid, advanceLogonFlow } from '../../actions/login';
+import { ErrorMessage } from '../../errors';
 
 const styles = theme => ({
   subHeader: {
@@ -32,7 +32,7 @@ const styles = theme => ({
   }
 });
 
-class Chooseaccount extends Component {
+class Chooseaccount extends React.PureComponent {
   componentDidMount() {
     const { hello, history } = this.props;
     if ((!hello || !hello.state) && history.action !== 'PUSH') {

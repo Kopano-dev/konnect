@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
@@ -11,7 +11,7 @@ import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import renderIf from 'render-if';
 
-import { retryHello } from '../actions/common-actions';
+import { retryHello } from '../actions/common';
 import { ErrorMessage } from '../errors';
 
 const styles = theme => ({
@@ -32,7 +32,7 @@ const styles = theme => ({
   }
 });
 
-class Loading extends Component {
+class Loading extends React.PureComponent {
   render() {
     const { classes, error } = this.props;
 

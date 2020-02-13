@@ -4,9 +4,9 @@ import PropTypes from 'prop-types';
 import Dialog from '@material-ui/core/Dialog';
 import withMobileDialog from '@material-ui/core/withMobileDialog';
 
-function ResponsiveDialog(props) {
+const ResponsiveDialog = (props) => {
   return <Dialog {...props}/>;
-}
+};
 
 ResponsiveDialog.propTypes = {
   fullScreen: PropTypes.bool.isRequired

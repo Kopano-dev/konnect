@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
@@ -13,8 +13,8 @@ import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 import DialogActions from '@material-ui/core/DialogActions';
 
-import { updateInput, executeLogonIfFormValid, advanceLogonFlow } from '../actions/login-actions';
-import { ErrorMessage } from '../errors';
+import { updateInput, executeLogonIfFormValid, advanceLogonFlow } from '../../actions/login';
+import { ErrorMessage } from '../../errors';
 
 const styles = theme => ({
   button: {
@@ -42,7 +42,7 @@ const styles = theme => ({
   }
 });
 
-class Login extends Component {
+class Login extends React.PureComponent {
   state = {};
 
   componentDidMount() {

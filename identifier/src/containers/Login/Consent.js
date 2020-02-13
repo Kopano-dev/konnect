@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
@@ -13,11 +13,11 @@ import green from '@material-ui/core/colors/green';
 import Typography from '@material-ui/core/Typography';
 import DialogActions from '@material-ui/core/DialogActions';
 
-import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../actions/login-actions';
-import { ErrorMessage } from '../errors';
-import { REQUEST_CONSENT_ALLOW } from '../actions/action-types';
-import ClientDisplayName from './ClientDisplayName';
-import ScopesList from './ScopesList';
+import { executeConsent, advanceLogonFlow, receiveValidateLogon } from '../../actions/login';
+import { ErrorMessage } from '../../errors';
+import { REQUEST_CONSENT_ALLOW } from '../../actions/types';
+import ClientDisplayName from '../../components/ClientDisplayName';
+import ScopesList from '../../components/ScopesList';
 
 const styles = theme => ({
   button: {
@@ -49,7 +49,7 @@ const styles = theme => ({
   }
 });
 
-class Consent extends Component {
+class Consent extends React.PureComponent {
   componentDidMount() {
     const { dispatch, hello, history, client } = this.props;
     if ((!hello || !hello.state || !client) && history.action !== 'PUSH') {

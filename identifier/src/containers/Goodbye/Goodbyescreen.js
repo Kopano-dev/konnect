@@ -10,8 +10,8 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import DialogActions from '@material-ui/core/DialogActions';
 
-import ResponsiveScreen from './ResponsiveScreen';
-import { executeHello, executeLogoff } from '../actions/common-actions';
+import ResponsiveScreen from '../../components/ResponsiveScreen';
+import { executeHello, executeLogoff } from '../../actions/common';
 
 const styles = theme => ({
   subHeader: {

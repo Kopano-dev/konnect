@@ -7,7 +7,7 @@ import {
   REQUEST_CONSENT_CANCEL,
   RECEIVE_CONSENT,
   UPDATE_INPUT
-} from '../actions/action-types';
+} from '../actions/types';
 
 function loginReducer(state = {
   loading: '',

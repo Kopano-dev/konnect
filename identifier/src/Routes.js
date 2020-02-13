@@ -7,11 +7,11 @@ import AsyncComponent from 'kpop/es/AsyncComponent';
 import PrivateRoute from './components/PrivateRoute';
 
 const AsyncLogin = AsyncComponent(() =>
-  import(/* webpackChunkName: "containers-login" */ './components/Loginscreen'));
+  import(/* webpackChunkName: "containers-login" */ './containers/Login'));
 const AsyncWelcome = AsyncComponent(() =>
-  import(/* webpackChunkName: "containers-welcome" */ './components/Welcomescreen'));
+  import(/* webpackChunkName: "containers-welcome" */ './containers/Welcome'));
 const AsyncGoodbye = AsyncComponent(() =>
-  import(/* webpackChunkName: "containers-goodbye" */ './components/Goodbyescreen'));
+  import(/* webpackChunkName: "containers-goodbye" */ './containers/Goodbye'));
 
 const Routes = ({ hello }) => (
   <Switch>
