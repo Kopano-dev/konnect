@@ -6,7 +6,7 @@
   "dependencies": {
     "@material-ui/core": "^4.8.0",
     "@material-ui/icons": "^4.5.0",
-    "axios": "^0.18.1",
+    "axios": "^0.19.2",
     "classnames": "^2.2.6",
     "kpop": "https://download.kopano.io/community/kapp:/kpop-2.2.0.tgz",
     "query-string": "^5.0.1",
@@ -58,7 +58,7 @@
       "src/**/*.js"
     ],
     "transformIgnorePatterns": [
-        "node_modules/?!(kpop)"
+      "node_modules/?!(kpop)"
     ]
   },
   "browserslist": [
