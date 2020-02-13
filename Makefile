@@ -84,6 +84,10 @@ lint-checkstyle: vendor ; $(info running $(GOLINT) checkstyle ...)     @
 	$(GOLINT) run $(GOLINT_ARGS) --out-format checkstyle --issues-exit-code 0 > test/tests.lint.xml
 	$(MAKE) -C identifier lint-checkstyle
 
+.PHONY: fulllint
+fulllint: GOLINT_ARGS=
+fulllint: lint
+
 .PHONY: fmt
 fmt: ; $(info running gofmt ...)	@
 	@ret=0 && for d in $$($(GO) list -mod=readonly -f '{{.Dir}}' ./... | grep -v /vendor/); do \
