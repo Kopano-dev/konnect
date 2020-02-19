@@ -83,6 +83,7 @@ type Config struct {
 	IdentifierClientPath           string
 	IdentifierRegistrationConf     string
 	IdentifierScopesConf           string
+	IdentifierWebAppDisabled       bool
 	SigningKid                     string
 	SigningMethod                  string
 	SigningPrivateKeyFiles         []string
@@ -109,6 +110,7 @@ type bootstrap struct {
 
 	issuerIdentifierURI        *url.URL
 	identifierClientPath       string
+	identifierWebAppDisabled   bool
 	identifierRegistrationConf string
 	identifierAuthoritiesConf  string
 	identifierScopesConf       string
@@ -271,6 +273,7 @@ func (bs *bootstrap) initialize(cfg *Config) error {
 	bs.cfg.ListenAddr = cfg.Listen
 
 	bs.identifierClientPath = cfg.IdentifierClientPath
+	bs.identifierWebAppDisabled = cfg.IdentifierWebAppDisabled
 
 	bs.identifierRegistrationConf = cfg.IdentifierRegistrationConf
 	if bs.identifierRegistrationConf != "" {

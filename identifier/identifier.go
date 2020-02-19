@@ -83,19 +83,23 @@ type Identifier struct {
 // NewIdentifier returns a new Identifier.
 func NewIdentifier(c *Config) (*Identifier, error) {
 	staticFolder := c.StaticFolder
-	webappIndexHTMLFilename := staticFolder + "/index.html"
-	if _, err := os.Stat(webappIndexHTMLFilename); os.IsNotExist(err) {
-		return nil, fmt.Errorf("identifier static client files: %v", err)
-	}
-	webappIndexHTML, err := ioutil.ReadFile(webappIndexHTMLFilename)
-	if err != nil {
-		return nil, fmt.Errorf("identifier failed to read client index.html: %v", err)
+	var webappIndexHTML = make([]byte, 0)
+
+	if !c.WebAppDisabled {
+		webappIndexHTMLFilename := staticFolder + "/index.html"
+		if _, err := os.Stat(webappIndexHTMLFilename); os.IsNotExist(err) {
+			return nil, fmt.Errorf("identifier static client files: %v", err)
+		}
+		webappIndexHTML, err := ioutil.ReadFile(webappIndexHTMLFilename)
+		if err != nil {
+			return nil, fmt.Errorf("identifier failed to read client index.html: %v", err)
+		}
+
+		webappIndexHTML = bytes.Replace(webappIndexHTML, []byte("__PATH_PREFIX__"), []byte(c.PathPrefix), 1)
 	}
 
 	oauth2CbEndpointURI, _ := url.Parse(c.BaseURI.String())
 	oauth2CbEndpointURI.Path = c.PathPrefix + "/identifier/oauth2/cb"
-
-	webappIndexHTML = bytes.Replace(webappIndexHTML, []byte("__PATH_PREFIX__"), []byte(c.PathPrefix), 1)
 
 	i := &Identifier{
 		Config: c,
@@ -118,6 +122,7 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		logger: c.Config.Logger,
 	}
 
+	var err error
 	i.meta = &meta.Meta{}
 	i.meta.Scopes, err = scopes.NewScopesFromFile(i.scopesConf, i.logger)
 	if err != nil {

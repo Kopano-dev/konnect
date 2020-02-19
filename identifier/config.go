@@ -33,6 +33,7 @@ type Config struct {
 	StaticFolder    string
 	LogonCookieName string
 	ScopesConf      string
+	WebAppDisabled  bool
 
 	AuthorizationEndpointURI *url.URL
 
