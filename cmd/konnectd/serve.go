@@ -84,6 +84,7 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().StringVar(&cfg.SignedOutURI, "signed-out-uri", "", "Custom redirection URI to signed-out goodbye page")
 	serveCmd.Flags().StringVar(&cfg.AuthorizationEndpointURI, "authorization-endpoint-uri", "", "Custom authorization endpoint URI")
 	serveCmd.Flags().StringVar(&cfg.EndsessionEndpointURI, "endsession-endpoint-uri", "", "Custom endsession endpoint URI")
+	serveCmd.Flags().BoolVar(&cfg.IdentifierClientDisabled, "disable-identifier-client", false, "Disable loading the identifier web client")
 	serveCmd.Flags().StringVar(&cfg.IdentifierClientPath, "identifier-client-path", envOrDefault("KONNECTD_IDENTIFIER_CLIENT_PATH", defaultIdentifierClientPath), fmt.Sprintf("Path to the identifier web client base folder (default \"%s\")", defaultIdentifierClientPath))
 	serveCmd.Flags().StringVar(&cfg.IdentifierRegistrationConf, "identifier-registration-conf", "", "Path to a identifier-registration.yaml configuration file")
 	serveCmd.Flags().StringVar(&cfg.IdentifierScopesConf, "identifier-scopes-conf", "", "Path to a scopes.yaml configuration file")
