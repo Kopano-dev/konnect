@@ -14,11 +14,11 @@ import { executeLogoff } from '../../actions/common';
 
 const styles = theme => ({
   button: {
-    margin: theme.spacing.unit,
+    margin: theme.spacing(1),
     minWidth: 100
   },
   subHeader: {
-    marginBottom: theme.spacing.unit * 5
+    marginBottom: theme.spacing(5)
   }
 });
 

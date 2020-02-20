@@ -28,7 +28,7 @@ const styles = theme => ({
     width: '100px'
   },
   button: {
-    marginTop: theme.spacing.unit * 5
+    marginTop: theme.spacing(5)
   }
 });
 

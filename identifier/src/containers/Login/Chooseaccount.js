@@ -17,18 +17,18 @@ import { ErrorMessage } from '../../errors';
 
 const styles = theme => ({
   subHeader: {
-    marginBottom: theme.spacing.unit * 2
+    marginBottom: theme.spacing(2)
   },
   message: {
-    marginTop: theme.spacing.unit * 2
+    marginTop: theme.spacing(2)
   },
   accountList: {
-    marginLeft: theme.spacing.unit * -3,
-    marginRight: theme.spacing.unit * -3
+    marginLeft: theme.spacing(-3),
+    marginRight: theme.spacing(-3)
   },
   accountListItem: {
-    paddingLeft: theme.spacing.unit * 3,
-    paddingRight: theme.spacing.unit * 3
+    paddingLeft: theme.spacing(3),
+    paddingRight: theme.spacing(3)
   }
 });
 

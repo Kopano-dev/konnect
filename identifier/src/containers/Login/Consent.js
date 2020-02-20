@@ -21,7 +21,7 @@ import ScopesList from '../../components/ScopesList';
 
 const styles = theme => ({
   button: {
-    margin: theme.spacing.unit,
+    margin: theme.spacing(1),
     minWidth: 100
   },
   buttonProgress: {
@@ -33,19 +33,19 @@ const styles = theme => ({
     marginLeft: -12
   },
   subHeader: {
-    marginBottom: theme.spacing.unit * 2
+    marginBottom: theme.spacing(2)
   },
   scopesList: {
-    marginBottom: theme.spacing.unit * 2
+    marginBottom: theme.spacing(2)
   },
   wrapper: {
-    marginTop: theme.spacing.unit * 2,
+    marginTop: theme.spacing(2),
     position: 'relative',
     display: 'inline-block'
   },
   message: {
-    marginTop: theme.spacing.unit * 2,
-    marginBottom: theme.spacing.unit * 2
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(2)
   }
 });
 

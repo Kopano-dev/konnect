@@ -15,10 +15,10 @@ import { executeHello, executeLogoff } from '../../actions/common';
 
 const styles = theme => ({
   subHeader: {
-    marginBottom: theme.spacing.unit * 5
+    marginBottom: theme.spacing(5)
   },
   wrapper: {
-    marginTop: theme.spacing.unit * 5,
+    marginTop: theme.spacing(5),
     position: 'relative',
     display: 'inline-block'
   }

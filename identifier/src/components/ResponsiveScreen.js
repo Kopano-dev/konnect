@@ -21,19 +21,19 @@ const styles = theme => ({
     paddingTop: 24,
     paddingBottom: 12,
     minHeight: 500,
-    paddingLeft: 2 * theme.spacing.unit,
-    paddingRight: 2 * theme.spacing.unit,
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
     position: 'relative'
   },
   logo: {
     height: 18,
-    marginBottom: theme.spacing.unit * 2
+    marginBottom: theme.spacing(2)
   },
   actions: {
     marginTop: -40,
     justifyContent: 'flex-start',
-    paddingLeft: 3 * theme.spacing.unit,
-    paddingRight: 3 * theme.spacing.unit
+    paddingLeft: theme.spacing(3),
+    paddingRight: theme.spacing(3)
   }
 });
 
