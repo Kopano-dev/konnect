@@ -96,6 +96,7 @@ func newLDAPIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		StaticFolder:    bs.identifierClientPath,
 		LogonCookieName: "__Secure-KKT", // Kopano-Konnect-Token
 		ScopesConf:      bs.identifierScopesConf,
+		WebAppDisabled:  bs.identifierClientDisabled,
 
 		AuthorizationEndpointURI: fullAuthorizationEndpointURL,
 

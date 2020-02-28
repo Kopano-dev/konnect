@@ -29,10 +29,12 @@ type Config struct {
 	Config *config.Config
 
 	BaseURI         *url.URL
-	PathPrefix      string
-	StaticFolder    string
 	LogonCookieName string
 	ScopesConf      string
+
+	PathPrefix     string
+	StaticFolder   string
+	WebAppDisabled bool
 
 	AuthorizationEndpointURI *url.URL
 

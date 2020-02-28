@@ -80,6 +80,7 @@ type Config struct {
 	AllowDynamicClientRegistration bool
 	EncryptionSecretFile           string
 	Listen                         string
+	IdentifierClientDisabled       bool
 	IdentifierClientPath           string
 	IdentifierRegistrationConf     string
 	IdentifierScopesConf           string
@@ -108,6 +109,7 @@ type bootstrap struct {
 	tlsClientConfig *tls.Config
 
 	issuerIdentifierURI        *url.URL
+	identifierClientDisabled   bool
 	identifierClientPath       string
 	identifierRegistrationConf string
 	identifierAuthoritiesConf  string
@@ -270,6 +272,7 @@ func (bs *bootstrap) initialize(cfg *Config) error {
 
 	bs.cfg.ListenAddr = cfg.Listen
 
+	bs.identifierClientDisabled = cfg.IdentifierClientDisabled
 	bs.identifierClientPath = cfg.IdentifierClientPath
 
 	bs.identifierRegistrationConf = cfg.IdentifierRegistrationConf
