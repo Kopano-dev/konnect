@@ -86,16 +86,15 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 	var webappIndexHTML = make([]byte, 0)
 
 	if !c.WebAppDisabled {
-		webappIndexHTMLFilename := staticFolder + "/index.html"
-		if _, err := os.Stat(webappIndexHTMLFilename); os.IsNotExist(err) {
-			return nil, fmt.Errorf("identifier static client files: %v", err)
+		fn := staticFolder + "/index.html"
+		if _, statErr := os.Stat(fn); os.IsNotExist(statErr) {
+			return nil, fmt.Errorf("identifier client index.html not found: %w", statErr)
 		}
-		webappIndexHTML, err := ioutil.ReadFile(webappIndexHTMLFilename)
-		if err != nil {
-			return nil, fmt.Errorf("identifier failed to read client index.html: %v", err)
+		readData, readErr := ioutil.ReadFile(fn)
+		if readErr != nil {
+			return nil, fmt.Errorf("identifier failed to read client index.html: %w", readErr)
 		}
-
-		webappIndexHTML = bytes.Replace(webappIndexHTML, []byte("__PATH_PREFIX__"), []byte(c.PathPrefix), 1)
+		webappIndexHTML = bytes.Replace(readData, []byte("__PATH_PREFIX__"), []byte(c.PathPrefix), 1)
 	}
 
 	oauth2CbEndpointURI, _ := url.Parse(c.BaseURI.String())
