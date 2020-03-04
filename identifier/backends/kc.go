@@ -212,8 +212,8 @@ func NewKCIdentifierBackend(c *config.Config, client *kcc.KCC, useGlobalSession 
 // RegisterManagers registers the provided managers,
 func (b *KCIdentifierBackend) RegisterManagers(mgrs *managers.Managers) error {
 	b.identityManager = mgrs.Must("identity").(identity.Manager)
-	if oidc, ok := mgrs.Get("oidc"); ok {
-		b.oidcProvider = oidc.(konnect.AccessTokenProvider)
+	if oidcManager, ok := mgrs.Get("oidc"); ok {
+		b.oidcProvider = oidcManager.(konnect.AccessTokenProvider)
 	}
 
 	return nil
@@ -409,7 +409,7 @@ func (b *KCIdentifierBackend) GetUser(ctx context.Context, userEntryID string, s
 	switch response.Er {
 	case kcc.KCSuccess:
 		// success.
-		responseAbeid, err := kcc.NewABEIDFromBase64([]byte(response.User.UserEntryID))
+		responseAbeid, _ := kcc.NewABEIDFromBase64([]byte(response.User.UserEntryID))
 		if !kcc.ABEIDEqual(abeid, responseAbeid) {
 			return nil, fmt.Errorf("kc identifier backend get user returned wrong user")
 		}

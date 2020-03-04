@@ -33,14 +33,14 @@ type Registry struct {
 	mutex sync.RWMutex
 
 	defaultID   string
-	authorities map[string]*AuthorityRegistration
+	authorities map[string]AuthorityRegistration
 
 	logger logrus.FieldLogger
 }
 
 // NewRegistry creates a new authorizations Registry with the provided parameters.
 func NewRegistry(ctx context.Context, registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
-	registryData := &RegistryData{}
+	registryData := &authorityRegistryData{}
 
 	if registrationConfFilepath != "" {
 		logger.Debugf("parsing authorities registration conf from %v", registrationConfFilepath)
@@ -56,36 +56,53 @@ func NewRegistry(ctx context.Context, registrationConfFilepath string, logger lo
 	}
 
 	r := &Registry{
-		authorities: make(map[string]*AuthorityRegistration),
+		authorities: make(map[string]AuthorityRegistration),
 
 		logger: logger,
 	}
 
-	var defaultAuthority *AuthorityRegistration
-	for _, authority := range registryData.Authorities {
-		validateErr := authority.Validate()
-		registerErr := r.Register(authority)
+	var defaultAuthorityRegistrationData *authorityRegistrationData
+	var defaultAuthority AuthorityRegistration
+	for _, registrationData := range registryData.Authorities {
+		var authority AuthorityRegistration
+		var validateErr error
+
+		if registrationData.ID == "" {
+			registrationData.ID = registrationData.Name
+			r.logger.WithField("id", registrationData.ID).Warnln("authority has no id, using name")
+		}
+
+		switch registrationData.AuthorityType {
+		case AuthorityTypeOIDC:
+			authority, validateErr = newOIDCAuthorityRegistration(registrationData)
+		}
+
 		fields := logrus.Fields{
-			"id":                 authority.ID,
-			"client_id":          authority.ClientID,
-			"with_client_secret": authority.ClientSecret != "",
-			"authority_type":     authority.AuthorityType,
-			"insecure":           authority.Insecure,
-			"default":            authority.Default,
-			"discover":           authority.discover,
-			"alias_required":     authority.IdentityAliasRequired,
+			"id":             registrationData.ID,
+			"authority_type": registrationData.AuthorityType,
+			"insecure":       registrationData.Insecure,
+			"default":        registrationData.Default,
+			"alias_required": registrationData.IdentityAliasRequired,
 		}
 
 		if validateErr != nil {
 			logger.WithError(validateErr).WithFields(fields).Warnln("skipped registration of invalid authority entry")
 			continue
 		}
-		if registerErr != nil {
+
+		if authority == nil {
+			logger.WithFields(fields).Warnln("skipped registration of authority of unknown type")
+			continue
+		}
+
+		if registerErr := r.Register(authority); registerErr != nil {
 			logger.WithError(registerErr).WithFields(fields).Warnln("skipped registration of invalid authority")
 			continue
 		}
-		if authority.Default || defaultAuthority == nil {
-			if defaultAuthority == nil || !defaultAuthority.Default {
+
+		if registrationData.Default || defaultAuthorityRegistrationData == nil {
+			if defaultAuthorityRegistrationData == nil || !defaultAuthorityRegistrationData.Default {
+				defaultAuthorityRegistrationData = registrationData
 				defaultAuthority = authority
 			} else {
 				logger.Warnln("ignored default authority flag since already have a default")
@@ -105,9 +122,9 @@ func NewRegistry(ctx context.Context, registrationConfFilepath string, logger lo
 	}
 
 	if defaultAuthority != nil {
-		if defaultAuthority.Default {
-			r.defaultID = defaultAuthority.ID
-			logger.WithField("id", defaultAuthority.ID).Infoln("using external default authority")
+		if defaultAuthorityRegistrationData.Default {
+			r.defaultID = defaultAuthorityRegistrationData.ID
+			logger.WithField("id", defaultAuthorityRegistrationData.ID).Infoln("using external default authority")
 		} else {
 			logger.Warnln("non-default authorities are not supported yet")
 		}
@@ -118,42 +135,26 @@ func NewRegistry(ctx context.Context, registrationConfFilepath string, logger lo
 
 // Register validates the provided authority registration and adds the authority
 // to the accociated registry if valid. Returns error otherwise.
-func (r *Registry) Register(authority *AuthorityRegistration) error {
-	if authority.ID == "" {
-		if authority.Name != "" {
-			authority.ID = authority.Name
-			r.logger.WithField("id", authority.ID).Warnln("authority has no id, using name")
-		} else {
-			return errors.New("no authority id")
-		}
-	}
-	if authority.ClientID == "" {
-		return errors.New("invalid authority client_id")
+func (r *Registry) Register(authority AuthorityRegistration) error {
+	id := authority.ID()
+	if id == "" {
+		return errors.New("no authority id")
 	}
 
-	switch authority.AuthorityType {
+	if err := authority.Validate(); err != nil {
+		return fmt.Errorf("authority data validation error: %w", err)
+	}
+
+	switch authority.AuthorityType() {
 	case AuthorityTypeOIDC:
-		// Ensure some defaults.
-		if len(authority.Scopes) == 0 {
-			authority.Scopes = authorityDefaultScopes
-		}
-		if authority.ResponseType == "" {
-			authority.ResponseType = authorityDefaultResponseType
-		}
-		if authority.CodeChallengeMethod == "" {
-			authority.CodeChallengeMethod = authorityDefaultCodeChallengeMethod
-		}
-		if authority.IdentityClaimName == "" {
-			authority.IdentityClaimName = authorityDefaultIdentityClaimName
-		}
-
+		// breaks
 	default:
-		return fmt.Errorf("unknown authority type: %v", authority.AuthorityType)
+		return fmt.Errorf("unknown authority type: %v", authority.AuthorityType())
 	}
 
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	r.authorities[authority.ID] = authority
+	r.authorities[id] = authority
 
 	return nil
 }
@@ -166,38 +167,12 @@ func (r *Registry) Lookup(ctx context.Context, authorityID string) (*Details, er
 		return nil, fmt.Errorf("unknown authority id: %v", authorityID)
 	}
 
-	// Create immutable registry record.
-	// TODO(longsleep): Cache record.
-	details := &Details{
-		ID:            registration.ID,
-		Name:          registration.Name,
-		AuthorityType: registration.AuthorityType,
-
-		ClientID:     registration.ClientID,
-		ClientSecret: registration.ClientSecret,
-
-		Insecure: registration.Insecure,
-
-		Scopes:              registration.Scopes,
-		ResponseType:        registration.ResponseType,
-		CodeChallengeMethod: registration.CodeChallengeMethod,
-
-		Registration: registration,
-	}
-	registration.mutex.RLock()
-	// Fill in dynamic stuff.
-	details.ready = registration.ready
-	if registration.ready {
-		details.AuthorizationEndpoint = registration.authorizationEndpoint
-		details.validationKeys = registration.validationKeys
-	}
-	registration.mutex.RUnlock()
-
+	details := registration.Authority()
 	return details, nil
 }
 
 // Get returns the registered authorities registration for the provided client ID.
-func (r *Registry) Get(ctx context.Context, authorityID string) (*AuthorityRegistration, bool) {
+func (r *Registry) Get(ctx context.Context, authorityID string) (AuthorityRegistration, bool) {
 	if authorityID == "" {
 		return nil, false
 	}

@@ -150,6 +150,7 @@ func (i *Identifier) handleIdentifier(rw http.ResponseWriter, req *http.Request)
 		//  Check if there is a default authority, if so use that.
 		authority := i.authorities.Default(req.Context())
 		if authority != nil {
+			// TODO(longsleep): Check authority type, base next call on it.
 			i.newOAuth2Start(rw, req, authority)
 			return
 		}
@@ -721,11 +722,10 @@ func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 		var username *string
 		if authority.AuthorityType == authorities.AuthorityTypeOIDC {
 			// Parse and validate IDToken.
-			idToken, idTokenParseErr := jwt.ParseWithClaims(authenticationSuccess.IDToken, jwt.MapClaims{}, authority.Keyfunc())
+			idToken, idTokenParseErr := jwt.ParseWithClaims(authenticationSuccess.IDToken, jwt.MapClaims{}, authority.JWTKeyfunc())
 			if idTokenParseErr != nil {
 				if authority.Insecure {
 					i.logger.WithField("client_id", sd.ClientID).WithError(idTokenParseErr).Warnln("identifier ignoring validation error for insecure authority")
-					err = nil
 				} else {
 					i.logger.WithError(idTokenParseErr).Debugln("identifier failed to validate oauth2 cb id token")
 					err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2ServerError, "authority response validation failed")

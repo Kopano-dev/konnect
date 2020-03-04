@@ -42,7 +42,7 @@ type Details struct {
 	ResponseType        string
 	CodeChallengeMethod string
 
-	Registration *AuthorityRegistration
+	registration AuthorityRegistration
 
 	ready bool
 
@@ -57,74 +57,45 @@ func (d *Details) IsReady() bool {
 	return d.ready
 }
 
-// IdentityClaimValue returns the claim value of the provided claims from the
-// claim defined at the associated registration.
-func (d *Details) IdentityClaimValue(claims map[string]interface{}) (string, error) {
-	icn := d.Registration.IdentityClaimName
-	if icn == "" {
-		icn = oidc.PreferredUsernameClaim
-	}
-
-	cvr, ok := claims[icn]
-	if !ok {
-		return "", errors.New("identity claim not found")
-	}
-	cvs, ok := cvr.(string)
-	if !ok {
-		return "", errors.New("identify claim has invalid type")
-	}
-
-	// Convert claim value.
-	whitelisted := false
-	if d.Registration.IdentityAliases != nil {
-		if alias, ok := d.Registration.IdentityAliases[cvs]; ok && alias != "" {
-			cvs = alias
-			whitelisted = true
-		}
-	}
-
-	// Check whitelist.
-	if d.Registration.IdentityAliasRequired && !whitelisted {
-		return "", errors.New("identity claim has no alias")
-	}
-
-	return cvs, nil
+// IdentityClaimValue returns the identity claim value from the provided data.
+func (d *Details) IdentityClaimValue(claims interface{}) (string, error) {
+	return d.registration.IdentityClaimValue(claims)
 }
 
-// Keyfunc returns a key func to validate JWTs with the keys of the associated
+// JWTKeyfunc returns a key func to validate JWTs with the keys of the associated
 // authority registration.
-func (d *Details) Keyfunc() jwt.Keyfunc {
+func (d *Details) JWTKeyfunc() jwt.Keyfunc {
 	return d.validateJWT
 }
 
 func (d *Details) validateJWT(token *jwt.Token) (interface{}, error) {
 	rawAlg, ok := token.Header[oidc.JWTHeaderAlg]
 	if !ok {
-		return nil, errors.New("No alg header")
+		return nil, errors.New("no alg header")
 	}
 	alg, ok := rawAlg.(string)
 	if !ok {
-		return nil, errors.New("Invalid alg value")
+		return nil, errors.New("invalid alg value")
 	}
 	switch jwt.GetSigningMethod(alg).(type) {
 	case *jwt.SigningMethodRSA:
 	case *jwt.SigningMethodECDSA:
 	case *jwt.SigningMethodRSAPSS:
 	default:
-		return nil, fmt.Errorf("Unexpected alg value")
+		return nil, fmt.Errorf("unexpected alg value")
 	}
 	rawKid, ok := token.Header[oidc.JWTHeaderKeyID]
 	if !ok {
-		return nil, fmt.Errorf("No kid header")
+		return nil, fmt.Errorf("no kid header")
 	}
 	kid, ok := rawKid.(string)
 	if !ok {
-		return nil, fmt.Errorf("Invalid kid value")
+		return nil, fmt.Errorf("invalid kid value")
 	}
 
 	if key, ok := d.validationKeys[kid]; ok {
 		return key, nil
 	}
 
-	return nil, errors.New("No key available")
+	return nil, errors.New("no key available")
 }
