@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -32,6 +33,8 @@ import (
 type Registry struct {
 	mutex sync.RWMutex
 
+	baseURI *url.URL
+
 	defaultID   string
 	authorities map[string]AuthorityRegistration
 
@@ -39,7 +42,7 @@ type Registry struct {
 }
 
 // NewRegistry creates a new authorizations Registry with the provided parameters.
-func NewRegistry(ctx context.Context, registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
+func NewRegistry(ctx context.Context, baseURI *url.URL, registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
 	registryData := &authorityRegistryData{}
 
 	if registrationConfFilepath != "" {
@@ -56,6 +59,8 @@ func NewRegistry(ctx context.Context, registrationConfFilepath string, logger lo
 	}
 
 	r := &Registry{
+		baseURI: baseURI,
+
 		authorities: make(map[string]AuthorityRegistration),
 
 		logger: logger,
@@ -74,7 +79,9 @@ func NewRegistry(ctx context.Context, registrationConfFilepath string, logger lo
 
 		switch registrationData.AuthorityType {
 		case AuthorityTypeOIDC:
-			authority, validateErr = newOIDCAuthorityRegistration(registrationData)
+			authority, validateErr = newOIDCAuthorityRegistration(r, registrationData)
+		case AuthorityTypeSAML2:
+			authority, validateErr = newSAML2AuthorityRegistration(r, registrationData)
 		}
 
 		fields := logrus.Fields{
@@ -113,7 +120,7 @@ func NewRegistry(ctx context.Context, registrationConfFilepath string, logger lo
 		}
 
 		go func() {
-			if initializeErr := authority.Initialize(ctx, logger); initializeErr != nil {
+			if initializeErr := authority.Initialize(ctx, r); initializeErr != nil {
 				logger.WithError(initializeErr).WithFields(fields).Warnln("failed to initialize authority")
 			}
 		}()
@@ -147,6 +154,8 @@ func (r *Registry) Register(authority AuthorityRegistration) error {
 
 	switch authority.AuthorityType() {
 	case AuthorityTypeOIDC:
+		// breaks
+	case AuthorityTypeSAML2:
 		// breaks
 	default:
 		return fmt.Errorf("unknown authority type: %v", authority.AuthorityType())

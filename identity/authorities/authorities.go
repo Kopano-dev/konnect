@@ -21,13 +21,14 @@ import (
 	"crypto"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/dgrijalva/jwt-go"
 	"stash.kopano.io/kgol/oidc-go"
 )
 
-// Details hold detail information about authorities identified by ID.
+// Details hold immutable information about external authorities identified by ID.
 type Details struct {
 	ID            string
 	Name          string
@@ -46,8 +47,6 @@ type Details struct {
 
 	ready bool
 
-	AuthorizationEndpoint *url.URL
-
 	validationKeys map[string]crypto.PublicKey
 }
 
@@ -60,6 +59,21 @@ func (d *Details) IsReady() bool {
 // IdentityClaimValue returns the identity claim value from the provided data.
 func (d *Details) IdentityClaimValue(claims interface{}) (string, error) {
 	return d.registration.IdentityClaimValue(claims)
+}
+
+// MakeRedirectAuthenticationRequestURL returns the authentication request
+// URL which can be used to initiate authentication with the associated
+// authority. It takes a state as parameter and in addition to the URL it also
+// returns a matting of extra state data and potentially an error.
+func (d *Details) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
+	return d.registration.MakeRedirectAuthenticationRequestURL(state)
+}
+
+// ParseStateResponse takes an incoming request, a state and optional extra data
+// and returns the parsed authority specific response data for that request or
+// error.
+func (d *Details) ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error) {
+	return d.registration.ParseStateResponse(req, state, extra)
 }
 
 // JWTKeyfunc returns a key func to validate JWTs with the keys of the associated

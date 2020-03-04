@@ -59,7 +59,7 @@ func newManagers(ctx context.Context, bs *bootstrap) (*managers.Managers, error)
 	mgrs.Set("clients", clients)
 
 	// Identifier authorities registry manager.
-	authorities, err := identityAuthorities.NewRegistry(ctx, bs.identifierAuthoritiesConf, logger)
+	authorities, err := identityAuthorities.NewRegistry(ctx, bs.makeURI(apiTypeSignin, ""), bs.identifierAuthoritiesConf, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authorities registry: %v", err)
 	}

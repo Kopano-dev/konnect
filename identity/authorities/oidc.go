@@ -26,10 +26,13 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/square/go-jose.v2"
 	"stash.kopano.io/kgol/oidc-go"
 
+	konnectoidc "stash.kopano.io/kc/konnect/oidc"
+	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -42,7 +45,8 @@ var (
 )
 
 type oidcAuthorityRegistration struct {
-	data *authorityRegistrationData
+	registry *Registry
+	data     *authorityRegistrationData
 
 	discover              bool
 	metadataEndpoint      *url.URL
@@ -54,9 +58,10 @@ type oidcAuthorityRegistration struct {
 	ready bool
 }
 
-func newOIDCAuthorityRegistration(registrationData *authorityRegistrationData) (*oidcAuthorityRegistration, error) {
+func newOIDCAuthorityRegistration(registry *Registry, registrationData *authorityRegistrationData) (*oidcAuthorityRegistration, error) {
 	ar := &oidcAuthorityRegistration{
-		data: registrationData,
+		registry: registry,
+		data:     registrationData,
 	}
 
 	if ar.data.RawMetadataEndpoint != "" {
@@ -145,7 +150,6 @@ func (ar *oidcAuthorityRegistration) Authority() *Details {
 	ar.mutex.RLock()
 	details.ready = ar.ready
 	if ar.ready {
-		details.AuthorizationEndpoint = ar.authorizationEndpoint
 		details.validationKeys = ar.validationKeys
 	}
 	ar.mutex.RUnlock()
@@ -203,7 +207,7 @@ func (ar *oidcAuthorityRegistration) Validate() error {
 	return nil
 }
 
-func (ar *oidcAuthorityRegistration) Initialize(ctx context.Context, logger logrus.FieldLogger) error {
+func (ar *oidcAuthorityRegistration) Initialize(ctx context.Context, registry *Registry) error {
 	ar.mutex.Lock()
 	defer ar.mutex.Unlock()
 
@@ -214,11 +218,11 @@ func (ar *oidcAuthorityRegistration) Initialize(ctx context.Context, logger logr
 		return fmt.Errorf("no metadata_endpoint set")
 	}
 
-	return initializeOIDC(ctx, logger, ar)
+	return initializeOIDC(ctx, registry.logger, ar)
 }
 
 func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (string, error) {
-	claims, _ := rawClaims.(map[string]interface{})
+	claims, _ := rawClaims.(jwt.MapClaims)
 	if claims == nil {
 		return "", errors.New("invalid claims data")
 	}
@@ -252,6 +256,37 @@ func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (
 	}
 
 	return cvs, nil
+}
+
+func (ar *oidcAuthorityRegistration) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
+	ar.mutex.RLock()
+	defer ar.mutex.RUnlock()
+
+	if !ar.ready {
+		return nil, nil, errors.New("not ready")
+	}
+
+	uri, _ := url.Parse(ar.authorizationEndpoint.String())
+	query := make(url.Values)
+	query.Add("state", state)
+	uri.RawQuery = query.Encode()
+
+	return uri, nil, nil
+}
+
+func (ar *oidcAuthorityRegistration) ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error) {
+	if authenticationErrorID := req.Form.Get("error"); authenticationErrorID != "" {
+		// Incoming error case.
+		return nil, konnectoidc.NewOAuth2Error(authenticationErrorID, req.Form.Get("error_description"))
+	}
+
+	// Success case.
+	authenticationSuccess := &payload.AuthenticationSuccess{}
+	err := utils.DecodeURLSchema(authenticationSuccess, req.Form)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse oidc state response: %w", err)
+	}
+	return authenticationSuccess, nil
 }
 
 type oidcProviderLogger struct {

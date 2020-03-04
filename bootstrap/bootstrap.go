@@ -394,15 +394,29 @@ func (bs *bootstrap) setup(ctx context.Context, cfg *Config) error {
 
 func (bs *bootstrap) makeURIPath(api string, subpath string) string {
 	subpath = strings.TrimPrefix(subpath, "/")
+	uriPath := ""
 
 	switch api {
 	case apiTypeKonnect:
-		return fmt.Sprintf("%s/konnect/v1/%s", strings.TrimSuffix(bs.uriBasePath, "/"), subpath)
+		uriPath = fmt.Sprintf("%s/konnect/v1/%s", strings.TrimSuffix(bs.uriBasePath, "/"), subpath)
 	case apiTypeSignin:
-		return fmt.Sprintf("%s/signin/v1/%s", strings.TrimSuffix(bs.uriBasePath, "/"), subpath)
+		uriPath = fmt.Sprintf("%s/signin/v1/%s", strings.TrimSuffix(bs.uriBasePath, "/"), subpath)
 	default:
 		panic("unknown api type")
 	}
+
+	if subpath == "" {
+		uriPath = strings.TrimSuffix(uriPath, "/")
+	}
+	return uriPath
+}
+
+func (bs *bootstrap) makeURI(api string, subpath string) *url.URL {
+	uriPath := bs.makeURIPath(api, subpath)
+	uri, _ := url.Parse(bs.issuerIdentifierURI.String())
+	uri.Path = uriPath
+
+	return uri
 }
 
 func (bs *bootstrap) setupIdentity(ctx context.Context, cfg *Config) (identity.Manager, error) {

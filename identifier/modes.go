@@ -26,3 +26,10 @@ const (
 	// and a password.
 	ModeLogonUsernamePassword = "1"
 )
+
+const (
+	// MustBeSignedIn is a authorize mode which tells the authorization code,
+	// that it is expected to have a signed in user and everything else should
+	// be treated as error.
+	MustBeSignedIn = "must"
+)

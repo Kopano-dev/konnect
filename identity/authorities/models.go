@@ -19,14 +19,16 @@ package authorities
 
 import (
 	"context"
+	"net/http"
+	"net/url"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/square/go-jose.v2"
 )
 
 // Supported Authority kind string values.
 const (
-	AuthorityTypeOIDC = "oidc"
+	AuthorityTypeOIDC  = "oidc"
+	AuthorityTypeSAML2 = "saml2"
 )
 
 type authorityRegistrationData struct {
@@ -38,6 +40,8 @@ type authorityRegistrationData struct {
 
 	ClientID     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"`
+
+	EntityID string `yaml:"entity_id"`
 
 	Insecure bool  `yaml:"insecure"`
 	Default  bool  `yaml:"default"`
@@ -72,6 +76,9 @@ type AuthorityRegistration interface {
 
 	Validate() error
 
-	Initialize(ctx context.Context, logger logrus.FieldLogger) error
+	Initialize(ctx context.Context, registry *Registry) error
+
+	MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error)
+	ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error)
 	IdentityClaimValue(data interface{}) (string, error)
 }

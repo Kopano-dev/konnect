@@ -167,6 +167,7 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/identifier/_/consent", i.secureHandler(http.HandlerFunc(i.handleConsent))).Methods(http.MethodPost)
 	r.Handle("/identifier/oauth2/start", http.HandlerFunc(i.handleOAuth2Start)).Methods(http.MethodGet)
 	r.Handle("/identifier/oauth2/cb", http.HandlerFunc(i.handleOAuth2Cb)).Methods(http.MethodGet)
+	r.Handle("/identifier/saml2/acs", http.HandlerFunc(i.handleSAML2AssertionConsumerService)).Methods(http.MethodPost)
 
 	if i.backend != nil {
 		i.backend.RunWithContext(ctx)
@@ -179,7 +180,7 @@ func (i *Identifier) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	addNoCacheResponseHeaders(rw.Header())
 
 	// Show default.
-	i.newIdentifierDefault(rw, req)
+	i.writeWebappIndexHTML(rw, req)
 }
 
 // SetKey sets the provided key for the accociated identifier.
@@ -451,9 +452,8 @@ func (i *Identifier) SetConsentToConsentCookie(ctx context.Context, rw http.Resp
 }
 
 // GetConsentFromConsentCookie extract consent information for the provided
-// request.
-func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request) (*Consent, error) {
-	state := req.Form.Get("konnect")
+// request and the provide state.
+func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request, state string) (*Consent, error) {
 	if state == "" {
 		return nil, nil
 	}
@@ -490,26 +490,25 @@ func (i *Identifier) GetConsentFromConsentCookie(ctx context.Context, rw http.Re
 	return &consent, nil
 }
 
-// SetStateToOAuth2StateCookie serializses the provided StateRequest and sets it
+// SetStateToStateCookie serializses the provided StateRequest and sets it
 // as cookie on the provided ReponseWriter.
-func (i *Identifier) SetStateToOAuth2StateCookie(ctx context.Context, rw http.ResponseWriter, sd *StateData) error {
+func (i *Identifier) SetStateToStateCookie(ctx context.Context, rw http.ResponseWriter, scope string, sd *StateData) error {
 	serialized, err := jwt.Encrypted(i.encrypter).Claims(sd).CompactSerialize()
 	if err != nil {
 		return err
 	}
 
-	return i.setOAuth2Cookie(rw, sd.State, serialized)
+	return i.setStateCookie(rw, scope, sd.State, serialized)
 }
 
-// GetStateFromOAuth2StateCookie extracts state information for the provided
-// request.
-func (i *Identifier) GetStateFromOAuth2StateCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request) (*StateData, error) {
-	state := req.Form.Get("state")
+// GetStateFromStateCookie extracts state information for the provided
+// request using the provided scope and state.
+func (i *Identifier) GetStateFromStateCookie(ctx context.Context, rw http.ResponseWriter, req *http.Request, scope string, state string) (*StateData, error) {
 	if state == "" {
 		return nil, nil
 	}
 
-	cookie, err := i.getOAuth2Cookie(req, state)
+	cookie, err := i.getStateCookie(req, state)
 	if err != nil {
 		if err == http.ErrNoCookie {
 			return nil, nil
@@ -518,7 +517,7 @@ func (i *Identifier) GetStateFromOAuth2StateCookie(ctx context.Context, rw http.
 	}
 
 	// Directly remove the cookie again after we used it.
-	i.removeOAuth2Cookie(rw, req, state)
+	i.removeStateCookie(rw, req, scope, state)
 
 	token, err := jwt.ParseEncrypted(cookie.Value)
 	if err != nil {

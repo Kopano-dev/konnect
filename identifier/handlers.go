@@ -18,26 +18,17 @@
 package identifier
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-	"stash.kopano.io/kgol/rndm"
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"stash.kopano.io/kgol/oidc-go"
 
-	"stash.kopano.io/kc/konnect/identifier/meta"
-	"stash.kopano.io/kc/konnect/identifier/meta/scopes"
 	"stash.kopano.io/kc/konnect/identity/authorities"
-
-	konnectoidc "stash.kopano.io/kc/konnect/oidc"
-	"stash.kopano.io/kc/konnect/oidc/payload"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -150,27 +141,20 @@ func (i *Identifier) handleIdentifier(rw http.ResponseWriter, req *http.Request)
 		//  Check if there is a default authority, if so use that.
 		authority := i.authorities.Default(req.Context())
 		if authority != nil {
-			// TODO(longsleep): Check authority type, base next call on it.
-			i.newOAuth2Start(rw, req, authority)
+			switch authority.AuthorityType {
+			case authorities.AuthorityTypeOIDC:
+				i.writeOAuth2Start(rw, req, authority)
+			case authorities.AuthorityTypeSAML2:
+				i.writeSAML2Start(rw, req, authority)
+			default:
+				i.ErrorPage(rw, http.StatusNotImplemented, "", "unknown authority type")
+			}
 			return
 		}
 	}
 
 	// Show default.
-	i.newIdentifierDefault(rw, req)
-}
-
-func (i *Identifier) newIdentifierDefault(rw http.ResponseWriter, req *http.Request) {
-	nonce := rndm.GenerateRandomString(32)
-
-	// FIXME(longsleep): Set a secure CSP. Right now we need `data:` for images
-	// since it is used. Since `data:` URLs possibly could allow xss, a better
-	// way should be found for our early loading inline SVG stuff.
-	rw.Header().Set("Content-Security-Policy", fmt.Sprintf("default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'nonce-%s'; base-uri 'none'; frame-ancestors 'none';", nonce))
-
-	// Write index with random nonce to response.
-	index := bytes.Replace(i.webappIndexHTML, []byte("__CSP_NONCE__"), []byte(nonce), 1)
-	rw.Write(index)
+	i.writeWebappIndexHTML(rw, req)
 }
 
 func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
@@ -303,7 +287,7 @@ func (i *Identifier) handleLogon(rw http.ResponseWriter, req *http.Request) {
 	user.logonAt = time.Now()
 
 	if r.Hello != nil {
-		hello, errHello := i.newHelloResponse(rw, req, r.Hello, user)
+		hello, errHello := i.writeHelloResponse(rw, req, r.Hello, user)
 		if errHello != nil {
 			i.logger.WithError(errHello).Debugln("rejecting identifier logon request")
 			i.ErrorPage(rw, http.StatusBadRequest, "", errHello.Error())
@@ -429,7 +413,7 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 
 	addNoCacheResponseHeaders(rw.Header())
 
-	response, err := i.newHelloResponse(rw, req, &r, nil)
+	response, err := i.writeHelloResponse(rw, req, &r, nil)
 	if err != nil {
 		i.logger.WithError(err).Debugln("rejecting identifier hello request")
 		i.ErrorPage(rw, http.StatusBadRequest, "", err.Error())
@@ -447,115 +431,10 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (i Identifier) newHelloResponse(rw http.ResponseWriter, req *http.Request, r *HelloRequest, identifiedUser *IdentifiedUser) (*HelloResponse, error) {
-	var err error
-	response := &HelloResponse{
-		State: r.State,
-	}
-
-handleHelloLoop:
-	for {
-		// Check prompt value.
-		switch {
-		case r.Prompts[oidc.PromptNone] == true:
-			// Never show sign-in, directly return error.
-			return nil, fmt.Errorf("prompt none requested")
-		case r.Prompts[oidc.PromptLogin] == true:
-			// Ignore all potential sources, when prompt login was requested.
-			if identifiedUser != nil {
-				response.Username = identifiedUser.Username()
-				response.DisplayName = identifiedUser.Name()
-				if response.Username != "" {
-					response.Success = true
-				}
-			}
-			break handleHelloLoop
-		default:
-			// Let all other prompt values pass.
-		}
-
-		if identifiedUser == nil {
-			// Check if logged in via cookie.
-			identifiedUser, err = i.GetUserFromLogonCookie(req.Context(), req, r.MaxAge, true)
-			if err != nil {
-				i.logger.WithError(err).Debugln("identifier failed to decode logon cookie in hello")
-			}
-		}
-
-		if identifiedUser != nil {
-			response.Username = identifiedUser.Username()
-			response.DisplayName = identifiedUser.Name()
-			if response.Username != "" {
-				response.Success = true
-				break
-			}
-		}
-
-		// Check frontend proxy injected auth (Eg. Kerberos/NTLM).
-		// TODO(longsleep): Add request validation before accepting incoming header.
-		forwardedUser := req.Header.Get("X-Forwarded-User")
-		if forwardedUser != "" {
-			response.Username = forwardedUser
-			response.Success = true
-			break
-		}
-
-		break
-	}
-
-	if !response.Success {
-		return response, nil
-	}
-
-	switch r.Flow {
-	case FlowOAuth:
-		fallthrough
-	case FlowConsent:
-		fallthrough
-	case FlowOIDC:
-		// TODO(longsleep): Add something to validate the parameters.
-		clientDetails, err := i.clients.Lookup(req.Context(), r.ClientID, "", r.RedirectURI, "", true)
-		if err != nil {
-			return nil, err
-		}
-
-		promptConsent := false
-
-		// Check prompt value.
-		switch {
-		case r.Prompts[oidc.PromptConsent] == true:
-			promptConsent = true
-		default:
-			// Let all other prompt values pass.
-		}
-
-		// If not trusted, always force consent.
-		if !clientDetails.Trusted {
-			promptConsent = true
-		}
-
-		if promptConsent {
-			// TODO(longsleep): Filter scopes to scopes we know about and all.
-			response.Next = FlowConsent
-			response.Scopes = r.Scopes
-			response.ClientDetails = clientDetails
-			response.Meta = &meta.Meta{
-				Scopes: scopes.NewScopesFromIDs(r.Scopes, i.meta.Scopes),
-			}
-		}
-
-		// Add authorize endpoint URI as continue URI.
-		response.ContinueURI = i.authorizationEndpointURI.String()
-		response.Flow = r.Flow
-	}
-
-	return response, nil
-}
-
 func (i *Identifier) handleOAuth2Start(rw http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
-		i.logger.WithError(err).Debugln("identifier failed to decode oauth 2 start request")
+		i.logger.WithError(err).Debugln("identifier failed to decode oauth2 start request")
 		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request parameters")
 		return
 	}
@@ -565,255 +444,27 @@ func (i *Identifier) handleOAuth2Start(rw http.ResponseWriter, req *http.Request
 		authority, _ = i.authorities.Lookup(req.Context(), authorityID)
 	}
 
-	i.newOAuth2Start(rw, req, authority)
-}
-
-func (i *Identifier) newOAuth2Start(rw http.ResponseWriter, req *http.Request, authority *authorities.Details) {
-	var err error
-
-	if authority == nil {
-		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2TemporarilyUnavailable, "no authority")
-	} else if !authority.IsReady() {
-		err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2TemporarilyUnavailable, "authority not ready")
-	}
-
-	switch typedErr := err.(type) {
-	case nil:
-		// breaks
-	case *konnectoidc.OAuth2Error:
-		// Redirect back, with error.
-		i.logger.WithFields(utils.ErrorAsFields(err)).Debugln("oauth2 start error")
-		// NOTE(longsleep): Pass along error ID but not the description to avoid
-		// leaking potentially internal information to our RP.
-		uri, _ := url.Parse(i.authorizationEndpointURI.String())
-		query, _ := url.ParseQuery(req.URL.RawQuery)
-		query.Del("flow")
-		query.Set("error", typedErr.ErrorID)
-		query.Set("error_description", "identifier failed to authenticate")
-		uri.RawQuery = query.Encode()
-		utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
-		return
-	default:
-		i.logger.WithError(err).Errorln("identifier failed to process oauth2 start")
-		i.ErrorPage(rw, http.StatusInternalServerError, "", "oauth2 start failed")
-		return
-	}
-
-	clientID := authority.ClientID
-	scopes := authority.Scopes
-	responseType := authority.ResponseType
-	codeVerifier := rndm.GenerateRandomString(32)
-	codeChallengeMethod := authority.CodeChallengeMethod
-
-	sd := &StateData{
-		State:    rndm.GenerateRandomString(32),
-		RawQuery: req.URL.RawQuery,
-
-		ClientID: clientID,
-		Ref:      authority.ID,
-	}
-
-	// Construct URL to redirect client to external OAuth2 authorize endpoints.
-	uri, _ := url.Parse(authority.AuthorizationEndpoint.String())
-	query := make(url.Values)
-	query.Add("client_id", clientID)
-	if responseType != "" {
-		query.Add("response_type", responseType)
-	}
-	query.Add("response_mode", oidc.ResponseModeQuery)
-	query.Add("scope", strings.Join(scopes, " "))
-	query.Add("redirect_uri", i.oauth2CbEndpointURI.String())
-	query.Add("nonce", rndm.GenerateRandomString(32))
-	if codeChallengeMethod != "" {
-		if codeChallenge, err := oidc.MakeCodeChallenge(codeChallengeMethod, codeVerifier); err == nil {
-			query.Add("code_challenge", codeChallenge)
-			query.Add("code_challenge_method", codeChallengeMethod)
-		} else {
-			i.logger.WithError(err).Debugln("identifier failed to create oauth 2 code challenge")
-			i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to create code challenge")
-			return
-		}
-	}
-	query.Add("state", sd.State)
-	if display := req.Form.Get("display"); display != "" {
-		query.Add("display", display)
-	}
-	if prompt := req.Form.Get("prompt"); prompt != "" {
-		query.Add("prompt", prompt)
-	}
-	if maxAge := req.Form.Get("max_age"); maxAge != "" {
-		query.Add("max_age", maxAge)
-	}
-	if uiLocales := req.Form.Get("ui_locales"); uiLocales != "" {
-		query.Add("ui_locales", uiLocales)
-	}
-	if acrValues := req.Form.Get("acr_values"); acrValues != "" {
-		query.Add("acr_values", acrValues)
-	}
-	if claimsLocales := req.Form.Get("claims_locales"); claimsLocales != "" {
-		query.Add("claims_locales", claimsLocales)
-	}
-
-	// Set cookie which is consumed by the callback later.
-	err = i.SetStateToOAuth2StateCookie(req.Context(), rw, sd)
-	if err != nil {
-		i.logger.WithError(err).Debugln("identifier failed to set oauth 2 state cookie")
-		i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to set cookie")
-		return
-	}
-
-	uri.RawQuery = query.Encode()
-	utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
+	i.writeOAuth2Start(rw, req, authority)
 }
 
 func (i *Identifier) handleOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
-		i.logger.WithError(err).Debugln("identifier failed to decode oauth 2 cb request")
+		i.logger.WithError(err).Debugln("identifier failed to decode oauth2 cb request")
 		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request parameters")
 		return
 	}
 
-	i.newOAuth2Cb(rw, req)
+	i.writeOAuth2Cb(rw, req)
 }
 
-func (i *Identifier) newOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
-	// Callbacks from authorization. Validate as specified at
-	// https://tools.ietf.org/html/rfc6749#section-4.1.2 and https://tools.ietf.org/html/rfc6749#section-10.12.
-	var err error
-	var sd *StateData
-	var user *IdentifiedUser
-	var claims jwt.MapClaims
-	var authority *authorities.Details
-
-	for {
-		sd, err = i.GetStateFromOAuth2StateCookie(req.Context(), rw, req)
-		if err != nil {
-			err = fmt.Errorf("failed to decode oauth2 cb state: %v", err)
-			break
-		}
-		if sd == nil {
-			err = errors.New("state not found")
-			break
-		}
-
-		// Load authority with client_id in state.
-		authority, _ = i.authorities.Lookup(req.Context(), sd.Ref)
-		if authority == nil {
-			i.logger.WithField("client_id", sd.ClientID).Debugln("identifier failed to find authority in oauth2 cb")
-			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "unknown client_id")
-			break
-		}
-
-		if authenticationErrorID := req.Form.Get("error"); authenticationErrorID != "" {
-			// Incoming error case.
-			err = konnectoidc.NewOAuth2Error(authenticationErrorID, req.Form.Get("error_description"))
-			break
-		}
-
-		// Success case.
-		authenticationSuccess := &payload.AuthenticationSuccess{}
-		err = DecodeURLSchema(authenticationSuccess, req.Form)
-		if err != nil {
-			err = fmt.Errorf("failed to parse oauth2 cb request: %v", err)
-			break
-		}
-
-		var username *string
-		if authority.AuthorityType == authorities.AuthorityTypeOIDC {
-			// Parse and validate IDToken.
-			idToken, idTokenParseErr := jwt.ParseWithClaims(authenticationSuccess.IDToken, jwt.MapClaims{}, authority.JWTKeyfunc())
-			if idTokenParseErr != nil {
-				if authority.Insecure {
-					i.logger.WithField("client_id", sd.ClientID).WithError(idTokenParseErr).Warnln("identifier ignoring validation error for insecure authority")
-				} else {
-					i.logger.WithError(idTokenParseErr).Debugln("identifier failed to validate oauth2 cb id token")
-					err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2ServerError, "authority response validation failed")
-					break
-				}
-			}
-			claims, _ = idToken.Claims.(jwt.MapClaims)
-			if claims == nil {
-				err = errors.New("invalid id token claims")
-				break
-			}
-
-			// Lookup username and user.
-			un, claimsErr := authority.IdentityClaimValue(claims)
-			if claimsErr != nil {
-				i.logger.WithError(claimsErr).Debugln("identifier failed to get username from oauth2 cb id token claims")
-				err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InsufficientScope, "identity claim not found")
-				break
-			}
-
-			username = &un
-		} else {
-			err = errors.New("unknown authority type")
-			break
-		}
-
-		user, err = i.resolveUser(req.Context(), *username)
-		if err != nil {
-			i.logger.WithError(err).WithField("username", *username).Debugln("identifier failed to resolve oauth2 cb user with backend")
-			// TODO(longsleep): Break on validation error.
-			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, "failed to resolve user")
-			break
-		}
-		if user == nil || user.Subject() == "" {
-			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, "no such user")
-			break
-		}
-
-		// Get user meta data.
-		// TODO(longsleep): This is an additional request to the backend. This
-		// should be avoided. Best would be if the backend would return everything
-		// in one shot (TODO in core).
-		err = i.updateUser(req.Context(), user)
-		if err != nil {
-			i.logger.WithError(err).Debugln("identifier failed to update user data in oauth2 cb request")
-		}
-
-		// Set logon time.
-		user.logonAt = time.Now()
-
-		err = i.SetUserToLogonCookie(req.Context(), rw, user)
-		if err != nil {
-			i.logger.WithError(err).Errorln("identifier failed to serialize logon ticket in oauth2 cb")
-			i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to serialize logon ticket")
-			return
-		}
-
-		break
-	}
-
-	if sd == nil {
-		i.logger.WithError(err).Debugln("identifier oauth2 cb without state")
-		i.ErrorPage(rw, http.StatusBadRequest, "", "state not found")
+func (i *Identifier) handleSAML2AssertionConsumerService(rw http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to decode saml2 acs request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request parameters")
 		return
 	}
 
-	uri, _ := url.Parse(i.authorizationEndpointURI.String())
-	query, _ := url.ParseQuery(sd.RawQuery)
-	query.Del("flow")
-	query.Set("prompt", oidc.PromptNone)
-
-	switch typedErr := err.(type) {
-	case nil:
-		// breaks
-	case *konnectoidc.OAuth2Error:
-		// Pass along OAuth2 error.
-		i.logger.WithFields(utils.ErrorAsFields(err)).Debugln("oauth2 cb error")
-		// NOTE(longsleep): Pass along error ID but not the description to avoid
-		// leaking potetially internal information to our RP.
-		query.Set("error", typedErr.ErrorID)
-		query.Set("error_description", "identifier failed to authenticate")
-		//breaks
-	default:
-		i.logger.WithError(err).Errorln("identifier failed to process oauth2 cb")
-		i.ErrorPage(rw, http.StatusInternalServerError, "", "oauth2 cb failed")
-		return
-	}
-
-	uri.RawQuery = query.Encode()
-	utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
+	i.writeSAML2AssertionConsumerService(rw, req)
 }

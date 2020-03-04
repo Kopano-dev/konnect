@@ -3,6 +3,7 @@ module stash.kopano.io/kc/konnect
 go 1.13
 
 require (
+	github.com/crewjam/saml v0.4.0
 	github.com/deckarep/golang-set v1.7.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.0
@@ -34,3 +35,5 @@ require (
 	stash.kopano.io/kgol/oidc-go v0.3.1
 	stash.kopano.io/kgol/rndm v1.1.0
 )
+
+replace github.com/crewjam/httperr => github.com/crewjam/httperr v0.2.0

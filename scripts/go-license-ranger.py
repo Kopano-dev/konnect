@@ -30,7 +30,7 @@ from os.path import abspath, isdir, join
 import subprocess
 import sys
 
-version = "20190906-1"
+version = "20200305-1"
 
 # Default configuration. Override possible with `.license-ranger.json` or with
 # a custom name if environment variable is set to a different value.
@@ -143,7 +143,7 @@ def getLicenseTable(base, relativeFolderPaths, licenseFileNames):
         licenses = findLicenseFile(base, table, abspath(folderPath),
                                    licenseFileNames)
 
-        if len(licenses) == 0 and folder in config.get("manual"):
+        if len(licenses) == 0 and folder in config.get("manual", ()):
             if config["debug"]:
                 print("> Using manual license definition: %s" % folderPath,
                       file=sys.stderr)

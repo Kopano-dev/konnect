@@ -126,6 +126,8 @@ type StateData struct {
 
 	ClientID string `json:"client_id"`
 	Ref      string `json:"ref,omitempty"`
+
+	Extra map[string]interface{} `json:"extra,omitempty"`
 }
 
 // A ConsentRequest is the request data as sent to the consent endpoint.

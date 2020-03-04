@@ -131,8 +131,8 @@ func (i *Identifier) getConsentCookieName(cr *ConsentRequest) (string, error) {
 	return name, nil
 }
 
-func (i *Identifier) setOAuth2Cookie(rw http.ResponseWriter, state string, value string) error {
-	name, err := i.getOAuth2CookieName(state)
+func (i *Identifier) setStateCookie(rw http.ResponseWriter, scope string, state string, value string) error {
+	name, err := i.getStateCookieName(state)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (i *Identifier) setOAuth2Cookie(rw http.ResponseWriter, state string, value
 		Value:  value,
 		MaxAge: 60,
 
-		Path:     i.pathPrefix + "/identifier/oauth2/cb",
+		Path:     i.pathPrefix + "/identifier/" + scope,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
@@ -152,8 +152,8 @@ func (i *Identifier) setOAuth2Cookie(rw http.ResponseWriter, state string, value
 	return nil
 }
 
-func (i *Identifier) getOAuth2Cookie(req *http.Request, state string) (*http.Cookie, error) {
-	name, err := i.getOAuth2CookieName(state)
+func (i *Identifier) getStateCookie(req *http.Request, state string) (*http.Cookie, error) {
+	name, err := i.getStateCookieName(state)
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +161,8 @@ func (i *Identifier) getOAuth2Cookie(req *http.Request, state string) (*http.Coo
 	return req.Cookie(name)
 }
 
-func (i *Identifier) removeOAuth2Cookie(rw http.ResponseWriter, req *http.Request, state string) error {
-	name, err := i.getOAuth2CookieName(state)
+func (i *Identifier) removeStateCookie(rw http.ResponseWriter, req *http.Request, scope string, state string) error {
+	name, err := i.getStateCookieName(state)
 	if err != nil {
 		return nil
 	}
@@ -170,7 +170,7 @@ func (i *Identifier) removeOAuth2Cookie(rw http.ResponseWriter, req *http.Reques
 	cookie := http.Cookie{
 		Name: name,
 
-		Path:     i.pathPrefix + "/identifier/oauth2/cb",
+		Path:     i.pathPrefix + "/identifier/ " + scope,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
@@ -182,6 +182,6 @@ func (i *Identifier) removeOAuth2Cookie(rw http.ResponseWriter, req *http.Reques
 	return nil
 }
 
-func (i *Identifier) getOAuth2CookieName(state string) (string, error) {
+func (i *Identifier) getStateCookieName(state string) (string, error) {
 	return "__my_state_cookie__", nil
 }

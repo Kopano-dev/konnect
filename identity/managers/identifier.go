@@ -117,13 +117,17 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 		user = asIdentifierUser(u)
 	} else {
 		// Not signed in.
-		if next != nil {
+		if mode := req.Form.Get("identifier"); mode == identifier.MustBeSignedIn {
+			// Identifier mode is set to must, this means that this flow must be authenticated here, and everything
+			// else is an error. This is for example set, when coming back from an external authority.
+			im.logger.WithField("mode", mode).Debugln("identifier mode is set, but not signed in")
+		} else if next != nil {
 			// Give next handler a chance if any.
-			if auth, err := next.Authenticate(ctx, rw, req, ar, nil); err == nil {
+			if auth, authErr := next.Authenticate(ctx, rw, req, ar, nil); authErr == nil {
 				// Inner handler success.
 				// TODO(longsleep): Add check and option to avoid that the inner
 				// handler can ever return users which exist at the outer.
-				return auth, err
+				return auth, authErr
 			} else {
 				switch err.(type) {
 				case *payload.AuthenticationError:
@@ -234,7 +238,7 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 	}
 
 	// Check given consent.
-	consent, err := im.identifier.GetConsentFromConsentCookie(req.Context(), rw, req)
+	consent, err := im.identifier.GetConsentFromConsentCookie(req.Context(), rw, req, req.Form.Get("konnect"))
 	if err != nil {
 		return nil, err
 	}
