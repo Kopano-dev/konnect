@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Ensure identifier client index.html is actually loaded
 - Build with Go 1.14
 - Merge branch 'IljaN-make-identifier-webapp-optional'
 - Add disable-identifier-webapp option
