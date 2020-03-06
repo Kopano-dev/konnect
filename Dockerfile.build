@@ -18,7 +18,7 @@ FROM golang:1.14.0-buster
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-ARG GOLANGCI_LINT_TAG=v1.21.0
+ARG GOLANGCI_LINT_TAG=v1.23.8
 RUN curl -sfL \
 	https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
 	sh -s -- -b /usr/local/bin ${GOLANGCI_LINT_TAG}
