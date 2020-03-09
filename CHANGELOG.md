@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+
+
+## v0.30.0 (2020-03-09)
+
+- Add SAML2 external authority example config
+- Update linter in CI to latest version so it works with Go 1.14
+- Implement SAML2 external authority support
+- Prepare external authority support for different authority types
+- Update and deduplicate external dependencies
 - Ensure identifier client index.html is actually loaded
 - Build with Go 1.14
 - Merge branch 'IljaN-make-identifier-webapp-optional'
