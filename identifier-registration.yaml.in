@@ -57,7 +57,7 @@ clients:
 
 # External authority registry.
 authorities:
-#  - id: my-univention
+#  - id: my-univention-oidc
 #    name: Univention
 #    client_id: kopano-konnect
 #    authority_type: oidc
@@ -76,6 +76,19 @@ authorities:
 #      - openid
 #      - profile
 #    identity_claim_name: preferred_username
+#    identity_aliases:
+#      external-user-a: local-user-a
+#      external-user-b: local-user-b
+#    identity_alias_required: true
+
+#  - id: my-univention-saml2
+#    name: Univention
+#    entity_id: kopano-konnect
+#    authority_type: saml2
+#    default: yes
+#    discover: yes
+#    metadata_endpoint: https://my-univention/simplesamlphp/saml2/idp/metadata.php
+#    identity_claim_name: uid
 #    identity_aliases:
 #      external-user-a: local-user-a
 #      external-user-b: local-user-b
