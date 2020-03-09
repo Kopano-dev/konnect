@@ -169,7 +169,7 @@ vendor: go.sum ; $(info retrieving dependencies ...)
 # Dist
 
 .PHONY: licenses
-licenses: ; $(info building licenses files ...)
+licenses: vendor ; $(info building licenses files ...)
 	$(CURDIR)/scripts/go-license-ranger.py > $(CURDIR)/3rdparty-LICENSES.md
 	make -s -C identifier licenses >> $(CURDIR)/3rdparty-LICENSES.md
 

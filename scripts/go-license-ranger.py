@@ -1,11 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # go-license-ranger. A simple script to generate a 3rd party license file out o
-# a Go dependency tree. Requires [glide](https://glide.sh) or
-# [dep](https://golang.github.io/dep/) to find the dependencies.
+# a Go dependency tree. Requires [Go modules](https://github.com/golang/go/wiki/Modules), 
+# [glide](https://glide.sh) or [dep](https://golang.github.io/dep/) to find the 
+# dependencies.
 #
 #
-# Copyright 2018-2019 Kopano and its licensors
+# Copyright 2018-2020 Kopano and its licensors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,7 +31,7 @@ from os.path import abspath, isdir, join
 import subprocess
 import sys
 
-version = "20200305-1"
+version = "20200309-1"
 
 # Default configuration. Override possible with `.license-ranger.json` or with
 # a custom name if environment variable is set to a different value.
@@ -66,7 +67,9 @@ config = {
 def main():
     loadConfigFromFile()
     if config.get("mode", None) == "mod":
-        dependencyFolders = getDependenciesWithMod(config["go"])
+        dependencyFolders = getDependenciesWithMod()
+    elif config.get("mode", None) == "mod-vendor":
+        dependencyFolders = getDependenciesWithModVendor()
     elif config.get("mode", None) == "dep":
         dependencyFolders = getDependenciesWithDep(config["dep"])
     elif config.get("mode", None) == "glide":
@@ -94,7 +97,18 @@ def loadConfigFromFile(configFilename=defaultConfigFilename):
         pass
 
 
-def getDependenciesWithMod(go="go"):
+def getDependenciesWithModVendor():
+    installed = []
+    with open(os.path.join("vendor", "modules.txt"), "r") as f:
+        for line in f.readlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                name = line.split(" ", 1)[0].strip()
+                if name:
+                    installed.append(name)
+    return installed
+
+def getDependenciesWithMod():
     installed = []
     with open("go.sum", "r") as f:
         for line in f.readlines():
