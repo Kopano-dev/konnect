@@ -429,7 +429,9 @@ func (b *LDAPIdentifierBackend) ResolveUserByUsername(ctx context.Context, usern
 		return nil, fmt.Errorf("ldap identifier backend resolve search returned wrong user")
 	}
 
-	user, err := newLdapUser(entry.DN, b.attributeMapping, entry)
+	newEntryID := b.entryIDFromEntry(b.attributeMapping, entry)
+
+	user, err := newLdapUser(newEntryID, b.attributeMapping, entry)
 	if err != nil {
 		return nil, fmt.Errorf("ldap identifier backend resolve entry data error: %v", err)
 	}
