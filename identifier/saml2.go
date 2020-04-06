@@ -159,7 +159,9 @@ func (i *Identifier) writeSAML2AssertionConsumerService(rw http.ResponseWriter, 
 		// in one shot (TODO in core).
 		err = i.updateUser(req.Context(), user)
 		if err != nil {
-			i.logger.WithError(err).Debugln("identifier failed to update user data in saml2 acs request")
+			i.logger.WithError(err).Debugln("identifier failed to get user data in saml2 acs request")
+			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, "failed to get user data")
+			break
 		}
 
 		// Set logon time.
