@@ -331,59 +331,65 @@ func (im *IdentifierIdentityManager) Authorize(ctx context.Context, rw http.Resp
 
 // EndSession implements the identity.Manager interface.
 func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.ResponseWriter, req *http.Request, esr *payload.EndSessionRequest) error {
-	// FIXME(longsleep): For now we always require the id_token_hint. Instead
-	// of fail we should treat is as unstrusted client.
-	if esr.IDTokenHint == nil {
-		im.logger.Debugln("endsession request without id_token_hint")
-		return esr.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "id_token_hint required")
-	}
+	var err error
+	var esrClaims *konnectoidc.IDTokenClaims
+	var clientDetails *clients.Details
 
 	origin := utils.OriginFromRequestHeaders(req.Header)
-	claims := esr.IDTokenHint.Claims.(*konnectoidc.IDTokenClaims)
-	clientDetails, err := im.clients.Lookup(ctx, claims.Audience, "", esr.PostLogoutRedirectURI, origin, true)
-	if err != nil {
-		// FIXME(longsleep): This error should no be fatal since according to
-		// the spec in https://openid.net/specs/openid-connect-session-1_0.html#RPLogout the
-		// id_token_hint is not enforced to match the audience. Instead of fail
-		// we should treat it as untrusted client.
-		im.logger.WithError(err).Errorln("IdentifierIdentityManager: id_token_hint does not match request")
-		return esr.NewBadRequest(oidc.ErrorCodeOAuth2InvalidRequest, "id_token_hint does not match request")
+
+	if esr.IDTokenHint != nil {
+		// Extended request, verify IDTokenHint and its claims if available.
+		esrClaims = esr.IDTokenHint.Claims.(*konnectoidc.IDTokenClaims)
+		clientDetails, err = im.clients.Lookup(ctx, esrClaims.Audience, "", esr.PostLogoutRedirectURI, origin, true)
+		if err != nil {
+			// This error is not fatal since according to
+			// the spec in https://openid.net/specs/openid-connect-session-1_0.html#RPLogout the
+			// id_token_hint is not enforced to match the audience. Instead of fail
+			// we treat it as untrusted client.
+			im.logger.WithError(err).Debugln("IdentifierIdentityManager: id_token_hint does not match request")
+			esrClaims = nil
+			clientDetails = nil
+		}
 	}
 
 	var user *identifierUser
 	u, _ := im.identifier.GetUserFromLogonCookie(ctx, req, 0, false)
 	if u != nil {
 		user = asIdentifierUser(u)
+		// More checks.
+		if clientDetails != nil && user != nil {
+			sub := user.Subject()
+			err = esr.Verify(sub)
+			if err != nil {
+				return err
+			}
+		}
+		if clientDetails != nil && clientDetails.Trusted {
+			// Directly clear identifier session when a trusted client requests it.
+			err = im.identifier.UnsetLogonCookie(ctx, u, rw)
+			if err != nil {
+				im.logger.WithError(err).Errorln("IdentifierIdentityManager: failed to unset logon cookie")
+				return err
+			}
+		}
 	} else {
 		// Ignore when not signed in, for end session.
 	}
 
-	// More checks.
-	if err == nil {
-		var sub string
-		if user != nil {
-			sub = user.Subject()
-		}
-		err = esr.Verify(sub)
-		if err != nil {
-			return err
-		}
-	}
-
-	if clientDetails.Trusted {
-		// Directly clear identifier session when a trusted client requests it.
-		err = im.identifier.UnsetLogonCookie(ctx, u, rw)
-		if err != nil {
-			im.logger.WithError(err).Errorln("IdentifierIdentityManager: failed to unset logon cookie")
-			return err
-		}
-	}
-
-	if !clientDetails.Trusted || esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
-		// Handle directly.by redirecting to our logout confirm url for untrusted
+	if clientDetails == nil || !clientDetails.Trusted || esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
+		// Handle directly by redirecting to our logout confirm url for untrusted
 		// clients or when no URL was set.
 		u, _ := url.Parse(im.signedOutURI)
-		u.RawQuery = fmt.Sprintf("flow=%s", identifier.FlowOIDC)
+		query := &url.Values{}
+
+		if clientDetails != nil {
+			query.Add("flow", identifier.FlowOIDC)
+		}
+		if esrClaims != nil {
+			query.Add("client_id", esrClaims.Audience)
+		}
+
+		u.RawQuery = query.Encode()
 		return identity.NewRedirectError(oidc.ErrorCodeOIDCInteractionRequired, u)
 	}
 
