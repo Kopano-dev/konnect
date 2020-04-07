@@ -43,6 +43,7 @@ type authorityRegistrationData struct {
 
 	EntityID string `yaml:"entity_id"`
 
+	Trusted  bool  `yaml:"trusted"`
 	Insecure bool  `yaml:"insecure"`
 	Default  bool  `yaml:"default"`
 	Discover *bool `yaml:"discover"`
@@ -81,4 +82,8 @@ type AuthorityRegistration interface {
 	MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error)
 	ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error)
 	IdentityClaimValue(data interface{}) (string, error)
+	MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error)
+
+	Issuer() string
+	Metadata() interface{}
 }

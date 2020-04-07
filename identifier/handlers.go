@@ -19,6 +19,7 @@ package identifier
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -458,6 +459,26 @@ func (i *Identifier) handleOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 	i.writeOAuth2Cb(rw, req)
 }
 
+func (i *Identifier) handleSAML2Metadata(rw http.ResponseWriter, req *http.Request) {
+	authorityDetails := i.authorities.Default(req.Context())
+	if authorityDetails.AuthorityType != authorities.AuthorityTypeSAML2 {
+		i.ErrorPage(rw, http.StatusNotFound, "", "saml not configured")
+		return
+	}
+
+	metadata := authorityDetails.Metadata()
+	if metadata == nil {
+		i.ErrorPage(rw, http.StatusNotFound, "", "saml has no meta data")
+		return
+	}
+
+	buf, _ := xml.MarshalIndent(metadata, "", "  ")
+	rw.Header().Set("Content-Type", "application/samlmetadata+xml")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte(xml.Header))
+	rw.Write(buf)
+}
+
 func (i *Identifier) handleSAML2AssertionConsumerService(rw http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {
@@ -467,4 +488,15 @@ func (i *Identifier) handleSAML2AssertionConsumerService(rw http.ResponseWriter,
 	}
 
 	i.writeSAML2AssertionConsumerService(rw, req)
+}
+
+func (i *Identifier) handleSAML2SingleLogoutService(rw http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to decode saml2 slo request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request parameters")
+		return
+	}
+
+	i.writeSAMLSingleLogoutService(rw, req)
 }

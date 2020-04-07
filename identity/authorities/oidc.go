@@ -138,6 +138,7 @@ func (ar *oidcAuthorityRegistration) Authority() *Details {
 		ClientID:     ar.data.ClientID,
 		ClientSecret: ar.data.ClientSecret,
 
+		Trusted:  ar.data.Trusted,
 		Insecure: ar.data.Insecure,
 
 		Scopes:              ar.data.Scopes,
@@ -258,6 +259,10 @@ func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (
 	return cvs, nil
 }
 
+func (ar *oidcAuthorityRegistration) Issuer() string {
+	return ar.data.Iss
+}
+
 func (ar *oidcAuthorityRegistration) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
 	ar.mutex.RLock()
 	defer ar.mutex.RUnlock()
@@ -287,6 +292,14 @@ func (ar *oidcAuthorityRegistration) ParseStateResponse(req *http.Request, state
 		return nil, fmt.Errorf("failed to parse oidc state response: %w", err)
 	}
 	return authenticationSuccess, nil
+}
+
+func (ar *oidcAuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
+func (ar *oidcAuthorityRegistration) Metadata() interface{} {
+	return nil
 }
 
 type oidcProviderLogger struct {

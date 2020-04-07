@@ -37,6 +37,7 @@ type Details struct {
 	ClientID     string
 	ClientSecret string
 
+	Trusted  bool
 	Insecure bool
 
 	Scopes              []string
@@ -112,4 +113,8 @@ func (d *Details) validateJWT(token *jwt.Token) (interface{}, error) {
 	}
 
 	return nil, errors.New("no key available")
+}
+
+func (d *Details) Metadata() interface{} {
+	return d.registration.Metadata()
 }

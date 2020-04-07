@@ -88,6 +88,7 @@ func NewRegistry(ctx context.Context, baseURI *url.URL, registrationConfFilepath
 			"id":             registrationData.ID,
 			"authority_type": registrationData.AuthorityType,
 			"insecure":       registrationData.Insecure,
+			"trusted":        registrationData.Trusted,
 			"default":        registrationData.Default,
 			"alias_required": registrationData.IdentityAliasRequired,
 		}
@@ -192,6 +193,20 @@ func (r *Registry) Get(ctx context.Context, authorityID string) (AuthorityRegist
 	r.mutex.RUnlock()
 
 	return registration, ok
+}
+
+// Find returns the first registered authority that satisfies the provided
+// selector function.
+func (r *Registry) Find(ctx context.Context, selector func(authority AuthorityRegistration) bool) (AuthorityRegistration, bool) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	for _, authority := range r.authorities {
+		if selector(authority) {
+			return authority, true
+		}
+	}
+
+	return nil, false
 }
 
 // Default returns the default authority from the associated registry if any.

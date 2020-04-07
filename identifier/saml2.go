@@ -32,6 +32,7 @@ import (
 	"stash.kopano.io/kc/konnect/identity/authorities"
 	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 
+	"stash.kopano.io/kc/konnect/identity/authorities/samlext"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -213,5 +214,107 @@ func (i *Identifier) writeSAML2AssertionConsumerService(rw http.ResponseWriter, 
 	}
 
 	uri.RawQuery = query.Encode()
+	utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
+}
+
+func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *http.Request) {
+	lor, err := samlext.NewIdpLogoutRequest(req)
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to process saml2 slo request")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to parse request")
+		return
+	}
+
+	err = lor.Validate()
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier saml2 slo request validation failure")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "slo request validation failure")
+		return
+	}
+
+	// TODO(longsleep): Validate signature if signed.
+
+	// In http://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf §3.4.5.2
+	// we get a description of the Destination attribute:
+	//
+	//   If the message is signed, the Destination XML attribute in the root SAML
+	//   element of the protocol message MUST contain the URL to which the sender
+	//   has instructed the user agent to deliver the message. The recipient MUST
+	//   then verify that the value matches the location at which the message has
+	//   been received.
+	//
+	// We require the destination be correct either (a) if signing is enabled or
+	// (b) if it was provided.
+	mustHaveDestination := lor.SigAlg != nil
+	mustHaveDestination = mustHaveDestination || lor.Request.Destination != ""
+	if mustHaveDestination {
+		uri, _ := i.absoluteURLForRoute("saml2/slo")
+		if lor.Request.Destination != uri.String() {
+			i.logger.WithField("destination", lor.Request.Destination).Debugln("identifier saml2 slo request with wrong desitation")
+			i.ErrorPage(rw, http.StatusBadRequest, "", "slo request destination wrong")
+			return
+		}
+	}
+
+	// Find matching authority.
+	authority, found := i.authorities.Find(req.Context(), func(authority authorities.AuthorityRegistration) bool {
+		if authority.AuthorityType() != authorities.AuthorityTypeSAML2 {
+			return false
+		}
+		if lor.Request.Issuer.Value == authority.Issuer() {
+			return true
+		}
+		return false
+	})
+	if !found {
+		i.logger.WithField("issuer", lor.Request.Issuer.Value).Debugln("identifier saml2 slo request from unknown issuer")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "slo request issuer unknown")
+		return
+	}
+
+	authorityDetails := authority.Authority()
+	if lor.SigAlg == nil {
+		// Never consider trusted if not signed.
+		authorityDetails.Trusted = false
+	}
+
+	user, _ := i.GetUserFromLogonCookie(req.Context(), req, 0, false)
+	if user != nil {
+		if authorityDetails != nil && authorityDetails.Trusted {
+			// Directly clear identifier session when a trusted authority requests it.
+			err = i.UnsetLogonCookie(req.Context(), user, rw)
+			if err != nil {
+				i.logger.WithError(err).Errorln("identifier saml2 slo failed to unset logon cookie")
+				i.ErrorPage(rw, http.StatusInternalServerError, "", "saml2 slo logout failed")
+				return
+			}
+		}
+	} else {
+		// Ignore when not signed in, for end session.
+	}
+
+	if authorityDetails == nil || !authorityDetails.Trusted {
+		// Handle directly by redirecting to our logout confirm url for untrusted
+		// registies or when no URL was set.
+		uri, _ := i.absoluteURLForRoute("goodbye")
+		query := &url.Values{}
+
+		uri.RawQuery = query.Encode()
+		utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
+		return
+	}
+
+	uri, _, err := authority.MakeRedirectLogoutRequestURL(&lor.Request, lor.RelayState)
+	if err != nil {
+		i.logger.WithError(err).Errorln("failed to make saml2 slo redirect request url")
+		i.ErrorPage(rw, http.StatusInternalServerError, "", "saml2 slo failed")
+		return
+	}
+	if uri == nil {
+		i.logger.Warnln("saml2 slo reached dead end, no post logout redirect uri available")
+		// Fall back to logout confirm url.
+		uri, _ = i.absoluteURLForRoute("goodbye")
+	}
+
 	utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
 }

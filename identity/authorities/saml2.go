@@ -93,6 +93,7 @@ func (ar *saml2AuthorityRegistration) Authority() *Details {
 		Name:          ar.data.Name,
 		AuthorityType: ar.data.AuthorityType,
 
+		Trusted:  ar.data.Trusted,
 		Insecure: ar.data.Insecure,
 
 		registration: ar,
@@ -133,8 +134,8 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 	}
 
 	baseURIString := registry.baseURI.String()
-	acsURL, _ := url.Parse(baseURIString + "/identifier/saml2/acs") // Assertion Consumer Service
-	sloURL, _ := url.Parse(baseURIString + "/identifier/saml2/slo") // Single Logout Service
+	acsURL, _ := url.Parse(baseURIString + "/identifier/saml2/acs")   // Assertion Consumer Service
+	sloURL, _ := url.Parse(baseURIString + "/identifier/_/saml2/slo") // Single Logout Service
 	logger.WithFields(logrus.Fields{
 		"entity_id":         ar.data.EntityID,
 		"metadata_endpoint": ar.data.RawMetadataEndpoint,
@@ -264,6 +265,10 @@ func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{
 	return cvs, nil
 }
 
+func (ar *saml2AuthorityRegistration) Issuer() string {
+	return ar.metadataEndpoint.String()
+}
+
 func (ar *saml2AuthorityRegistration) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
 	ar.mutex.RLock()
 	defer ar.mutex.RUnlock()
@@ -287,4 +292,30 @@ func (ar *saml2AuthorityRegistration) ParseStateResponse(req *http.Request, stat
 	requestID := extra["rid"].(string)
 
 	return ar.serviceProvider.ParseResponse(req, []string{requestID})
+}
+
+func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	ar.mutex.RLock()
+	defer ar.mutex.RUnlock()
+
+	if !ar.ready {
+		return nil, nil, errors.New("not ready")
+	}
+
+	// TODO(longsleep): Implement extration of URL from RelayState.
+	return nil, nil, nil
+}
+
+func (ar *saml2AuthorityRegistration) Metadata() interface{} {
+	metadata := ar.serviceProvider.Metadata()
+
+	// Set SLO to use redirect binding.
+	metadata.SPSSODescriptors[0].SSODescriptor.SingleLogoutServices = []saml.Endpoint{
+		{
+			Binding:  saml.HTTPRedirectBinding,
+			Location: ar.serviceProvider.SloURL.String(),
+		},
+	}
+
+	return metadata
 }

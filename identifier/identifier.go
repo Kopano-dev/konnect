@@ -78,6 +78,8 @@ type Identifier struct {
 	onUnsetLogonCallbacks []func(ctx context.Context, rw http.ResponseWriter) error
 
 	logger logrus.FieldLogger
+
+	router *mux.Router
 }
 
 // NewIdentifier returns a new Identifier.
@@ -155,11 +157,11 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 
 	r.PathPrefix("/static/").Handler(i.staticHandler(http.StripPrefix(i.pathPrefix, http.FileServer(http.Dir(i.staticFolder))), true))
 	r.Handle("/service-worker.js", i.staticHandler(http.StripPrefix(i.pathPrefix, http.FileServer(http.Dir(i.staticFolder))), false))
-	r.Handle("/identifier", http.HandlerFunc(i.handleIdentifier)).Methods(http.MethodGet)
-	r.Handle("/chooseaccount", i).Methods(http.MethodGet)
-	r.Handle("/consent", i).Methods(http.MethodGet)
-	r.Handle("/welcome", i).Methods(http.MethodGet)
-	r.Handle("/goodbye", i).Methods(http.MethodGet)
+	r.Handle("/identifier", http.HandlerFunc(i.handleIdentifier)).Methods(http.MethodGet).Name("index")
+	r.Handle("/chooseaccount", i).Methods(http.MethodGet).Name("chooseaccount")
+	r.Handle("/consent", i).Methods(http.MethodGet).Name("consent")
+	r.Handle("/welcome", i).Methods(http.MethodGet).Name("welcome")
+	r.Handle("/goodbye", i).Methods(http.MethodGet).Name("goodbye")
 	r.Handle("/index.html", i).Methods(http.MethodGet) // For service worker.
 	r.Handle("/identifier/_/logon", i.secureHandler(http.HandlerFunc(i.handleLogon))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)
@@ -167,7 +169,11 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/identifier/_/consent", i.secureHandler(http.HandlerFunc(i.handleConsent))).Methods(http.MethodPost)
 	r.Handle("/identifier/oauth2/start", http.HandlerFunc(i.handleOAuth2Start)).Methods(http.MethodGet)
 	r.Handle("/identifier/oauth2/cb", http.HandlerFunc(i.handleOAuth2Cb)).Methods(http.MethodGet)
-	r.Handle("/identifier/saml2/acs", http.HandlerFunc(i.handleSAML2AssertionConsumerService)).Methods(http.MethodPost)
+	r.Handle("/identifier/saml2/metadata", http.HandlerFunc(i.handleSAML2Metadata))
+	r.Handle("/identifier/saml2/acs", http.HandlerFunc(i.handleSAML2AssertionConsumerService)).Methods(http.MethodPost).Name("saml2/acs")
+	r.Handle("/identifier/_/saml2/slo", http.HandlerFunc(i.handleSAML2SingleLogoutService)).Methods(http.MethodGet).Name("saml2/slo")
+
+	i.router = r
 
 	if i.backend != nil {
 		i.backend.RunWithContext(ctx)
@@ -573,4 +579,19 @@ func (i *Identifier) OnSetLogon(cb func(ctx context.Context, rw http.ResponseWri
 func (i *Identifier) OnUnsetLogon(cb func(ctx context.Context, rw http.ResponseWriter) error) error {
 	i.onUnsetLogonCallbacks = append(i.onUnsetLogonCallbacks, cb)
 	return nil
+}
+
+func (i *Identifier) absoluteURLForRoute(name string) (*url.URL, error) {
+	uri, _ := url.Parse(i.Config.BaseURI.String())
+
+	route := i.router.Get(name)
+
+	path, err := route.URL()
+	if err != nil {
+		return nil, err
+	}
+
+	uri.Path = path.Path
+
+	return uri, nil
 }
