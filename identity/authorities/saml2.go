@@ -275,6 +275,8 @@ func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{
 		return "", errors.New("identity claim not found")
 	}
 
+	// TODO(longslee): Add support for extra external authority claims, for example SessionIndex.
+
 	// Convert claim value.
 	whitelisted := false
 	if ar.data.IdentityAliases != nil {

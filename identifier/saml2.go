@@ -289,6 +289,9 @@ func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *h
 				return
 			}
 		}
+
+		// TODO(longsleep): Compare signed in SAML SessionIndex with the on provided in the LogoutRequest.
+
 	} else {
 		// Ignore when not signed in, for end session.
 	}
