@@ -461,7 +461,7 @@ func (i *Identifier) handleOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 
 func (i *Identifier) handleSAML2Metadata(rw http.ResponseWriter, req *http.Request) {
 	authorityDetails := i.authorities.Default(req.Context())
-	if authorityDetails.AuthorityType != authorities.AuthorityTypeSAML2 {
+	if authorityDetails == nil || authorityDetails.AuthorityType != authorities.AuthorityTypeSAML2 {
 		i.ErrorPage(rw, http.StatusNotFound, "", "saml not configured")
 		return
 	}

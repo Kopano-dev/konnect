@@ -86,10 +86,8 @@ authorities:
 #    entity_id: kopano-konnect
 #    authority_type: saml2
 #    default: yes
+#    trusted: yes
 #    discover: yes
 #    metadata_endpoint: https://my-univention/simplesamlphp/saml2/idp/metadata.php
 #    identity_claim_name: uid
-#    identity_aliases:
-#      external-user-a: local-user-a
-#      external-user-b: local-user-b
-#    identity_alias_required: true
+#    identity_alias_required: false

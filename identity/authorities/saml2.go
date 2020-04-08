@@ -21,11 +21,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
+	"github.com/crewjam/httperr"
 	"github.com/crewjam/saml"
 	"github.com/crewjam/saml/samlsp"
 	"github.com/sirupsen/logrus"
@@ -61,7 +63,9 @@ func newSAML2AuthorityRegistration(registry *Registry, registrationData *authori
 	}
 
 	if ar.data.EntityID == "" {
-		return nil, errors.New("no entity_id")
+		baseURIString := registry.baseURI.String()
+		metadataURI, _ := url.Parse(baseURIString + "/identifier/saml2/metadata") // Use our own meta data
+		ar.data.EntityID = metadataURI.String()
 	}
 
 	if ar.data.Discover != nil {
@@ -136,16 +140,35 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 	baseURIString := registry.baseURI.String()
 	acsURL, _ := url.Parse(baseURIString + "/identifier/saml2/acs")   // Assertion Consumer Service
 	sloURL, _ := url.Parse(baseURIString + "/identifier/_/saml2/slo") // Single Logout Service
-	logger.WithFields(logrus.Fields{
-		"entity_id":         ar.data.EntityID,
-		"metadata_endpoint": ar.data.RawMetadataEndpoint,
-	}).Infoln("setting up external saml2 authority")
 
 	go func() {
 		var md *saml.EntityDescriptor
 		var err error
 		for {
-			md, err = samlsp.FetchMetadata(ctx, client, *ar.metadataEndpoint)
+			logger.Debugf("fetching SAML2 provider meta data: %s", ar.metadataEndpoint.String())
+			md, err = func() (*saml.EntityDescriptor, error) {
+				req, fetchErr := http.NewRequest(http.MethodGet, ar.metadataEndpoint.String(), nil)
+				if fetchErr != nil {
+					return nil, fetchErr
+				}
+				req = req.WithContext(ctx)
+				req.Header.Set("User-Agent", utils.DefaultHTTPUserAgent)
+
+				resp, fetchErr := client.Do(req)
+				if fetchErr != nil {
+					return nil, fetchErr
+				}
+				defer resp.Body.Close()
+				if resp.StatusCode >= 400 {
+					return nil, httperr.Response(*resp)
+				}
+
+				data, fetchErr := ioutil.ReadAll(resp.Body)
+				if fetchErr != nil {
+					return nil, fetchErr
+				}
+				return samlsp.ParseMetadata(data)
+			}()
 			if err != nil {
 				logger.Errorf("error while saml2 provider meta data update: %v", err)
 			}
@@ -188,6 +211,7 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 				ar.mutex.Unlock()
 
 				if ready {
+					logger.Debugln("SAML2 provider meta data loaded and initialized")
 					return
 				}
 			}
@@ -310,13 +334,21 @@ func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(req interface
 }
 
 func (ar *saml2AuthorityRegistration) Metadata() interface{} {
-	metadata := ar.serviceProvider.Metadata()
+	ar.mutex.RLock()
+	sp := ar.serviceProvider
+	ar.mutex.RUnlock()
+
+	if sp == nil {
+		return nil
+	}
+
+	metadata := sp.Metadata()
 
 	// Set SLO to use redirect binding.
 	metadata.SPSSODescriptors[0].SSODescriptor.SingleLogoutServices = []saml.Endpoint{
 		{
 			Binding:  saml.HTTPRedirectBinding,
-			Location: ar.serviceProvider.SloURL.String(),
+			Location: sp.SloURL.String(),
 		},
 	}
 

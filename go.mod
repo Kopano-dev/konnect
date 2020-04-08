@@ -3,7 +3,7 @@ module stash.kopano.io/kc/konnect
 go 1.13
 
 require (
-	github.com/crewjam/httperr v0.2.0 // indirect
+	github.com/crewjam/httperr v0.2.0
 	github.com/crewjam/saml v0.4.0
 	github.com/deckarep/golang-set v1.7.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
