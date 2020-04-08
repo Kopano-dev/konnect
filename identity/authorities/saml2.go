@@ -139,8 +139,6 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 	logger.WithFields(logrus.Fields{
 		"entity_id":         ar.data.EntityID,
 		"metadata_endpoint": ar.data.RawMetadataEndpoint,
-		"acs_url":           acsURL.String(),
-		"slo_url":           sloURL.String(),
 	}).Infoln("setting up external saml2 authority")
 
 	go func() {
@@ -150,7 +148,12 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 			md, err = samlsp.FetchMetadata(ctx, client, *ar.metadataEndpoint)
 			if err != nil {
 				logger.Errorf("error while saml2 provider meta data update: %v", err)
+			}
+
+			select {
+			case <-ctx.Done():
 				return
+			default:
 			}
 
 			if md != nil {
