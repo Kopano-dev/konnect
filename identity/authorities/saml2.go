@@ -19,21 +19,28 @@ package authorities
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sync"
 	"time"
 
 	"github.com/crewjam/httperr"
 	"github.com/crewjam/saml"
 	"github.com/crewjam/saml/samlsp"
+	dsig "github.com/russellhaering/goxmldsig"
 	"github.com/sirupsen/logrus"
 
+	"stash.kopano.io/kc/konnect/identity/authorities/samlext"
 	"stash.kopano.io/kc/konnect/utils"
 )
+
+var cleanWhitespaceRegexp = regexp.MustCompile(`\s+`)
 
 type saml2AuthorityRegistration struct {
 	registry *Registry
@@ -45,7 +52,8 @@ type saml2AuthorityRegistration struct {
 	mutex sync.RWMutex
 	ready bool
 
-	serviceProvider *saml.ServiceProvider
+	serviceProvider             *saml.ServiceProvider
+	serviceProviderSigningCerts []*x509.Certificate
 }
 
 func newSAML2AuthorityRegistration(registry *Registry, registrationData *authorityRegistrationData) (*saml2AuthorityRegistration, error) {
@@ -110,6 +118,10 @@ func (ar *saml2AuthorityRegistration) Authority() *Details {
 	return details
 }
 
+func (ar *saml2AuthorityRegistration) Issuer() string {
+	return ar.metadataEndpoint.String()
+}
+
 func (ar *saml2AuthorityRegistration) Validate() error {
 	return nil
 }
@@ -170,7 +182,7 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 				return samlsp.ParseMetadata(data)
 			}()
 			if err != nil {
-				logger.Errorf("error while saml2 provider meta data update: %v", err)
+				logger.WithError(err).Errorln("error while saml2 provider meta data update")
 			}
 
 			select {
@@ -180,39 +192,57 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 			}
 
 			if md != nil {
-				ar.mutex.Lock()
-
-				ar.serviceProvider = &saml.ServiceProvider{
-					EntityID:          ar.data.EntityID,
-					AcsURL:            *acsURL,
-					SloURL:            *sloURL,
-					IDPMetadata:       md,
-					AllowIDPInitiated: false,
-				}
-
-				ready := ar.ready
-				if ar.serviceProvider != nil {
-					ar.ready = true
-				} else {
-					ar.ready = false
-				}
-				if ready != ar.ready {
-					if ar.ready {
-						logger.Infoln("authority is now ready")
-					} else {
-						logger.Warnln("authority is no longer ready")
+				for {
+					var serviceProviderSigningCerts []*x509.Certificate
+					serviceProviderSigningCerts, err = getCertsFromMetadata(md, "signing")
+					if err != nil {
+						break
 					}
-				} else if !ar.ready {
-					logger.Warnln("authority not ready")
+					if len(serviceProviderSigningCerts) == 0 {
+						err = errors.New("no signing certificate in meta data")
+						break
+					}
+
+					ar.mutex.Lock()
+
+					ar.serviceProviderSigningCerts = serviceProviderSigningCerts
+					ar.serviceProvider = &saml.ServiceProvider{
+						EntityID:          ar.data.EntityID,
+						AcsURL:            *acsURL,
+						SloURL:            *sloURL,
+						IDPMetadata:       md,
+						AllowIDPInitiated: false,
+					}
+
+					ready := ar.ready
+					if ar.serviceProvider != nil {
+						ar.ready = true
+					} else {
+						ar.ready = false
+					}
+					if ready != ar.ready {
+						if ar.ready {
+							logger.Infoln("authority is now ready")
+						} else {
+							logger.Warnln("authority is no longer ready")
+						}
+					} else if !ar.ready {
+						logger.Warnln("authority not ready")
+					}
+
+					ready = ar.ready
+
+					ar.mutex.Unlock()
+
+					if ready {
+						logger.WithField("signing_certs", len(serviceProviderSigningCerts)).Debugln("SAML2 provider meta data loaded and initialized")
+						return
+					}
+
+					break
 				}
-
-				ready = ar.ready
-
-				ar.mutex.Unlock()
-
-				if ready {
-					logger.Debugln("SAML2 provider meta data loaded and initialized")
-					return
+				if err != nil {
+					logger.WithError(err).Errorln("error while initializing saml2 provider from meta data")
 				}
 			}
 
@@ -310,10 +340,6 @@ func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{
 	return cvs, claims, nil
 }
 
-func (ar *saml2AuthorityRegistration) Issuer() string {
-	return ar.metadataEndpoint.String()
-}
-
 func (ar *saml2AuthorityRegistration) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
 	ar.mutex.RLock()
 	defer ar.mutex.RUnlock()
@@ -333,12 +359,6 @@ func (ar *saml2AuthorityRegistration) MakeRedirectAuthenticationRequestURL(state
 	}, nil
 }
 
-func (ar *saml2AuthorityRegistration) ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error) {
-	requestID := extra["rid"].(string)
-
-	return ar.serviceProvider.ParseResponse(req, []string{requestID})
-}
-
 func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
 	ar.mutex.RLock()
 	defer ar.mutex.RUnlock()
@@ -349,6 +369,67 @@ func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(req interface
 
 	// TODO(longsleep): Implement extration of URL from RelayState.
 	return nil, nil, nil
+}
+
+func (ar *saml2AuthorityRegistration) ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error) {
+	requestID := extra["rid"].(string)
+
+	return ar.serviceProvider.ParseResponse(req, []string{requestID})
+}
+
+func (ar *saml2AuthorityRegistration) ValidateIdpLogoutRequest(req interface{}, state string) (bool, error) {
+	slo := req.(*samlext.IdpLogoutRequest)
+
+	// NOTE(longsleep): We currently only support redirect binding (which uses a detached signature).
+	if slo.Binding != saml.HTTPRedirectBinding {
+		return false, fmt.Errorf("binding not supported")
+	}
+
+	// Validate signature if signed.
+	if slo.SigAlg == nil {
+		return false, nil
+	}
+
+	ar.mutex.RLock()
+	serviceProviderSigningCerts := ar.serviceProviderSigningCerts
+	ready := ar.ready
+	ar.mutex.RUnlock()
+
+	if !ready {
+		return false, errors.New("not ready")
+	}
+
+	if len(serviceProviderSigningCerts) == 0 {
+		// No signing certs, cannot do anything.
+		return false, nil
+	}
+
+	// Check if we are good.
+	switch *slo.SigAlg {
+	case dsig.RSASHA1SignatureMethod:
+		ar.registry.logger.WithField("sig_alg", *slo.SigAlg).Warnln("saml2 insecure signature alg in idp logout request")
+		if !ar.Authority().Insecure {
+			return false, nil
+		}
+
+	default:
+		// Let the rest pass, and decide later.
+	}
+
+	if len(slo.Signature) == 0 {
+		return true, fmt.Errorf("signature data is empty")
+	}
+
+	// Get first certificate, and verify.
+	if len(serviceProviderSigningCerts) > 1 {
+		ar.registry.logger.Warnln("saml2 authority has multiple signing keys, using first")
+	}
+	pubKey := serviceProviderSigningCerts[0].PublicKey
+	if verifyErr := slo.VerifySignature(pubKey); verifyErr != nil {
+		return true, fmt.Errorf("signature verification failed: %w", verifyErr)
+	}
+
+	return true, nil
 }
 
 func (ar *saml2AuthorityRegistration) Metadata() AuthorityMetadata {
@@ -371,4 +452,45 @@ func (ar *saml2AuthorityRegistration) Metadata() AuthorityMetadata {
 	}
 
 	return metadata
+}
+
+func getCertsFromMetadata(md *saml.EntityDescriptor, use string) ([]*x509.Certificate, error) {
+	var certStrs []string
+	for _, idpSSODescriptor := range md.IDPSSODescriptors {
+		for _, keyDescriptor := range idpSSODescriptor.KeyDescriptors {
+			if keyDescriptor.Use == use {
+				certStrs = append(certStrs, keyDescriptor.KeyInfo.Certificate)
+			}
+		}
+	}
+
+	// If there are no explicitly signing certs, just return the first non-empty cert we find.
+	if len(certStrs) == 0 {
+		for _, idpSSODescriptor := range md.IDPSSODescriptors {
+			for _, keyDescriptor := range idpSSODescriptor.KeyDescriptors {
+				if keyDescriptor.Use == "" && keyDescriptor.KeyInfo.Certificate != "" {
+					certStrs = append(certStrs, keyDescriptor.KeyInfo.Certificate)
+					break
+				}
+			}
+		}
+	}
+
+	var certs []*x509.Certificate
+
+	for _, certStr := range certStrs {
+		certStr = cleanWhitespaceRegexp.ReplaceAllString(certStr, "")
+		certBytes, err := base64.StdEncoding.DecodeString(certStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse certificate: %w", err)
+		}
+
+		parsedCert, err := x509.ParseCertificate(certBytes)
+		if err != nil {
+			return nil, err
+		}
+		certs = append(certs, parsedCert)
+	}
+
+	return certs, nil
 }

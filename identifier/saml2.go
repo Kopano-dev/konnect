@@ -239,12 +239,10 @@ func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *h
 
 	err = lor.Validate()
 	if err != nil {
-		i.logger.WithError(err).Debugln("identifier saml2 slo request validation failure")
-		i.ErrorPage(rw, http.StatusBadRequest, "", "slo request validation failure")
+		i.logger.WithError(err).Debugln("identifier saml2 slo request validation failed")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "slo request validation failed")
 		return
 	}
-
-	// TODO(longsleep): Validate signature if signed.
 
 	// In http://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf §3.4.5.2
 	// we get a description of the Destination attribute:
@@ -287,6 +285,18 @@ func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *h
 	authorityDetails := authority.Authority()
 	if lor.SigAlg == nil {
 		// Never consider trusted if not signed.
+		authorityDetails.Trusted = false
+	}
+
+	// TODO(longsleep): Validate signature if signed.
+	validated, err := authority.ValidateIdpLogoutRequest(lor, lor.RelayState)
+	if err != nil {
+		i.logger.WithError(err).WithField("issuer", authority.Issuer()).Debugln("identifier saml2 slo request authority validation failed")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "slo request authority validation failed")
+		return
+	}
+	if !validated && authorityDetails.Trusted {
+		// Never consider unvalidated logout requests as trusted.
 		authorityDetails.Trusted = false
 	}
 

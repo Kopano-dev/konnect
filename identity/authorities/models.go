@@ -74,17 +74,21 @@ type AuthorityRegistration interface {
 	AuthorityType() string
 
 	Authority() *Details
+	Issuer() string
 
 	Validate() error
 
 	Initialize(ctx context.Context, registry *Registry) error
 
 	MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error)
-	ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error)
-	IdentityClaimValue(data interface{}) (string, map[string]interface{}, error)
 	MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error)
 
-	Issuer() string
+	ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error)
+
+	ValidateIdpLogoutRequest(req interface{}, state string) (bool, error)
+
+	IdentityClaimValue(data interface{}) (string, map[string]interface{}, error)
+
 	Metadata() AuthorityMetadata
 }
 

@@ -20,6 +20,8 @@ package samlext
 import (
 	"bytes"
 	"compress/flate"
+	"crypto"
+
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
@@ -32,14 +34,16 @@ import (
 
 // IdpLogoutRequest is used by IdentityProvider to handle a single logout request.
 type IdpLogoutRequest struct {
-	HTTPRequest   *http.Request
-	RelayState    string
+	HTTPRequest *http.Request
+
+	Binding       string
 	RequestBuffer []byte
 	Request       saml.LogoutRequest
 	Now           time.Time
 
-	SigAlg    *string
-	Signature []byte
+	RelayState string
+	SigAlg     *string
+	Signature  []byte
 }
 
 func NewIdpLogoutRequest(r *http.Request) (*IdpLogoutRequest, error) {
@@ -49,7 +53,9 @@ func NewIdpLogoutRequest(r *http.Request) (*IdpLogoutRequest, error) {
 	}
 
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
+		req.Binding = saml.HTTPRedirectBinding
+
 		compressedRequest, err := base64.StdEncoding.DecodeString(r.URL.Query().Get("SAMLRequest"))
 		if err != nil {
 			return nil, fmt.Errorf("cannot decode request: %w", err)
@@ -71,10 +77,13 @@ func NewIdpLogoutRequest(r *http.Request) (*IdpLogoutRequest, error) {
 			req.Signature = signature
 		}
 
-	case "POST":
+	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			return nil, err
 		}
+
+		req.Binding = saml.HTTPPostBinding
+
 		var err error
 		req.RequestBuffer, err = base64.StdEncoding.DecodeString(r.PostForm.Get("SAMLRequest"))
 		if err != nil {
@@ -105,4 +114,10 @@ func (req *IdpLogoutRequest) Validate() error {
 	}
 
 	return nil
+}
+
+// VerifySignature verifies the associated IdpLogoutRequest data with the
+// associated Signature using the provided public key.
+func (req *IdpLogoutRequest) VerifySignature(pubKey crypto.PublicKey) error {
+	return VerifySignedHTTPRedirectQuery("SAMLRequest", req.HTTPRequest.URL.RawQuery, *req.SigAlg, req.Signature, pubKey)
 }

@@ -158,6 +158,10 @@ func (ar *oidcAuthorityRegistration) Authority() *Details {
 	return details
 }
 
+func (ar *oidcAuthorityRegistration) Issuer() string {
+	return ar.data.Iss
+}
+
 func (ar *oidcAuthorityRegistration) setValidationKeysFromJWKS(jwks *jose.JSONWebKeySet, skipInvalid bool) error {
 	if jwks == nil || len(jwks.Keys) == 0 {
 		ar.validationKeys = nil
@@ -259,10 +263,6 @@ func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (
 	return cvs, nil, nil
 }
 
-func (ar *oidcAuthorityRegistration) Issuer() string {
-	return ar.data.Iss
-}
-
 func (ar *oidcAuthorityRegistration) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
 	ar.mutex.RLock()
 	defer ar.mutex.RUnlock()
@@ -277,6 +277,10 @@ func (ar *oidcAuthorityRegistration) MakeRedirectAuthenticationRequestURL(state 
 	uri.RawQuery = query.Encode()
 
 	return uri, nil, nil
+}
+
+func (ar *oidcAuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	return nil, nil, fmt.Errorf("not implemented")
 }
 
 func (ar *oidcAuthorityRegistration) ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error) {
@@ -294,8 +298,8 @@ func (ar *oidcAuthorityRegistration) ParseStateResponse(req *http.Request, state
 	return authenticationSuccess, nil
 }
 
-func (ar *oidcAuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
-	return nil, nil, fmt.Errorf("not implemented")
+func (ar *oidcAuthorityRegistration) ValidateIdpLogoutRequest(req interface{}, state string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
 }
 
 func (ar *oidcAuthorityRegistration) Metadata() AuthorityMetadata {
