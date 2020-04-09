@@ -129,7 +129,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 				// handler can ever return users which exist at the outer.
 				return auth, authErr
 			} else {
-				switch err.(type) {
+				switch authErr.(type) {
 				case *payload.AuthenticationError:
 					// ignore, breaks
 				case *identity.LoginRequiredError:
@@ -137,7 +137,7 @@ func (im *IdentifierIdentityManager) Authenticate(ctx context.Context, rw http.R
 				case *identity.IsHandledError:
 					// breaks, breaks
 				default:
-					im.logger.WithFields(utils.ErrorAsFields(err)).Errorln("inner authorize request failed")
+					im.logger.WithFields(utils.ErrorAsFields(authErr)).Errorln("inner authorize request failed")
 				}
 			}
 		}
