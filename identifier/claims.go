@@ -19,6 +19,10 @@ package identifier
 
 // Additional claims as used by the identifier in its own tokens.
 const (
-	SessionIDClaim  = "sid"
-	UserClaimsClaim = "claims"
+	SessionIDClaim = "sid"
+)
+
+// History claims previously used by the identifier in its own tokens.
+const (
+	ObsoleteUserClaimsClaim = "claims"
 )

@@ -228,10 +228,10 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 	return nil
 }
 
-func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{}) (string, error) {
+func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{}) (string, map[string]interface{}, error) {
 	assertion, _ := rawAssertion.(*saml.Assertion)
 	if assertion == nil {
-		return "", errors.New("invalid assertion data")
+		return "", nil, errors.New("invalid assertion data")
 	}
 
 	icn := ar.data.IdentityClaimName
@@ -272,10 +272,26 @@ func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{
 	}
 
 	if !ok {
-		return "", errors.New("identity claim not found")
+		return "", nil, errors.New("identity claim not found")
 	}
 
-	// TODO(longslee): Add support for extra external authority claims, for example SessionIndex.
+	// Add extra external authority claims, for example SessionIndex.
+	claims := make(map[string]interface{})
+	for _, authnStatement := range assertion.AuthnStatements {
+		ar.registry.logger.WithFields(logrus.Fields{
+			"SessionNotOnOrAfter": authnStatement.SessionNotOnOrAfter,
+			"SessionIndex":        authnStatement.SessionIndex,
+		}).Debugln("saml2 authnStatement")
+		if authnStatement.SessionIndex != "" {
+			claims["SessionIndex"] = authnStatement.SessionIndex
+			if authnStatement.SessionNotOnOrAfter != nil {
+				if saml.TimeNow().After(*authnStatement.SessionNotOnOrAfter) {
+					return "", nil, errors.New("session is expired")
+				}
+				claims["SessionNotOnOrAfter"] = authnStatement.SessionNotOnOrAfter
+			}
+		}
+	}
 
 	// Convert claim value.
 	whitelisted := false
@@ -288,10 +304,10 @@ func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{
 
 	// Check whitelist.
 	if ar.data.IdentityAliasRequired && !whitelisted {
-		return "", errors.New("identity claim has no alias")
+		return "", nil, errors.New("identity claim has no alias")
 	}
 
-	return cvs, nil
+	return cvs, claims, nil
 }
 
 func (ar *saml2AuthorityRegistration) Issuer() string {
@@ -335,7 +351,7 @@ func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(req interface
 	return nil, nil, nil
 }
 
-func (ar *saml2AuthorityRegistration) Metadata() interface{} {
+func (ar *saml2AuthorityRegistration) Metadata() AuthorityMetadata {
 	ar.mutex.RLock()
 	sp := ar.serviceProvider
 	ar.mutex.RUnlock()

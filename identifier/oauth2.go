@@ -199,7 +199,7 @@ func (i *Identifier) writeOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Lookup username and user.
-		un, claimsErr := authority.IdentityClaimValue(claims)
+		un, _, claimsErr := authority.IdentityClaimValue(claims)
 		if claimsErr != nil {
 			i.logger.WithError(claimsErr).Debugln("identifier failed to get username from oauth2 cb id token claims")
 			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InsufficientScope, "identity claim not found")

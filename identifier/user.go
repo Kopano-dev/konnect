@@ -48,7 +48,8 @@ type IdentifiedUser struct {
 	sessionRef *string
 	claims     map[string]interface{}
 
-	logonAt time.Time
+	logonAt      time.Time
+	expiresAfter *time.Time
 }
 
 // Subject returns the associated users subject field. The subject is the main

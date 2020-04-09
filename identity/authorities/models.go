@@ -81,9 +81,12 @@ type AuthorityRegistration interface {
 
 	MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error)
 	ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error)
-	IdentityClaimValue(data interface{}) (string, error)
+	IdentityClaimValue(data interface{}) (string, map[string]interface{}, error)
 	MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error)
 
 	Issuer() string
-	Metadata() interface{}
+	Metadata() AuthorityMetadata
+}
+
+type AuthorityMetadata interface {
 }

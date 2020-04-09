@@ -222,10 +222,10 @@ func (ar *oidcAuthorityRegistration) Initialize(ctx context.Context, registry *R
 	return initializeOIDC(ctx, registry.logger, ar)
 }
 
-func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (string, error) {
+func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (string, map[string]interface{}, error) {
 	claims, _ := rawClaims.(jwt.MapClaims)
 	if claims == nil {
-		return "", errors.New("invalid claims data")
+		return "", nil, errors.New("invalid claims data")
 	}
 
 	icn := ar.data.IdentityClaimName
@@ -235,11 +235,11 @@ func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (
 
 	cvr, ok := claims[icn]
 	if !ok {
-		return "", errors.New("identity claim not found")
+		return "", nil, errors.New("identity claim not found")
 	}
 	cvs, ok := cvr.(string)
 	if !ok {
-		return "", errors.New("identify claim has invalid type")
+		return "", nil, errors.New("identify claim has invalid type")
 	}
 
 	// Convert claim value.
@@ -253,10 +253,10 @@ func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (
 
 	// Check whitelist.
 	if ar.data.IdentityAliasRequired && !whitelisted {
-		return "", errors.New("identity claim has no alias")
+		return "", nil, errors.New("identity claim has no alias")
 	}
 
-	return cvs, nil
+	return cvs, nil, nil
 }
 
 func (ar *oidcAuthorityRegistration) Issuer() string {
@@ -298,7 +298,7 @@ func (ar *oidcAuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{
 	return nil, nil, fmt.Errorf("not implemented")
 }
 
-func (ar *oidcAuthorityRegistration) Metadata() interface{} {
+func (ar *oidcAuthorityRegistration) Metadata() AuthorityMetadata {
 	return nil
 }
 

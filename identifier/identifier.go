@@ -42,6 +42,7 @@ import (
 	"stash.kopano.io/kc/konnect/identity/clients"
 	"stash.kopano.io/kc/konnect/managers"
 	"stash.kopano.io/kc/konnect/utils"
+	"stash.kopano.io/kgol/oidc-go"
 )
 
 // audienceMarker defines the value which gets included in logon cookies. Valid
@@ -252,14 +253,18 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 		Subject:  user.Subject(),
 		IssuedAt: jwt.NewNumericDate(logonAt),
 	}
+	// Add expiration, if set.
+	if user.expiresAfter != nil {
+		claims.Expiry = jwt.NewNumericDate(*user.expiresAfter)
+	}
+
 	// Additional claims.
 	userClaims := map[string]interface{}(user.Claims())
 	sessionRef := user.SessionRef()
 	if sessionRef != nil {
-		userClaims[SessionIDClaim] = user.SessionRef()
+		sessionRefString := user.SessionRef()
+		userClaims[SessionIDClaim] = *sessionRefString
 	}
-	// User defined claims.
-	userClaims[UserClaimsClaim] = user.claims
 
 	// Serialize and encrypt cookie value.
 	serialized, err := jwt.Encrypted(i.encrypter).Claims(claims).Claims(userClaims).CompactSerialize()
@@ -332,18 +337,20 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	// Parse claims.
 	var claims jwt.Claims
 	var userClaims map[string]interface{}
-	if err = token.Claims(i.recipient.Key, &claims, &userClaims); err != nil {
-		return nil, err
+	if claimsErr := token.Claims(i.recipient.Key, &claims, &userClaims); claimsErr != nil {
+		return nil, claimsErr
 	}
 
-	// Ignore cookie, when audience marker does not match. This happens
-	// for cookies from an older version of konnect. Users need to sign in again.
-	if !claims.Audience.Contains(audienceMarker[0]) {
-		return nil, nil
-	}
-	// Ignore cookie, when issuer does not match our backend name. This usually
-	// means that konnect was reconfigured. Users need to sign in again.
-	if claims.Issuer != i.backend.Name() {
+	// Validate claims.
+	if claimsErr := claims.Validate(jwt.Expected{
+		// Ignore cookie, when issuer does not match our backend name. This usually
+		// means that konnect was reconfigured. Users need to sign in again.
+		Issuer: i.backend.Name(),
+		// Ignore cookie, when audience marker does not match. This happens
+		// for cookies from an older version of konnect. Users need to sign in again.
+		Audience: jwt.Audience{audienceMarker[0]},
+	}); claimsErr != nil {
+		i.logger.WithError(claimsErr).Debugln("logon token claims validation failed")
 		return nil, nil
 	}
 	if claims.Subject == "" {
@@ -364,6 +371,10 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 
 		logonAt: claims.IssuedAt.Time(),
 	}
+	if claims.Expiry != nil {
+		expiresAfter := claims.Expiry.Time()
+		user.expiresAfter = &expiresAfter
+	}
 
 	loggedOn, logonAt := user.LoggedOn()
 	if !loggedOn {
@@ -378,7 +389,7 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 	}
 
 	// Get and refresh session via claim.
-	if v, _ := userClaims[SessionIDClaim]; v != nil {
+	if v := userClaims[SessionIDClaim]; v != nil {
 		sessionRef := v.(string)
 		if sessionRef != "" {
 			// Remember session ref in user.
@@ -393,15 +404,31 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 			}
 		}
 	}
-	// Fill additional known claim data.
-	if v, _ := userClaims[konnect.IdentifiedUsernameClaim]; v != nil {
-		user.username = v.(string)
-	}
-	if v, _ := userClaims[konnect.IdentifiedDisplayNameClaim]; v != nil {
-		user.displayName = v.(string)
-	}
-	if v, _ := userClaims[UserClaimsClaim]; v != nil {
-		user.claims = v.(map[string]interface{})
+
+	// Fill additional claim.
+	user.claims = make(map[string]interface{})
+	for k, v := range userClaims {
+		switch k {
+		case konnect.IdentifiedUsernameClaim:
+			user.username = v.(string)
+		case konnect.IdentifiedDisplayNameClaim:
+			user.displayName = v.(string)
+
+		case SessionIDClaim:
+			// Already handled above
+			continue
+		case ObsoleteUserClaimsClaim:
+			// Keep and ignore for history reasons.
+			continue
+
+		case oidc.AudienceClaim, oidc.IssuedAtClaim, oidc.ExpirationClaim, oidc.SubjectIdentifierClaim, oidc.IssuerIdentifierClaim:
+			// Ignore default OIDC claims when resurrecting claims data.
+			continue
+
+		default:
+			// Add the rest.
+			user.claims[k] = v
+		}
 	}
 
 	return user, nil

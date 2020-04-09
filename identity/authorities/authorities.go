@@ -58,7 +58,7 @@ func (d *Details) IsReady() bool {
 }
 
 // IdentityClaimValue returns the identity claim value from the provided data.
-func (d *Details) IdentityClaimValue(claims interface{}) (string, error) {
+func (d *Details) IdentityClaimValue(claims interface{}) (string, map[string]interface{}, error) {
 	return d.registration.IdentityClaimValue(claims)
 }
 

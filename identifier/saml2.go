@@ -133,7 +133,7 @@ func (i *Identifier) writeSAML2AssertionConsumerService(rw http.ResponseWriter, 
 		}
 
 		// Lookup username and user.
-		un, claimsErr := authority.IdentityClaimValue(assertion)
+		un, claims, claimsErr := authority.IdentityClaimValue(assertion)
 		if claimsErr != nil {
 			i.logger.WithError(claimsErr).Debugln("identifier failed to get username from saml2 acs assertion")
 			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InsufficientScope, "identity claim not found")
@@ -152,6 +152,18 @@ func (i *Identifier) writeSAML2AssertionConsumerService(rw http.ResponseWriter, 
 		if user == nil || user.Subject() == "" {
 			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, "no such user")
 			break
+		}
+
+		// Apply additional authority claims.
+		if sessionNotOnOrAfter, ok := claims["SessionNotOnOrAfter"]; ok {
+			user.expiresAfter = sessionNotOnOrAfter.(*time.Time)
+		}
+		if authority.Trusted {
+			// Use external authority session, if the external authority is trusted.
+			if sessionIndexString, ok := claims["SessionIndex"]; ok {
+				sessionIndex := sessionIndexString.(string)
+				user.sessionRef = &sessionIndex
+			}
 		}
 
 		// Get user meta data.
@@ -280,6 +292,20 @@ func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *h
 
 	user, _ := i.GetUserFromLogonCookie(req.Context(), req, 0, false)
 	if user != nil {
+		// Compare signed in SAML SessionIndex with the on provided in the LogoutRequest.
+		if user.SessionRef() != nil {
+			if lor.Request.SessionIndex == nil {
+				i.logger.Debugln("identifier saml2 slo request without session index")
+				i.ErrorPage(rw, http.StatusBadRequest, "", "slo request missing session index")
+				return
+			}
+			if lor.Request.SessionIndex.Value != *user.SessionRef() {
+				i.logger.Debugln("identifier saml2 slo request for other session index")
+				i.ErrorPage(rw, http.StatusBadRequest, "", "slo request session index mismatch")
+				return
+			}
+		}
+
 		if authorityDetails != nil && authorityDetails.Trusted {
 			// Directly clear identifier session when a trusted authority requests it.
 			err = i.UnsetLogonCookie(req.Context(), user, rw)
@@ -289,9 +315,6 @@ func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *h
 				return
 			}
 		}
-
-		// TODO(longsleep): Compare signed in SAML SessionIndex with the on provided in the LogoutRequest.
-
 	} else {
 		// Ignore when not signed in, for end session.
 	}
