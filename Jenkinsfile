@@ -19,7 +19,7 @@ pipeline {
 			steps {
 				echo 'Linting..'
 				sh 'make lint-checkstyle GOLINT_ARGS="--new-from-rev=HEAD~ --verbose"'
-				checkstyle pattern: 'test/tests.lint.xml', canComputeNew: false, unstableTotalAll: '5'
+				checkstyle pattern: 'test/tests.lint.xml', canComputeNew: false, unstableTotalAll: '50'
 				checkstyle pattern: 'test/tests.eslint.xml', canComputeNew: false, failedTotalAll: '5', unstableTotalAll: '50'
 			}
 		}
