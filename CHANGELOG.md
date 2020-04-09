@@ -4,6 +4,23 @@
 
 
 
+## v0.31.0 (2020-04-09)
+
+- Relax linter to let more warning pass
+- Implement validation for IdP initiated SLO requests
+- Add support for expiration and session id for external authorities
+- Fix wrong error message when there was no error
+- Add additional TODO markers for SAML external authority
+- Improve logging when using external SAML authority
+- Retry SAML initialize on error
+- Improve OIDC endsession endpoint handler when without token hint
+- Implement support for SAML IdP slo
+- Fail early when SAML2 authority fails to resolve user from backend
+- Apply user mapping when resolving users from LDAP backend
+- Update 3rd party dependencies
+- Update license ranger and generate 3rd party licenses from vendor folder
+
+
 ## v0.30.0 (2020-03-09)
 
 - Add SAML2 external authority example config
