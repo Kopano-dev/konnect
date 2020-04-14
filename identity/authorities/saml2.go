@@ -359,7 +359,7 @@ func (ar *saml2AuthorityRegistration) MakeRedirectAuthenticationRequestURL(state
 	}, nil
 }
 
-func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
+func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(rawReq interface{}, state string) (*url.URL, map[string]interface{}, error) {
 	ar.mutex.RLock()
 	defer ar.mutex.RUnlock()
 
@@ -367,8 +367,24 @@ func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(req interface
 		return nil, nil, errors.New("not ready")
 	}
 
-	// TODO(longsleep): Implement extration of URL from RelayState.
-	return nil, nil, nil
+	req, _ := rawReq.(*saml.LogoutRequest)
+	if req == nil {
+		return nil, nil, errors.New("invalid request data")
+	}
+
+	// NOTE(longsleep): This resonse currently always reports success.
+	status := &saml.Status{
+		StatusCode: saml.StatusCode{
+			Value: saml.StatusSuccess,
+		},
+	}
+	res, err := samlext.MakeLogoutResponse(ar.serviceProvider, req, status, saml.HTTPRedirectBinding)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to make logout response: %w", err)
+	}
+
+	uri := res.Redirect(state)
+	return uri, nil, nil
 }
 
 func (ar *saml2AuthorityRegistration) ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error) {
