@@ -260,10 +260,11 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 
 	// Additional claims.
 	userClaims := map[string]interface{}(user.Claims())
-	sessionRef := user.SessionRef()
-	if sessionRef != nil {
-		sessionRefString := user.SessionRef()
-		userClaims[SessionIDClaim] = *sessionRefString
+	if sessionRef := user.SessionRef(); sessionRef != nil {
+		userClaims[SessionIDClaim] = *sessionRef
+	}
+	if externalAuthorityID := user.ExternalAuthorityID(); externalAuthorityID != nil {
+		userClaims[ExternalAuthorityIDClaim] = *externalAuthorityID
 	}
 
 	// Serialize and encrypt cookie value.
@@ -405,6 +406,25 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		}
 	}
 
+	// Get and set external authority via claim.
+	if v := userClaims[ExternalAuthorityIDClaim]; v != nil {
+		externalAuthorityID := v.(string)
+		if externalAuthorityID != "" {
+			authority, err := i.authorities.Lookup(ctx, externalAuthorityID)
+			if err != nil {
+				// Ignore logons which have set an unknown external authority.
+				return nil, nil
+			}
+			// TODO(longsleep): Check if authority is actually enabled. For now
+			// we check if it is ready.
+			if !authority.IsReady() {
+				// Ignore logons which have sent an authority which is not ready.
+				return nil, nil
+			}
+			user.externalAuthority = authority
+		}
+	}
+
 	// Fill additional claim.
 	user.claims = make(map[string]interface{})
 	for k, v := range userClaims {
@@ -415,7 +435,10 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 			user.displayName = v.(string)
 
 		case SessionIDClaim:
-			// Already handled above
+			// Already handled above.
+			continue
+		case ExternalAuthorityIDClaim:
+			// Already handled above.
 			continue
 		case ObsoleteUserClaimsClaim:
 			// Keep and ignore for history reasons.

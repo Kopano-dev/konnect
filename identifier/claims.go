@@ -19,7 +19,8 @@ package identifier
 
 // Additional claims as used by the identifier in its own tokens.
 const (
-	SessionIDClaim = "sid"
+	SessionIDClaim           = "sid"
+	ExternalAuthorityIDClaim = "eaid"
 )
 
 // History claims previously used by the identifier in its own tokens.

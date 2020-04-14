@@ -27,13 +27,15 @@ import (
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
 	"stash.kopano.io/kc/konnect/identity"
+	"stash.kopano.io/kc/konnect/identity/authorities"
 )
 
 // A IdentifiedUser is a user with meta data.
 type IdentifiedUser struct {
 	sub string
 
-	backend backends.Backend
+	backend           backends.Backend
+	externalAuthority *authorities.Details
 
 	username      string
 	email         string
@@ -140,6 +142,14 @@ func (u *IdentifiedUser) SessionRef() *string {
 	return u.sessionRef
 }
 
+func (u *IdentifiedUser) ExternalAuthorityID() *string {
+	if u.externalAuthority == nil {
+		return nil
+	}
+	id := u.externalAuthority.ID
+	return &id
+}
+
 // BackendName returns the accociated users underlaying backend name.
 func (u *IdentifiedUser) BackendName() string {
 	return u.backend.Name()
@@ -193,7 +203,7 @@ func (i *Identifier) resolveUser(ctx context.Context, username string) (*Identif
 	return user, nil
 }
 
-func (i *Identifier) updateUser(ctx context.Context, user *IdentifiedUser) error {
+func (i *Identifier) updateUser(ctx context.Context, user *IdentifiedUser, externalAuthority *authorities.Details) error {
 	var userID string
 	identityClaims := user.Claims()
 	if userIDString, ok := identityClaims[konnect.IdentifiedUserIDClaim]; ok {
@@ -213,6 +223,7 @@ func (i *Identifier) updateUser(ctx context.Context, user *IdentifiedUser) error
 	}
 
 	user.backend = i.backend
+	user.externalAuthority = externalAuthority
 
 	return nil
 }
