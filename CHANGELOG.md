@@ -4,6 +4,15 @@
 
 
 
+## v0.32.0 (2020-04-15)
+
+- Implement delegation of end session to external authority
+- Improve names of temporary state and consent cookies
+- Use correct path when removing state cookies
+- Store identified user external authority ID in session data
+- Implement redirect binding slo response
+
+
 ## v0.31.0 (2020-04-09)
 
 - Relax linter to let more warning pass
