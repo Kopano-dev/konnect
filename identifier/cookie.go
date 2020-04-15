@@ -170,7 +170,7 @@ func (i *Identifier) removeStateCookie(rw http.ResponseWriter, req *http.Request
 	cookie := http.Cookie{
 		Name: name,
 
-		Path:     i.pathPrefix + "/identifier/ " + scope,
+		Path:     i.pathPrefix + "/identifier/" + scope,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteNoneMode,
