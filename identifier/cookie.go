@@ -24,6 +24,11 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+const (
+	consentCookieNamePrefix = "__Secure-KKTC" // Kopano Konnect Temorary Consent
+	stateCookieNamePrefix   = "__Secure-KKTS" // Kopano Konnect Temporary State
+)
+
 func (i *Identifier) setLogonCookie(rw http.ResponseWriter, value string) error {
 	cookie := http.Cookie{
 		Name:  i.logonCookieName,
@@ -128,7 +133,7 @@ func (i *Identifier) getConsentCookieName(cr *ConsentRequest) (string, error) {
 	hasher.Write([]byte(cr.Nonce))
 
 	name := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
-	return name, nil
+	return consentCookieNamePrefix + "-" + name, nil
 }
 
 func (i *Identifier) setStateCookie(rw http.ResponseWriter, scope string, state string, value string) error {
@@ -183,5 +188,15 @@ func (i *Identifier) removeStateCookie(rw http.ResponseWriter, req *http.Request
 }
 
 func (i *Identifier) getStateCookieName(state string) (string, error) {
-	return "__my_state_cookie__", nil
+	// State cookie names are based on the state value.
+	hasher, err := blake2b.New256(nil)
+	if err != nil {
+		return "", err
+	}
+
+	hasher.Write([]byte(state))
+
+	name := base64.RawURLEncoding.EncodeToString(hasher.Sum(nil))
+
+	return stateCookieNamePrefix + "-" + name, nil
 }
