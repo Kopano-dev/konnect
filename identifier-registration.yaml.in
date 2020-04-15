@@ -91,3 +91,4 @@ authorities:
 #    metadata_endpoint: https://my-univention/simplesamlphp/saml2/idp/metadata.php
 #    identity_claim_name: uid
 #    identity_alias_required: false
+#    end_session_enabled: true

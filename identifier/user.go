@@ -48,6 +48,7 @@ type IdentifiedUser struct {
 	uid string
 
 	sessionRef *string
+	logonRef   *string
 	claims     map[string]interface{}
 
 	logonAt      time.Time
@@ -140,6 +141,11 @@ func (u *IdentifiedUser) LoggedOn() (bool, time.Time) {
 // SessionRef returns the accociated users underlaying session reference.
 func (u *IdentifiedUser) SessionRef() *string {
 	return u.sessionRef
+}
+
+// UserRef returns the accociated users underlaying logon reference.
+func (u *IdentifiedUser) LogonRef() *string {
+	return u.logonRef
 }
 
 func (u *IdentifiedUser) ExternalAuthorityID() *string {

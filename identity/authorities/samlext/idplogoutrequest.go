@@ -38,7 +38,7 @@ type IdpLogoutRequest struct {
 
 	Binding       string
 	RequestBuffer []byte
-	Request       saml.LogoutRequest
+	Request       *saml.LogoutRequest
 	Now           time.Time
 
 	RelayState string
@@ -72,7 +72,7 @@ func NewIdpLogoutRequest(r *http.Request) (*IdpLogoutRequest, error) {
 
 			signature, err := base64.StdEncoding.DecodeString(r.URL.Query().Get("Signature"))
 			if err != nil {
-				return nil, fmt.Errorf("cannot decode signatlure: %w", err)
+				return nil, fmt.Errorf("cannot decode signature: %w", err)
 			}
 			req.Signature = signature
 		}
@@ -102,9 +102,11 @@ func NewIdpLogoutRequest(r *http.Request) (*IdpLogoutRequest, error) {
 // the LogoutRequest and Metadata properties. Returns a non-nil error if the
 // request is not valid.
 func (req *IdpLogoutRequest) Validate() error {
-	if err := xml.Unmarshal(req.RequestBuffer, &req.Request); err != nil {
+	request := &saml.LogoutRequest{}
+	if err := xml.Unmarshal(req.RequestBuffer, request); err != nil {
 		return err
 	}
+	req.Request = request
 
 	if req.Request.IssueInstant.Add(saml.MaxIssueDelay).Before(req.Now) {
 		return fmt.Errorf("request expired at %s", req.Request.IssueInstant.Add(saml.MaxIssueDelay))

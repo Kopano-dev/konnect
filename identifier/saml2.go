@@ -158,6 +158,17 @@ func (i *Identifier) writeSAML2AssertionConsumerService(rw http.ResponseWriter, 
 		if sessionNotOnOrAfter, ok := claims["SessionNotOnOrAfter"]; ok {
 			user.expiresAfter = sessionNotOnOrAfter.(*time.Time)
 		}
+		var logonRef string
+		if nameIDTransient, ok := claims["TransientNameID"]; ok {
+			logonRef = "transient:" + nameIDTransient.(string)
+		} else if nameIDPersistent, ok := claims["PersistentNameID"]; ok {
+			logonRef = "persistent:" + nameIDPersistent.(string)
+		} else if nameIDUnspecified, ok := claims["UnspecifiedNameID"]; ok {
+			logonRef = "unspecified:" + nameIDUnspecified.(string)
+		}
+		if logonRef != "" {
+			user.logonRef = &logonRef
+		}
 		if authority.Trusted {
 			// Use external authority session, if the external authority is trusted.
 			if sessionIndexString, ok := claims["SessionIndex"]; ok {
@@ -229,7 +240,7 @@ func (i *Identifier) writeSAML2AssertionConsumerService(rw http.ResponseWriter, 
 	utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
 }
 
-func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *http.Request) {
+func (i *Identifier) writeSAMLSingleLogoutServiceRequest(rw http.ResponseWriter, req *http.Request) {
 	lor, err := samlext.NewIdpLogoutRequest(req)
 	if err != nil {
 		i.logger.WithError(err).Debugln("identifier failed to process saml2 slo request")
@@ -288,8 +299,14 @@ func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *h
 		authorityDetails.Trusted = false
 	}
 
-	// TODO(longsleep): Validate signature if signed.
-	validated, err := authority.ValidateIdpLogoutRequest(lor, lor.RelayState)
+	if authorityDetails.AuthorityType != authorities.AuthorityTypeSAML2 {
+		i.logger.WithField("issuer", lor.Request.Issuer.Value).Debugln("identifier saml2 slo request for unknown authority type")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "slo request issuer authority type unknown")
+		return
+	}
+
+	// Validate.
+	validated, err := authority.ValidateIdpEndSessionRequest(lor, lor.RelayState)
 	if err != nil {
 		i.logger.WithError(err).WithField("issuer", authority.Issuer()).Debugln("identifier saml2 slo request authority validation failed")
 		i.ErrorPage(rw, http.StatusBadRequest, "", "slo request authority validation failed")
@@ -340,10 +357,82 @@ func (i *Identifier) writeSAMLSingleLogoutService(rw http.ResponseWriter, req *h
 		return
 	}
 
-	uri, _, err := authority.MakeRedirectLogoutRequestURL(&lor.Request, lor.RelayState)
+	uri, _, err := authorityDetails.MakeRedirectEndSessionResponseURL(&lor.Request, lor.RelayState)
 	if err != nil {
 		i.logger.WithError(err).Errorln("failed to make saml2 slo redirect request url")
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "saml2 slo failed")
+		return
+	}
+	if uri == nil {
+		i.logger.Warnln("saml2 slo reached dead end, no post logout redirect uri available")
+		// Fall back to logout confirm url.
+		uri, _ = i.absoluteURLForRoute("goodbye")
+	}
+
+	utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
+}
+
+func (i *Identifier) writeSAMLSingleLogoutServiceResponse(rw http.ResponseWriter, req *http.Request) {
+	lor, err := samlext.NewIdpLogoutResponse(req)
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier failed to process saml2 slo response")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "failed to parse response")
+		return
+	}
+
+	err = lor.Validate()
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier saml2 slo response validation failed")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "response validation failed")
+		return
+	}
+
+	sd, err := i.GetStateFromStateCookie(req.Context(), rw, req, "_/saml2/slo", lor.RelayState)
+	if err != nil {
+		i.logger.WithError(err).Debugln("identifier saml2 slo response failed to load state")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "response state invalid")
+		return
+	}
+
+	authority, found := i.authorities.Get(req.Context(), sd.Ref)
+	if !found {
+		i.ErrorPage(rw, http.StatusBadRequest, "", "no authority")
+		return
+	}
+
+	authorityDetails := authority.Authority()
+	if lor.SigAlg == nil {
+		// Never consider trusted if not signed.
+		authorityDetails.Trusted = false
+	}
+
+	if authorityDetails.AuthorityType != authorities.AuthorityTypeSAML2 {
+		i.logger.WithField("issuer", authority.Issuer()).Debugln("identifier saml2 slo response for unknown authority type")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "slo response issuer authority type unknown")
+		return
+	}
+
+	// Validate.
+	validated, err := authority.ValidateIdpEndSessionResponse(lor, lor.RelayState)
+	if err != nil {
+		i.logger.WithError(err).WithField("issuer", authority.Issuer()).Debugln("identifier saml2 slo response authority validation failed")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "slo response authority validation failed")
+		return
+	}
+	if !validated && authorityDetails.Trusted {
+		// Never consider unvalidated logout responses as trusted.
+		authorityDetails.Trusted = false
+	}
+
+	if lor.Response.Status.StatusCode.Value != saml.StatusSuccess {
+		i.logger.WithField("status", lor.Response.Status.StatusCode).Debugln("saml2 slo response without success status")
+	}
+
+	// Extract destination URI from state data (its put into the RawQuery field).
+	uri, err := url.Parse(sd.RawQuery)
+	if err != nil {
+		i.logger.WithError(err).Errorln("failed to parse slo response redirect url from state data")
+		i.ErrorPage(rw, http.StatusInternalServerError, "", "saml2 slo response failed")
 		return
 	}
 	if uri == nil {

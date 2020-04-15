@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -107,6 +108,8 @@ func (ar *saml2AuthorityRegistration) Authority() *Details {
 
 		Trusted:  ar.data.Trusted,
 		Insecure: ar.data.Insecure,
+
+		EndSessionEnabled: ar.data.EndSessionEnabled,
 
 		registration: ar,
 	}
@@ -212,6 +215,7 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 						SloURL:            *sloURL,
 						IDPMetadata:       md,
 						AllowIDPInitiated: false,
+						AuthnNameIDFormat: saml.TransientNameIDFormat,
 					}
 
 					ready := ar.ready
@@ -323,6 +327,21 @@ func (ar *saml2AuthorityRegistration) IdentityClaimValue(rawAssertion interface{
 		}
 	}
 
+	if assertion.Subject != nil {
+		switch assertion.Subject.NameID.Format {
+		case string(saml.TransientNameIDFormat):
+			claims["TransientNameID"] = assertion.Subject.NameID.Value
+		case string(saml.PersistentNameIDFormat):
+			claims["PersistentNameID"] = assertion.Subject.NameID.Value
+		case string(saml.UnspecifiedNameIDFormat):
+			claims["UnspecifiedNameID"] = assertion.Subject.NameID.Value
+		default:
+			return "", nil, errors.New("nameid format must be transient")
+		}
+	} else {
+		return "", nil, errors.New("subject not found")
+	}
+
 	// Convert claim value.
 	whitelisted := false
 	if ar.data.IdentityAliases != nil {
@@ -359,7 +378,44 @@ func (ar *saml2AuthorityRegistration) MakeRedirectAuthenticationRequestURL(state
 	}, nil
 }
 
-func (ar *saml2AuthorityRegistration) MakeRedirectLogoutRequestURL(rawReq interface{}, state string) (*url.URL, map[string]interface{}, error) {
+func (ar *saml2AuthorityRegistration) MakeRedirectEndSessionRequestURL(ref interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	ar.mutex.RLock()
+	defer ar.mutex.RUnlock()
+
+	if !ar.ready {
+		return nil, nil, errors.New("not ready")
+	}
+
+	logonRef := ref.(*string)
+	var nameID string
+	var nameIDFormat saml.NameIDFormat
+	if logonRef != nil {
+		logonRefParts := strings.SplitN(*logonRef, ":", 2)
+		switch logonRefParts[0] {
+		case "transient":
+			nameIDFormat = saml.TransientNameIDFormat
+		case "persistent":
+			nameIDFormat = saml.PersistentNameIDFormat
+		case "unspecified":
+			nameIDFormat = saml.UnspecifiedNameIDFormat
+		default:
+			return nil, nil, fmt.Errorf("unsupported name id format prefix: %v", logonRefParts[0])
+		}
+		nameID = logonRefParts[1]
+	}
+	req, err := ar.serviceProvider.MakeRedirectLogoutRequest(nameID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to make redirect logout request: %w", err)
+	}
+	req.NameID.Format = string(nameIDFormat)
+
+	lor := &samlext.LogoutRequest{
+		LogoutRequest: req,
+	}
+	return lor.Redirect(state), nil, nil
+}
+
+func (ar *saml2AuthorityRegistration) MakeRedirectEndSessionResponseURL(rawReq interface{}, state string) (*url.URL, map[string]interface{}, error) {
 	ar.mutex.RLock()
 	defer ar.mutex.RUnlock()
 
@@ -393,15 +449,19 @@ func (ar *saml2AuthorityRegistration) ParseStateResponse(req *http.Request, stat
 	return ar.serviceProvider.ParseResponse(req, []string{requestID})
 }
 
-func (ar *saml2AuthorityRegistration) ValidateIdpLogoutRequest(req interface{}, state string) (bool, error) {
+func (ar *saml2AuthorityRegistration) ValidateIdpEndSessionRequest(req interface{}, state string) (bool, error) {
 	slo := req.(*samlext.IdpLogoutRequest)
+
+	if slo.Request == nil {
+		return false, fmt.Errorf("request not set")
+	}
 
 	// NOTE(longsleep): We currently only support redirect binding (which uses a detached signature).
 	if slo.Binding != saml.HTTPRedirectBinding {
 		return false, fmt.Errorf("binding not supported")
 	}
 
-	// Validate signature if signed.
+	// Only validate signature if signed.
 	if slo.SigAlg == nil {
 		return false, nil
 	}
@@ -442,6 +502,65 @@ func (ar *saml2AuthorityRegistration) ValidateIdpLogoutRequest(req interface{}, 
 	}
 	pubKey := serviceProviderSigningCerts[0].PublicKey
 	if verifyErr := slo.VerifySignature(pubKey); verifyErr != nil {
+		return true, fmt.Errorf("signature verification failed: %w", verifyErr)
+	}
+
+	return true, nil
+}
+
+func (ar *saml2AuthorityRegistration) ValidateIdpEndSessionResponse(res interface{}, state string) (bool, error) {
+	lor := res.(*samlext.IdpLogoutResponse)
+
+	if lor.Response == nil {
+		return false, fmt.Errorf("response not set")
+	}
+
+	// NOTE(longsleep): We currently only support redirect binding (which uses a detached signature).
+	if lor.Binding != saml.HTTPRedirectBinding {
+		return false, fmt.Errorf("binding not supported")
+	}
+
+	// Only validate signature if signed.
+	if lor.SigAlg == nil {
+		return false, nil
+	}
+
+	ar.mutex.RLock()
+	serviceProviderSigningCerts := ar.serviceProviderSigningCerts
+	ready := ar.ready
+	ar.mutex.RUnlock()
+
+	if !ready {
+		return false, errors.New("not ready")
+	}
+
+	if len(serviceProviderSigningCerts) == 0 {
+		// No signing certs, cannot do anything.
+		return false, nil
+	}
+
+	// Check if we are good.
+	switch *lor.SigAlg {
+	case dsig.RSASHA1SignatureMethod:
+		ar.registry.logger.WithField("sig_alg", *lor.SigAlg).Warnln("saml2 insecure signature alg in idp logout response")
+		if !ar.Authority().Insecure {
+			return false, nil
+		}
+
+	default:
+		// Let the rest pass, and decide later.
+	}
+
+	if len(lor.Signature) == 0 {
+		return true, fmt.Errorf("signature data is empty")
+	}
+
+	// Get first certificate, and verify.
+	if len(serviceProviderSigningCerts) > 1 {
+		ar.registry.logger.Warnln("saml2 authority has multiple signing keys, using first")
+	}
+	pubKey := serviceProviderSigningCerts[0].PublicKey
+	if verifyErr := lor.VerifySignature(pubKey); verifyErr != nil {
 		return true, fmt.Errorf("signature verification failed: %w", verifyErr)
 	}
 

@@ -498,5 +498,11 @@ func (i *Identifier) handleSAML2SingleLogoutService(rw http.ResponseWriter, req 
 		return
 	}
 
-	i.writeSAMLSingleLogoutService(rw, req)
+	if _, ok := req.Form["SAMLRequest"]; ok {
+		i.writeSAMLSingleLogoutServiceRequest(rw, req)
+	} else if _, ok := req.Form["SAMLResponse"]; ok {
+		i.writeSAMLSingleLogoutServiceResponse(rw, req)
+	} else {
+		i.ErrorPage(rw, http.StatusBadRequest, "", "neither SAMLRequest nor SAMLResponse parameter found")
+	}
 }

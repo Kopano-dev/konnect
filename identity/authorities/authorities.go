@@ -44,6 +44,8 @@ type Details struct {
 	ResponseType        string
 	CodeChallengeMethod string
 
+	EndSessionEnabled bool
+
 	registration AuthorityRegistration
 
 	ready bool
@@ -65,9 +67,25 @@ func (d *Details) IdentityClaimValue(claims interface{}) (string, map[string]int
 // MakeRedirectAuthenticationRequestURL returns the authentication request
 // URL which can be used to initiate authentication with the associated
 // authority. It takes a state as parameter and in addition to the URL it also
-// returns a matting of extra state data and potentially an error.
+// returns a mapping of extra state data and potentially an error.
 func (d *Details) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
 	return d.registration.MakeRedirectAuthenticationRequestURL(state)
+}
+
+// MakeRedirectEndSessionRequestURL returns the end session request URL which
+// can be used to initiate end session with the associated authority. It takes
+// a state as paraeter and in addition to the URL it also returns a mappting
+// of extra state data and potentially an error.
+func (d *Details) MakeRedirectEndSessionRequestURL(ref interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	return d.registration.MakeRedirectEndSessionRequestURL(ref, state)
+}
+
+// MakeRedirectEndSessionResponseURL returns the end session response URL which
+// can be used to redirect back the response for an incoming end session request.
+// It takes the authority specific request and a state, returning the destination
+// url, additional state mapping and potential error.
+func (d *Details) MakeRedirectEndSessionResponseURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	return d.registration.MakeRedirectEndSessionResponseURL(req, state)
 }
 
 // ParseStateResponse takes an incoming request, a state and optional extra data

@@ -20,6 +20,7 @@ package identifier
 // Additional claims as used by the identifier in its own tokens.
 const (
 	SessionIDClaim           = "sid"
+	LogonRefClaim            = "lref"
 	ExternalAuthorityIDClaim = "eaid"
 )
 

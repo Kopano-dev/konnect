@@ -51,6 +51,7 @@ type oidcAuthorityRegistration struct {
 	discover              bool
 	metadataEndpoint      *url.URL
 	authorizationEndpoint *url.URL
+	endSessionEndpoint    *url.URL
 
 	validationKeys map[string]crypto.PublicKey
 
@@ -145,6 +146,8 @@ func (ar *oidcAuthorityRegistration) Authority() *Details {
 		ResponseType:        ar.data.ResponseType,
 		CodeChallengeMethod: ar.data.CodeChallengeMethod,
 
+		EndSessionEnabled: ar.data.EndSessionEnabled,
+
 		registration: ar,
 	}
 
@@ -226,8 +229,12 @@ func (ar *oidcAuthorityRegistration) Initialize(ctx context.Context, registry *R
 	return initializeOIDC(ctx, registry.logger, ar)
 }
 
-func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (string, map[string]interface{}, error) {
-	claims, _ := rawClaims.(jwt.MapClaims)
+func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawToken interface{}) (string, map[string]interface{}, error) {
+	idToken, _ := rawToken.(*jwt.Token)
+	if idToken == nil {
+		return "", nil, errors.New("invalid ID token data")
+	}
+	claims, _ := idToken.Claims.(jwt.MapClaims)
 	if claims == nil {
 		return "", nil, errors.New("invalid claims data")
 	}
@@ -246,6 +253,10 @@ func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (
 		return "", nil, errors.New("identify claim has invalid type")
 	}
 
+	// Add extra external authority claims, for example SessionIndex.
+	extra := make(map[string]interface{})
+	extra["RawIDToken"] = idToken.Raw
+
 	// Convert claim value.
 	whitelisted := false
 	if ar.data.IdentityAliases != nil {
@@ -260,7 +271,7 @@ func (ar *oidcAuthorityRegistration) IdentityClaimValue(rawClaims interface{}) (
 		return "", nil, errors.New("identity claim has no alias")
 	}
 
-	return cvs, nil, nil
+	return cvs, extra, nil
 }
 
 func (ar *oidcAuthorityRegistration) MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error) {
@@ -279,8 +290,31 @@ func (ar *oidcAuthorityRegistration) MakeRedirectAuthenticationRequestURL(state 
 	return uri, nil, nil
 }
 
-func (ar *oidcAuthorityRegistration) MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
-	return nil, nil, fmt.Errorf("not implemented")
+func (ar *oidcAuthorityRegistration) MakeRedirectEndSessionRequestURL(ref interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	ar.mutex.RLock()
+	defer ar.mutex.RUnlock()
+
+	if !ar.ready {
+		return nil, nil, errors.New("not ready")
+	}
+
+	logonRef := ref.(*string)
+	if logonRef == nil {
+		// Do nothing when we cannot provide id token hint.
+		return nil, nil, nil
+	}
+
+	uri, _ := url.Parse(ar.endSessionEndpoint.String())
+	query := make(url.Values)
+	query.Add("state", state)
+	query.Add("id_token_hint", *logonRef)
+	uri.RawQuery = query.Encode()
+
+	return uri, nil, nil
+}
+
+func (ar *oidcAuthorityRegistration) MakeRedirectEndSessionResponseURL(req interface{}, state string) (*url.URL, map[string]interface{}, error) {
+	return nil, nil, fmt.Errorf("idp end session not implemented")
 }
 
 func (ar *oidcAuthorityRegistration) ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error) {
@@ -298,7 +332,11 @@ func (ar *oidcAuthorityRegistration) ParseStateResponse(req *http.Request, state
 	return authenticationSuccess, nil
 }
 
-func (ar *oidcAuthorityRegistration) ValidateIdpLogoutRequest(req interface{}, state string) (bool, error) {
+func (ar *oidcAuthorityRegistration) ValidateIdpEndSessionRequest(req interface{}, state string) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
+func (ar *oidcAuthorityRegistration) ValidateIdpEndSessionResponse(res interface{}, state string) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
@@ -372,6 +410,12 @@ func initializeOIDC(ctx context.Context, logger logrus.FieldLogger, ar *oidcAuth
 				if pd.WellKnown != nil && pd.WellKnown.AuthorizationEndpoint != "" {
 					if ar.authorizationEndpoint, err = url.Parse(pd.WellKnown.AuthorizationEndpoint); err != nil {
 						providerLogger.WithError(err).Errorln("failed to parse oidc provider discover document authorization_endpoint")
+					}
+				}
+
+				if pd.WellKnown != nil && pd.WellKnown.EndSessionEndpoint != "" {
+					if ar.endSessionEndpoint, err = url.Parse(pd.WellKnown.EndSessionEndpoint); err != nil {
+						providerLogger.WithError(err).Errorln("failed to parse oidc provider discover document endsession_endpoint")
 					}
 				}
 

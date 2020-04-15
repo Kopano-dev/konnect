@@ -32,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus"
 	jose "gopkg.in/square/go-jose.v2"
 	jwt "gopkg.in/square/go-jose.v2/jwt"
+	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
@@ -263,6 +264,9 @@ func (i *Identifier) SetUserToLogonCookie(ctx context.Context, rw http.ResponseW
 	if sessionRef := user.SessionRef(); sessionRef != nil {
 		userClaims[SessionIDClaim] = *sessionRef
 	}
+	if logonRef := user.LogonRef(); logonRef != nil {
+		userClaims[LogonRefClaim] = *logonRef
+	}
 	if externalAuthorityID := user.ExternalAuthorityID(); externalAuthorityID != nil {
 		userClaims[ExternalAuthorityIDClaim] = *externalAuthorityID
 	}
@@ -315,6 +319,54 @@ func (i *Identifier) UnsetLogonCookie(ctx context.Context, user *IdentifiedUser,
 	}
 
 	return nil
+}
+
+// EndSession begins the process to end the session either directly or indirectly
+// based on the provided user. It optionally returns an uri which shall be used
+// as redirection target or an error.
+func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw http.ResponseWriter, postRedirectURI *url.URL) (*url.URL, error) {
+	err := i.UnsetLogonCookie(ctx, user, rw)
+	if err != nil {
+		return nil, err
+	}
+
+	var uri *url.URL
+	if user.externalAuthority != nil && user.externalAuthority.EndSessionEnabled {
+		// Generate state and set state cookie with postRedirectURI.
+		sd := &StateData{
+			State: rndm.GenerateRandomString(32),
+
+			Ref: user.externalAuthority.ID,
+		}
+		var extra map[string]interface{}
+		uri, extra, err = user.externalAuthority.MakeRedirectEndSessionRequestURL(user.LogonRef(), sd.State)
+		if err != nil {
+			return nil, err
+		}
+		sd.Extra = extra
+		if postRedirectURI != nil {
+			sd.RawQuery = postRedirectURI.String()
+		}
+
+		var scope string
+		switch user.externalAuthority.AuthorityType {
+		case authorities.AuthorityTypeOIDC:
+			// TODO(longsleep): Implement endsession for oidc authorities, also
+			// needs scope. Potentially the redirect also always needs to go
+			// through a trampolin page to ensure correct origin.
+			return nil, fmt.Errorf("oidc external authority end session not supported yet")
+		case authorities.AuthorityTypeSAML2:
+			scope = "_/saml2/slo"
+		}
+		if scope != "" {
+			err = i.SetStateToStateCookie(ctx, rw, scope, sd)
+			if err != nil {
+				return nil, fmt.Errorf("failed to set saml2 slo state cookie: %w", err)
+			}
+		}
+	}
+
+	return uri, nil
 }
 
 // GetUserFromLogonCookie looks up the associated cookie name from the provided
@@ -389,7 +441,7 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 		}
 	}
 
-	// Get and refresh session via claim.
+	// Get specific data from claims.
 	if v := userClaims[SessionIDClaim]; v != nil {
 		sessionRef := v.(string)
 		if sessionRef != "" {
@@ -405,8 +457,13 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 			}
 		}
 	}
-
-	// Get and set external authority via claim.
+	if v := userClaims[LogonRefClaim]; v != nil {
+		logonRef := v.(string)
+		if logonRef != "" {
+			// Remember logon ref in user.
+			user.logonRef = &logonRef
+		}
+	}
 	if v := userClaims[ExternalAuthorityIDClaim]; v != nil {
 		externalAuthorityID := v.(string)
 		if externalAuthorityID != "" {
@@ -435,6 +492,9 @@ func (i *Identifier) GetUserFromLogonCookie(ctx context.Context, req *http.Reque
 			user.displayName = v.(string)
 
 		case SessionIDClaim:
+			// Already handled above.
+			continue
+		case LogonRefClaim:
 			// Already handled above.
 			continue
 		case ExternalAuthorityIDClaim:

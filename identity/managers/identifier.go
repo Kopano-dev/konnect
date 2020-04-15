@@ -365,11 +365,18 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 			}
 		}
 		if clientDetails != nil && clientDetails.Trusted {
-			// Directly clear identifier session when a trusted client requests it.
-			err = im.identifier.UnsetLogonCookie(ctx, u, rw)
+			// Directly end identifier session when a trusted client requests
+			// and honor redirect wish if any.
+			var uri *url.URL
+			uri, err = im.identifier.EndSession(ctx, u, rw, esr.PostLogoutRedirectURI)
 			if err != nil {
-				im.logger.WithError(err).Errorln("IdentifierIdentityManager: failed to unset logon cookie")
+				// Do nothing if err.
+				im.logger.WithError(err).Errorln("IdentifierIdentityManager: failed to end session")
 				return err
+			}
+			if uri != nil {
+				// Redirect to uri if end session returned any.
+				return identity.NewRedirectError("", uri)
 			}
 		}
 	} else {

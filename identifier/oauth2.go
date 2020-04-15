@@ -199,7 +199,7 @@ func (i *Identifier) writeOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		// Lookup username and user.
-		un, _, claimsErr := authority.IdentityClaimValue(claims)
+		un, extra, claimsErr := authority.IdentityClaimValue(idToken)
 		if claimsErr != nil {
 			i.logger.WithError(claimsErr).Debugln("identifier failed to get username from oauth2 cb id token claims")
 			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InsufficientScope, "identity claim not found")
@@ -218,6 +218,14 @@ func (i *Identifier) writeOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 		if user == nil || user.Subject() == "" {
 			err = konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2AccessDenied, "no such user")
 			break
+		}
+
+		var logonRef string
+		if rawIDToken, ok := extra["RawIDToken"]; ok {
+			logonRef = rawIDToken.(string)
+		}
+		if logonRef != "" {
+			user.logonRef = &logonRef
 		}
 
 		// Get user meta data.

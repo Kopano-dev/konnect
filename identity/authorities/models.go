@@ -61,6 +61,8 @@ type authorityRegistrationData struct {
 
 	IdentityAliases       map[string]string `yaml:"identity_aliases,flow"`
 	IdentityAliasRequired bool              `yaml:"identity_alias_required"`
+
+	EndSessionEnabled bool `yaml:"end_session_enabled"`
 }
 
 type authorityRegistryData struct {
@@ -81,11 +83,13 @@ type AuthorityRegistration interface {
 	Initialize(ctx context.Context, registry *Registry) error
 
 	MakeRedirectAuthenticationRequestURL(state string) (*url.URL, map[string]interface{}, error)
-	MakeRedirectLogoutRequestURL(req interface{}, state string) (*url.URL, map[string]interface{}, error)
+	MakeRedirectEndSessionRequestURL(ref interface{}, state string) (*url.URL, map[string]interface{}, error)
+	MakeRedirectEndSessionResponseURL(req interface{}, state string) (*url.URL, map[string]interface{}, error)
 
 	ParseStateResponse(req *http.Request, state string, extra map[string]interface{}) (interface{}, error)
 
-	ValidateIdpLogoutRequest(req interface{}, state string) (bool, error)
+	ValidateIdpEndSessionRequest(req interface{}, state string) (bool, error)
+	ValidateIdpEndSessionResponse(res interface{}, state string) (bool, error)
 
 	IdentityClaimValue(data interface{}) (string, map[string]interface{}, error)
 

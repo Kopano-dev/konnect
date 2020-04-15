@@ -21,64 +21,33 @@ import (
 	"bytes"
 	"compress/flate"
 	"encoding/base64"
-	"encoding/xml"
-	"fmt"
 	"net/url"
 
+	"github.com/beevik/etree"
 	"github.com/crewjam/saml"
-	"stash.kopano.io/kgol/rndm"
 )
 
-func MakeLogoutResponse(sp *saml.ServiceProvider, req *saml.LogoutRequest, status *saml.Status, binding string) (*LogoutResponse, error) {
-
-	res := &LogoutResponse{&saml.LogoutResponse{
-		ID:           fmt.Sprintf("id-%x", rndm.GenerateRandomBytes(20)),
-		InResponseTo: req.ID,
-
-		Version:      "2.0",
-		IssueInstant: saml.TimeNow(),
-		Destination:  sp.GetSLOBindingLocation(binding),
-
-		Issuer: &saml.Issuer{
-			Format: "urn:oasis:names:tc:SAML:2.0:nameid-format:entity",
-			Value:  firstSet(sp.EntityID, sp.MetadataURL.String()),
-		},
-	}}
-
-	if status != nil {
-		res.LogoutResponse.Status = *status
-	}
-
-	return res, nil
-}
-
-func firstSet(a, b string) string {
-	if a == "" {
-		return b
-	}
-	return a
-}
-
-type LogoutResponse struct {
-	*saml.LogoutResponse
+type LogoutRequest struct {
+	*saml.LogoutRequest
 }
 
 // Redirect returns a URL suitable for using the redirect binding with the response.
-func (res *LogoutResponse) Redirect(relayState string) *url.URL {
+func (req *LogoutRequest) Redirect(relayState string) *url.URL {
 	w := &bytes.Buffer{}
 	w1 := base64.NewEncoder(base64.StdEncoding, w)
 	w2, _ := flate.NewWriter(w1, 9)
-	e := xml.NewEncoder(w2)
-	if err := e.Encode(res); err != nil {
+	doc := etree.NewDocument()
+	doc.SetRoot(req.Element())
+	if _, err := doc.WriteTo(w2); err != nil {
 		panic(err)
 	}
 	w2.Close()
 	w1.Close()
 
-	rv, _ := url.Parse(res.Destination)
+	rv, _ := url.Parse(req.Destination)
 
 	query := rv.Query()
-	query.Set("SAMLResponse", w.String())
+	query.Set("SAMLRequest", w.String())
 	if relayState != "" {
 		query.Set("RelayState", relayState)
 	}
