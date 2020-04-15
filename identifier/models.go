@@ -121,13 +121,22 @@ type StateResponse struct {
 
 // StateData contains data bound to a state.
 type StateData struct {
-	State    string `json:"state"`
+	State string `json:"state"`
+	Mode  string `json:"mode,omitempty"`
+
 	RawQuery string `json:"raw_query,omitempty"`
 
 	ClientID string `json:"client_id"`
 	Ref      string `json:"ref,omitempty"`
 
 	Extra map[string]interface{} `json:"extra,omitempty"`
+
+	Trampolin *TrampolinData `json:"trampolin,omitempty"`
+}
+
+type TrampolinData struct {
+	URI   string `json:"uri"`
+	Scope string `json:"scope"`
 }
 
 // A ConsentRequest is the request data as sent to the consent endpoint.

@@ -169,11 +169,13 @@ func (i *Identifier) AddRoutes(ctx context.Context, router *mux.Router) {
 	r.Handle("/identifier/_/logoff", i.secureHandler(http.HandlerFunc(i.handleLogoff))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/hello", i.secureHandler(http.HandlerFunc(i.handleHello))).Methods(http.MethodPost)
 	r.Handle("/identifier/_/consent", i.secureHandler(http.HandlerFunc(i.handleConsent))).Methods(http.MethodPost)
-	r.Handle("/identifier/oauth2/start", http.HandlerFunc(i.handleOAuth2Start)).Methods(http.MethodGet)
-	r.Handle("/identifier/oauth2/cb", http.HandlerFunc(i.handleOAuth2Cb)).Methods(http.MethodGet)
+	r.Handle("/identifier/oauth2/start", http.HandlerFunc(i.handleOAuth2Start)).Methods(http.MethodGet).Name("oauth2/start")
+	r.Handle("/identifier/oauth2/cb", http.HandlerFunc(i.handleOAuth2Cb)).Methods(http.MethodGet).Name("oauth2/cb")
 	r.Handle("/identifier/saml2/metadata", http.HandlerFunc(i.handleSAML2Metadata))
 	r.Handle("/identifier/saml2/acs", http.HandlerFunc(i.handleSAML2AssertionConsumerService)).Methods(http.MethodPost).Name("saml2/acs")
 	r.Handle("/identifier/_/saml2/slo", http.HandlerFunc(i.handleSAML2SingleLogoutService)).Methods(http.MethodGet).Name("saml2/slo")
+	r.Handle("/identifier/trampolin", http.HandlerFunc(i.handleTrampolin)).Methods(http.MethodGet).Name("trampolin")
+	r.Handle("/identifier/trampolin/trampolin.js", http.HandlerFunc(i.handleTrampolin)).Methods(http.MethodGet)
 
 	i.router = r
 
@@ -335,6 +337,7 @@ func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw ht
 		// Generate state and set state cookie with postRedirectURI.
 		sd := &StateData{
 			State: rndm.GenerateRandomString(32),
+			Mode:  StateModeEndSession,
 
 			Ref: user.externalAuthority.ID,
 		}
@@ -351,13 +354,29 @@ func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw ht
 		var scope string
 		switch user.externalAuthority.AuthorityType {
 		case authorities.AuthorityTypeOIDC:
-			// TODO(longsleep): Implement endsession for oidc authorities, also
-			// needs scope. Potentially the redirect also always needs to go
-			// through a trampolin page to ensure correct origin.
-			return nil, fmt.Errorf("oidc external authority end session not supported yet")
+			// Inject post logout url target.
+			cb, _ := i.router.GetRoute("oauth2/cb").URL()
+			next, _ := url.Parse(i.baseURI.String())
+			next.Path = cb.Path
+			query := uri.Query()
+			query.Set("post_logout_redirect_uri", next.String())
+			uri.RawQuery = query.Encode()
+			// Redirect using trampolin, to ensure origin checks of external
+			// authority can pass.
+			sd.Trampolin = &TrampolinData{
+				URI:   uri.String(),
+				Scope: "oauth2/cb",
+			}
+			scope = "trampolin"
+			uri, _ = i.router.GetRoute("trampolin").URL()
+			query = make(url.Values)
+			query.Add("state", sd.State)
+			uri.RawQuery = query.Encode()
+
 		case authorities.AuthorityTypeSAML2:
 			scope = "_/saml2/slo"
 		}
+
 		if scope != "" {
 			err = i.SetStateToStateCookie(ctx, rw, scope, sd)
 			if err != nil {

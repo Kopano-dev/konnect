@@ -432,6 +432,42 @@ func (i *Identifier) handleHello(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (i *Identifier) handleTrampolin(rw http.ResponseWriter, req *http.Request) {
+	if !strings.HasSuffix(req.URL.Path, ".js") {
+		err := req.ParseForm()
+		if err != nil {
+			i.logger.WithError(err).Debugln("identifier failed to decode trampolin request")
+			i.ErrorPage(rw, http.StatusBadRequest, "", "failed to decode request parameters")
+			return
+		}
+
+		sd, err := i.GetStateFromStateCookie(req.Context(), rw, req, "trampolin", req.Form.Get("state"))
+		if err != nil {
+			i.ErrorPage(rw, http.StatusBadRequest, "", err.Error())
+			return
+		}
+		if sd == nil || sd.Trampolin == nil {
+			i.ErrorPage(rw, http.StatusBadRequest, "", "no state")
+			return
+		}
+
+		scope := sd.Trampolin.Scope
+		uri, _ := url.Parse(sd.Trampolin.URI)
+		sd.Trampolin = nil
+
+		err = i.SetStateToStateCookie(req.Context(), rw, scope, sd)
+		if err != nil {
+			i.logger.WithError(err).Errorln("failed to write trampolin state cookie")
+			i.ErrorPage(rw, http.StatusInternalServerError, "", "failed to write trampolin state cookie")
+			return
+		}
+
+		i.writeTrampolinHTML(rw, req, uri)
+	} else {
+		i.writeTrampolinScript(rw, req)
+	}
+}
+
 func (i *Identifier) handleOAuth2Start(rw http.ResponseWriter, req *http.Request) {
 	err := req.ParseForm()
 	if err != nil {

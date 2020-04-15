@@ -33,3 +33,9 @@ const (
 	// be treated as error.
 	MustBeSignedIn = "must"
 )
+
+const (
+	// StateModeEndSession is a state mode which selects end session specific
+	// actions when processing state requests.
+	StateModeEndSession = "0"
+)

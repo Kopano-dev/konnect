@@ -140,7 +140,7 @@ func (i *Identifier) writeOAuth2Start(rw http.ResponseWriter, req *http.Request,
 }
 
 func (i *Identifier) writeOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
-	// Callbacks from authorization. Validate as specified at
+	// Callbacks from authorization or end session. Validate as specified at
 	// https://tools.ietf.org/html/rfc6749#section-4.1.2 and https://tools.ietf.org/html/rfc6749#section-10.12.
 	var err error
 	var sd *StateData
@@ -170,6 +170,34 @@ func (i *Identifier) writeOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 		if authority.AuthorityType != authorities.AuthorityTypeOIDC {
 			err = errors.New("unknown authority type")
 			break
+		}
+
+		// Check incoming state type.
+		var done bool
+		done, err = func() (bool, error) {
+			switch sd.Mode {
+			case StateModeEndSession:
+				// Special mode. When in end session, take value from state and
+				// redirect to it. This completes end session callback.
+				uri, _ := url.Parse(sd.RawQuery)
+				if uri == nil {
+					return false, konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "no uri in state")
+				}
+				utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
+
+				return true, nil
+			default:
+				// Continue further.
+			}
+
+			return false, nil
+		}()
+		if err != nil {
+			break
+		}
+		if done {
+			// Already done, nothing further so return.
+			return
 		}
 
 		// Parse incoming state response.
