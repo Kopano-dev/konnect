@@ -93,7 +93,9 @@ func commandServe() *cobra.Command {
 	serveCmd.Flags().StringArrayVar(&cfg.AllowScope, "allow-scope", nil, "Allow OAuth 2 scope (can be used multiple times, if not set default scopes are allowed)")
 	serveCmd.Flags().BoolVar(&cfg.AllowClientGuests, "allow-client-guests", false, "Allow sign in of client controlled guest users")
 	serveCmd.Flags().BoolVar(&cfg.AllowDynamicClientRegistration, "allow-dynamic-client-registration", false, "Allow dynamic OAuth2 client registration")
-
+	serveCmd.Flags().Uint64Var(&cfg.AccessTokenDurationSeconds, "access-token-expiration", 60*10, "Expiration time of access tokens in seconds since generated")             // 10 Minutes.
+	serveCmd.Flags().Uint64Var(&cfg.IDTokenDurationSeconds, "id-token-expiration", 60*60, "Expiration time of id tokens in seconds since generated")                         // 1 Hour.
+	serveCmd.Flags().Uint64Var(&cfg.RefreshTokenDurationSeconds, "refresh-token-expiration", 60*60*24*365*3, "Expiration time of refresh tokens in seconds since generated") // 3 Years.
 	serveCmd.Flags().Bool("log-timestamp", true, "Prefix each log line with timestamp")
 	serveCmd.Flags().String("log-level", "info", "Log level (one of panic, fatal, error, warn, info or debug)")
 	serveCmd.Flags().Bool("with-pprof", false, "With pprof enabled")

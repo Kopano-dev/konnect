@@ -90,6 +90,9 @@ type Config struct {
 	ValidationKeysPath             string
 	CookieBackendURI               string
 	CookieNames                    []string
+	AccessTokenDurationSeconds     uint64
+	IDTokenDurationSeconds         uint64
+	RefreshTokenDurationSeconds    uint64
 }
 
 // Bootstrap is a data structure to hold configuration required to start
@@ -121,8 +124,10 @@ type bootstrap struct {
 	signers          map[string]crypto.Signer
 	validators       map[string]crypto.PublicKey
 
-	accessTokenDurationSeconds uint64
-	uriBasePath                string
+	accessTokenDurationSeconds  uint64
+	idTokenDurationSeconds      uint64
+	refreshTokenDurationSeconds uint64
+	uriBasePath                 string
 
 	cfg      *config.Config
 	managers *managers.Managers
@@ -345,7 +350,19 @@ func (bs *bootstrap) initialize(cfg *Config) error {
 	}
 
 	bs.cfg.HTTPTransport = utils.HTTPTransportWithTLSClientConfig(bs.tlsClientConfig)
-	bs.accessTokenDurationSeconds = 10 * 60 // 10 Minutes.
+
+	bs.accessTokenDurationSeconds = cfg.AccessTokenDurationSeconds
+	if bs.accessTokenDurationSeconds == 0 {
+		bs.accessTokenDurationSeconds = 60 * 10 // 10 Minutes
+	}
+	bs.idTokenDurationSeconds = cfg.IDTokenDurationSeconds
+	if bs.idTokenDurationSeconds == 0 {
+		bs.idTokenDurationSeconds = 60 * 60 // 1 Hour
+	}
+	bs.refreshTokenDurationSeconds = cfg.RefreshTokenDurationSeconds
+	if bs.refreshTokenDurationSeconds == 0 {
+		bs.refreshTokenDurationSeconds = 60 * 60 * 24 * 365 * 3 // 3 Years
+	}
 
 	return nil
 }
@@ -512,8 +529,8 @@ func (bs *bootstrap) setupOIDCProvider(ctx context.Context) (*oidcProvider.Provi
 		SessionCookieName: "__Secure-KKCS", // Kopano-Konnect-Client-Session
 
 		AccessTokenDuration:  time.Duration(bs.accessTokenDurationSeconds) * time.Second,
-		IDTokenDuration:      1 * time.Hour,            // 1 Hour, must be consumed by then.
-		RefreshTokenDuration: 24 * 365 * 3 * time.Hour, // 3 Years.
+		IDTokenDuration:      time.Duration(bs.idTokenDurationSeconds) * time.Second,
+		RefreshTokenDuration: time.Duration(bs.refreshTokenDurationSeconds) * time.Second,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create provider: %v", err)

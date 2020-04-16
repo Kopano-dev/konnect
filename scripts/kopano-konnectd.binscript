@@ -91,7 +91,7 @@ case "${1}" in
 		fi
 
 		if [ "$insecure" = "yes" ]; then
-			set -- "$@" "--insecure"
+			set -- "$@" --insecure
 		fi
 
 		if [ -n "$listen" ]; then
@@ -148,11 +148,23 @@ case "${1}" in
 		fi
 
 		if [ "$allow_client_guests" = "yes" ]; then
-			set -- "$@" "--allow-client-guests"
+			set -- "$@" --allow-client-guests
 		fi
 
 		if [ "$allow_dynamic_client_registration" = "yes" ]; then
-			set -- "$@" "--allow-dynamic-client-registration"
+			set -- "$@" --allow-dynamic-client-registration
+		fi
+
+		if [ -n "$access_token_expiration" ]; then
+			set -- "$@" --access-token-expiration="$access_token_expiration"
+		fi
+
+		if [ -n "$id_token_expiration" ]; then
+			set -- "$@" --id-token-expiration="$id_token_expiration"
+		fi
+
+		if [ -n "$refresh_token_expiration" ]; then
+			set -- "$@" --refresh-token-expiration="$refresh_token_expiration"
 		fi
 
 		# kc identity manager
