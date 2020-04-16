@@ -14,11 +14,11 @@
 # limitations under the License.
 #
 
-FROM alpine:3.10
+FROM alpine:3.11
 LABEL maintainer="development@kopano.io"
 
 RUN apk add --no-cache \
-	su-exec=0.2-r0
+	su-exec=0.2-r1
 
 # Expose ports.
 EXPOSE 8777
@@ -99,8 +99,8 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # Download
 RUN apk add --no-cache \
-		ca-certificates=20191127-r0 \
-		curl=7.66.0-r0 \
+		ca-certificates=20191127-r1 \
+		curl=7.67.0-r0 \
 	&& curl -sSL https://download.kopano.io/community/konnect:/kopano-konnect-${VERSION}.tar.gz | \
 	tar -C /var/lib/konnectd-docker --strip 1 -vxzf - && \
 	mv ${EXE} /usr/local/bin/${EXE}
