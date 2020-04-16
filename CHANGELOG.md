@@ -4,6 +4,14 @@
 
 
 
+## v0.33.0 (2020-04-16)
+
+- Allow configuration of expiration of oidc access, id and refresh tokens
+- Implement trampolin for external OIDC authority end session
+- Update to latest Alpine release
+- Update ca-certificates version
+
+
 ## v0.32.0 (2020-04-15)
 
 - Implement delegation of end session to external authority
