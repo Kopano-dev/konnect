@@ -122,7 +122,11 @@ func (ar *saml2AuthorityRegistration) Authority() *Details {
 }
 
 func (ar *saml2AuthorityRegistration) Issuer() string {
-	return ar.metadataEndpoint.String()
+	issuer := ar.serviceProvider.IDPMetadata.EntityID
+	if issuer == "" {
+		issuer = ar.metadataEndpoint.String()
+	}
+	return issuer
 }
 
 func (ar *saml2AuthorityRegistration) Validate() error {
@@ -239,7 +243,10 @@ func (ar *saml2AuthorityRegistration) Initialize(ctx context.Context, registry *
 					ar.mutex.Unlock()
 
 					if ready {
-						logger.WithField("signing_certs", len(serviceProviderSigningCerts)).Debugln("SAML2 provider meta data loaded and initialized")
+						logger.WithFields(logrus.Fields{
+							"signing_certs": len(serviceProviderSigningCerts),
+							"issuer":        ar.Issuer(),
+						}).Debugln("SAML2 provider meta data loaded and initialized")
 						return
 					}
 
