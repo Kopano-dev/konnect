@@ -393,6 +393,11 @@ func (i *Identifier) writeSAMLSingleLogoutServiceResponse(rw http.ResponseWriter
 		i.ErrorPage(rw, http.StatusBadRequest, "", "response state invalid")
 		return
 	}
+	if sd == nil {
+		i.logger.WithError(err).Debugln("identifier saml2 slo response failed as state is missing")
+		i.ErrorPage(rw, http.StatusBadRequest, "", "response state missing")
+		return
+	}
 
 	authority, found := i.authorities.Get(req.Context(), sd.Ref)
 	if !found {
