@@ -357,7 +357,7 @@ func (i *Identifier) writeSAMLSingleLogoutServiceRequest(rw http.ResponseWriter,
 		return
 	}
 
-	uri, _, err := authorityDetails.MakeRedirectEndSessionResponseURL(&lor.Request, lor.RelayState)
+	uri, _, err := authorityDetails.MakeRedirectEndSessionResponseURL(lor.Request, lor.RelayState)
 	if err != nil {
 		i.logger.WithError(err).Errorln("failed to make saml2 slo redirect request url")
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "saml2 slo failed")
