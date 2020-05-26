@@ -4,6 +4,13 @@
 
 
 
+## v0.33.1 (2020-05-26)
+
+- Fix SAML2 logout request parsing
+- Cure panic when no state is found in saml esr
+- Use SAML IdP Issuer value from meta data entityID
+
+
 ## v0.33.0 (2020-04-16)
 
 - Allow configuration of expiration of oidc access, id and refresh tokens
