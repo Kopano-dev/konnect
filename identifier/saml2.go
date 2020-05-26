@@ -440,7 +440,7 @@ func (i *Identifier) writeSAMLSingleLogoutServiceResponse(rw http.ResponseWriter
 		i.ErrorPage(rw, http.StatusInternalServerError, "", "saml2 slo response failed")
 		return
 	}
-	if uri == nil {
+	if uri == nil || uri.String() == "" {
 		i.logger.Warnln("saml2 slo reached dead end, no post logout redirect uri available")
 		// Fall back to logout confirm url.
 		uri, _ = i.absoluteURLForRoute("goodbye")

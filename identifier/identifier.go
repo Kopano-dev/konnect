@@ -347,7 +347,7 @@ func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw ht
 			return nil, err
 		}
 		sd.Extra = extra
-		if postRedirectURI != nil {
+		if postRedirectURI != nil && postRedirectURI.String() != "" {
 			sd.RawQuery = postRedirectURI.String()
 		}
 
