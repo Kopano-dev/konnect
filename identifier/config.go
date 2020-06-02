@@ -37,6 +37,7 @@ type Config struct {
 	WebAppDisabled bool
 
 	AuthorizationEndpointURI *url.URL
+	SignedOutEndpointURI     *url.URL
 
 	Backend backends.Backend
 }

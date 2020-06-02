@@ -122,6 +122,8 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	}
 
 	fullAuthorizationEndpointURL := withSchemeAndHost(bs.authorizationEndpointURI, bs.issuerIdentifierURI)
+	fullSignInFormURL := withSchemeAndHost(bs.signInFormURI, bs.issuerIdentifierURI)
+	fullSignedOutEndpointURL := withSchemeAndHost(bs.signedOutURI, bs.issuerIdentifierURI)
 
 	activeIdentifier, err := identifier.NewIdentifier(&identifier.Config{
 		Config: bs.cfg,
@@ -134,6 +136,7 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 		WebAppDisabled:  bs.identifierClientDisabled,
 
 		AuthorizationEndpointURI: fullAuthorizationEndpointURL,
+		SignedOutEndpointURI:     fullSignedOutEndpointURL,
 
 		Backend: identifierBackend,
 	})
@@ -146,8 +149,8 @@ func newKCIdentityManager(bs *bootstrap) (identity.Manager, error) {
 	}
 
 	identityManagerConfig := &identity.Config{
-		SignInFormURI: withSchemeAndHost(bs.signInFormURI, bs.issuerIdentifierURI),
-		SignedOutURI:  withSchemeAndHost(bs.signedOutURI, bs.issuerIdentifierURI),
+		SignInFormURI: fullSignInFormURL,
+		SignedOutURI:  fullSignedOutEndpointURL,
 
 		Logger: logger,
 

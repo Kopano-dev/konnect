@@ -66,6 +66,7 @@ type Identifier struct {
 	webappIndexHTML []byte
 
 	authorizationEndpointURI *url.URL
+	signedOutEndpointURI     *url.URL
 	oauth2CbEndpointURI      *url.URL
 
 	encrypter   jose.Encrypter
@@ -115,6 +116,7 @@ func NewIdentifier(c *Config) (*Identifier, error) {
 		webappIndexHTML: webappIndexHTML,
 
 		authorizationEndpointURI: c.AuthorizationEndpointURI,
+		signedOutEndpointURI:     c.SignedOutEndpointURI,
 		oauth2CbEndpointURI:      oauth2CbEndpointURI,
 
 		backend: c.Backend,
