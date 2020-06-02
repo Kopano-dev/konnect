@@ -4,6 +4,12 @@
 
 
 
+## v0.33.2 (2020-06-02)
+
+- Use signed-out-uri if set as fallback for goodbye redirect on saml slo
+- Add checks to ensure post_logout_redirect_uri is not empty
+
+
 ## v0.33.1 (2020-05-26)
 
 - Fix SAML2 logout request parsing
