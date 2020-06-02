@@ -4,6 +4,11 @@
 
 
 
+## v0.33.3 (2020-06-02)
+
+- Use server provided username to avoid case mismatch
+
+
 ## v0.33.2 (2020-06-02)
 
 - Use signed-out-uri if set as fallback for goodbye redirect on saml slo
