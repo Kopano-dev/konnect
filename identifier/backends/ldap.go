@@ -348,7 +348,7 @@ func (b *LDAPIdentifierBackend) RunWithContext(ctx context.Context) error {
 
 // Logon implements the Backend interface, enabling Logon with user name and
 // password as provided. Requests are bound to the provided context.
-func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, password string) (bool, *string, *string, map[string]interface{}, error) {
+func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, password string) (bool, *string, *string, UserFromBackend, error) {
 	loginAttributeName := b.attributeMapping[ldapDefinitions.AttributeLogin]
 	if loginAttributeName == "" {
 		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon impossible as no login attribute is set")
@@ -394,12 +394,15 @@ func (b *LDAPIdentifierBackend) Logon(ctx context.Context, audience, username, p
 		return false, nil, nil, nil, fmt.Errorf("ldap identifier backend logon entry data error: %v", err)
 	}
 
+	// Use the users subject as user id.
+	userID := user.Subject()
+
 	b.logger.WithFields(logrus.Fields{
-		"username": username,
-		"id":       entryID,
+		"username": user.Username(),
+		"id":       userID,
 	}).Debugln("ldap identifier backend logon")
 
-	return true, &entryID, nil, user.BackendClaims(), nil
+	return true, &userID, nil, user, nil
 }
 
 // ResolveUserByUsername implements the Beckend interface, providing lookup for

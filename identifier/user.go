@@ -162,24 +162,24 @@ func (u *IdentifiedUser) BackendName() string {
 }
 
 func (i *Identifier) logonUser(ctx context.Context, audience, username, password string) (*IdentifiedUser, error) {
-	success, subject, sessionRef, claims, err := i.backend.Logon(ctx, audience, username, password)
+	success, subject, sessionRef, u, err := i.backend.Logon(ctx, audience, username, password)
 	if err != nil {
 		return nil, err
 	}
 
-	if !success {
+	if !success || u == nil {
 		return nil, nil
 	}
 
 	user := &IdentifiedUser{
 		sub: *subject,
 
-		username: username,
+		username: u.Username(),
 
 		backend: i.backend,
 
 		sessionRef: sessionRef,
-		claims:     claims,
+		claims:     u.BackendClaims(),
 	}
 
 	return user, nil

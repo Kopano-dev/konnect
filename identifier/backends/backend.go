@@ -29,7 +29,7 @@ import (
 type Backend interface {
 	RunWithContext(context.Context) error
 
-	Logon(ctx context.Context, audience string, username string, password string) (success bool, userID *string, sessionRef *string, claims map[string]interface{}, err error)
+	Logon(ctx context.Context, audience string, username string, password string) (success bool, userID *string, sessionRef *string, user UserFromBackend, err error)
 	GetUser(ctx context.Context, userID string, sessionRef *string) (user UserFromBackend, err error)
 
 	ResolveUserByUsername(ctx context.Context, username string) (user UserFromBackend, err error)

@@ -291,7 +291,7 @@ func (b *KCIdentifierBackend) RunWithContext(ctx context.Context) error {
 
 // Logon implements the Backend interface, enabling Logon with user name and
 // password as provided. Requests are bound to the provided context.
-func (b *KCIdentifierBackend) Logon(ctx context.Context, audience, username, password string) (bool, *string, *string, map[string]interface{}, error) {
+func (b *KCIdentifierBackend) Logon(ctx context.Context, audience, username, password string) (bool, *string, *string, UserFromBackend, error) {
 	var logonFlags kcc.KCFlag
 	logonFlags |= kcc.KOPANO_LOGON_NO_UID_AUTH
 	if b.useGlobalSession {
@@ -346,12 +346,12 @@ func (b *KCIdentifierBackend) Logon(ctx context.Context, audience, username, pas
 		b.logger.WithFields(logrus.Fields{
 			"session":  session,
 			"ref":      *sessionRef,
-			"username": username,
-			"id":       user.Subject(),
+			"username": user.Username(),
+			"id":       userID,
 			"abeid":    user.user.UserEntryID,
 		}).Debugln("kc identifier backend logon")
 
-		return true, &userID, sessionRef, user.BackendClaims(), nil
+		return true, &userID, sessionRef, user, nil
 
 	case kcc.KCERR_LOGON_FAILED:
 		return false, nil, nil, nil, nil
