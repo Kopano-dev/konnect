@@ -32,7 +32,6 @@ import (
 	"github.com/sirupsen/logrus"
 	jose "gopkg.in/square/go-jose.v2"
 	jwt "gopkg.in/square/go-jose.v2/jwt"
-	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
@@ -328,7 +327,7 @@ func (i *Identifier) UnsetLogonCookie(ctx context.Context, user *IdentifiedUser,
 // EndSession begins the process to end the session either directly or indirectly
 // based on the provided user. It optionally returns an uri which shall be used
 // as redirection target or an error.
-func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw http.ResponseWriter, postRedirectURI *url.URL) (*url.URL, error) {
+func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw http.ResponseWriter, postRedirectURI *url.URL, state string) (*url.URL, error) {
 	err := i.UnsetLogonCookie(ctx, user, rw)
 	if err != nil {
 		return nil, err
@@ -338,7 +337,7 @@ func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw ht
 	if user.externalAuthority != nil && user.externalAuthority.EndSessionEnabled {
 		// Generate state and set state cookie with postRedirectURI.
 		sd := &StateData{
-			State: rndm.GenerateRandomString(32),
+			State: state,
 			Mode:  StateModeEndSession,
 
 			Ref: user.externalAuthority.ID,

@@ -183,6 +183,11 @@ func (i *Identifier) writeOAuth2Cb(rw http.ResponseWriter, req *http.Request) {
 				if uri == nil {
 					return false, konnectoidc.NewOAuth2Error(oidc.ErrorCodeOAuth2InvalidRequest, "no uri in state")
 				}
+				if sd.State != "" {
+					query := uri.Query()
+					query.Set("state", sd.State)
+					uri.RawQuery = query.Encode()
+				}
 				utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
 
 				return true, nil

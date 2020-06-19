@@ -449,6 +449,11 @@ func (i *Identifier) writeSAMLSingleLogoutServiceResponse(rw http.ResponseWriter
 			uri, _ = i.absoluteURLForRoute("goodbye")
 		}
 	}
+	if sd.State != "" {
+		query := uri.Query()
+		query.Set("state", sd.State)
+		uri.RawQuery = query.Encode()
+	}
 
 	utils.WriteRedirect(rw, http.StatusFound, uri, nil, false)
 }

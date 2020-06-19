@@ -368,7 +368,7 @@ func (im *IdentifierIdentityManager) EndSession(ctx context.Context, rw http.Res
 			// Directly end identifier session when a trusted client requests
 			// and honor redirect wish if any.
 			var uri *url.URL
-			uri, err = im.identifier.EndSession(ctx, u, rw, esr.PostLogoutRedirectURI)
+			uri, err = im.identifier.EndSession(ctx, u, rw, esr.PostLogoutRedirectURI, esr.State)
 			if err != nil {
 				// Do nothing if err.
 				im.logger.WithError(err).Errorln("IdentifierIdentityManager: failed to end session")
