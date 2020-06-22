@@ -784,10 +784,11 @@ done:
 			// do nothing
 		case *konnectoidc.OAuth2Error:
 			err = esr.NewError(err.Error(), err.(*konnectoidc.OAuth2Error).Description())
-			if esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
+			uri := esr.MakeRedirectEndSessionRequestURL()
+			if uri == nil {
 				p.ErrorPage(rw, http.StatusForbidden, err.Error(), "oauth2 error")
 			} else {
-				p.Found(rw, esr.PostLogoutRedirectURI, err, false)
+				p.Found(rw, uri, err, false)
 			}
 		default:
 			p.logger.WithFields(utils.ErrorAsFields(err)).Errorln("endsession request failed")
@@ -802,13 +803,14 @@ done:
 		State: esr.State,
 	}
 
-	if esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
+	uri := esr.MakeRedirectEndSessionRequestURL()
+	if uri == nil {
 		err = utils.WriteJSON(rw, http.StatusOK, response, "")
 		if err != nil {
 			p.logger.WithError(err).Errorln("endsession request failed writing response")
 		}
 	} else {
-		p.Found(rw, esr.PostLogoutRedirectURI, response, false)
+		p.Found(rw, uri, response, false)
 	}
 }
 

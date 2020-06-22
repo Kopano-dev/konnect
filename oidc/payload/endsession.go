@@ -117,3 +117,18 @@ func (esr *EndSessionRequest) NewBadRequest(id string, description string) *Auth
 		State:            esr.State,
 	}
 }
+
+func (esr *EndSessionRequest) MakeRedirectEndSessionRequestURL() *url.URL {
+	if esr.PostLogoutRedirectURI == nil || esr.PostLogoutRedirectURI.String() == "" {
+		return nil
+	}
+
+	if esr.State == "" {
+		return esr.PostLogoutRedirectURI
+	}
+	uri, _ := url.Parse(esr.PostLogoutRedirectURI.String())
+	query := uri.Query()
+	query.Add("state", esr.State)
+	uri.RawQuery = query.Encode()
+	return uri
+}

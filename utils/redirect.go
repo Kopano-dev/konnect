@@ -18,7 +18,6 @@
 package utils
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -32,29 +31,31 @@ import (
 // asFragment is true, the provided params are added as URL fragment, otherwise
 // they replace the query. If params is nil, the provided uri is taken as is.
 func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interface{}, asFragment bool) error {
-	uriString := uri.String()
-
 	if params != nil {
-		queryString, err := query.Values(params)
+		paramValues, err := query.Values(params)
 		if err != nil {
 			return err
 		}
 
-		separator := "#"
-		if !asFragment {
-			separator = "?"
+		u, _ := url.Parse(uri.String())
+		if asFragment {
+			if u.Fragment != "" {
+				u.Fragment += "&"
+			}
+			u.Fragment += strings.ReplaceAll(paramValues.Encode(), "+", "%20") // NOTE(longsleep): Ensure we use %20 instead of +.
+		} else {
+			queryValues := u.Query()
+			for k, vs := range paramValues {
+				for _, v := range vs {
+					queryValues.Add(k, v)
+				}
+			}
+			u.RawQuery = strings.ReplaceAll(queryValues.Encode(), "+", "%20") // NOTE(longsleep): Ensure we use %20 instead of +.
 		}
-
-		if strings.Contains(uriString, separator) {
-			// Avoid generating invalid URLs if the separator is already part
-			// of the target URL - instead append it in the most likely way.
-			separator = "&"
-		}
-		queryStringEncoded := strings.Replace(queryString.Encode(), "+", "%20", -1) // NOTE(longsleep): Ensure we use %20 instead of +.
-		uriString = fmt.Sprintf("%s%s%s", uriString, separator, queryStringEncoded)
+		uri = u
 	}
 
-	rw.Header().Set("Location", uriString)
+	rw.Header().Set("Location", uri.String())
 	rw.Header().Set("Cache-Control", "no-store")
 	rw.Header().Set("Pragma", "no-cache")
 
