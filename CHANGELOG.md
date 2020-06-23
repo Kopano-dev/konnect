@@ -4,6 +4,13 @@
 
 
 
+## v0.33.4 (2020-06-23)
+
+- Avoid generating fragmet/query URLs with wrong order
+- Return state for oidc endsession response redirects
+- Build with Go 1.14.4
+
+
 ## v0.33.3 (2020-06-02)
 
 - Use server provided username to avoid case mismatch
