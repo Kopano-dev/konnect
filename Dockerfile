@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2017-2019 Kopano and its licensors
+# Copyright 2017-2020 Kopano and its licensors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-FROM alpine:3.10
+FROM alpine:3.12
 LABEL maintainer="development@kopano.io"
 
 RUN apk add --no-cache \
