@@ -42,7 +42,9 @@ func WriteRedirect(rw http.ResponseWriter, code int, uri *url.URL, params interf
 			if u.Fragment != "" {
 				u.Fragment += "&"
 			}
-			u.Fragment += strings.ReplaceAll(paramValues.Encode(), "+", "%20") // NOTE(longsleep): Ensure we use %20 instead of +.
+			f := paramValues.Encode()   // This encods into URL encoded form with QueryEscape.
+			f, _ = url.QueryUnescape(f) // But we need it unencoded since its the fragment, it is encoded later (when serializing the URL).
+			u.Fragment += f             // Append fragment extension.
 		} else {
 			queryValues := u.Query()
 			for k, vs := range paramValues {
