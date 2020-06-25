@@ -4,6 +4,12 @@
 
 
 
+## v0.33.5 (2020-06-25)
+
+- Fix regression which encodes URL fragments twice
+- Update Docker dependencies
+
+
 ## v0.33.4 (2020-06-23)
 
 - Avoid generating fragmet/query URLs with wrong order
