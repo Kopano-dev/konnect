@@ -4,6 +4,12 @@
 
 
 
+## v0.33.6 (2020-09-10)
+
+- Update Jenkins reporting plugin from checkstyle to recordIssues
+- Remove extra kty key from JWKS top level document
+
+
 ## v0.33.5 (2020-06-25)
 
 - Fix regression which encodes URL fragments twice
