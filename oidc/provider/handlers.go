@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
-	jwk "github.com/mendsley/gojwk"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/square/go-jose.v2"
 	"stash.kopano.io/kgol/oidc-go"
 	"stash.kopano.io/kgol/rndm"
 
@@ -35,7 +35,6 @@ import (
 	konnectoidc "stash.kopano.io/kc/konnect/oidc"
 	"stash.kopano.io/kc/konnect/oidc/code"
 	"stash.kopano.io/kc/konnect/oidc/payload"
-	"stash.kopano.io/kc/konnect/signing"
 	"stash.kopano.io/kc/konnect/utils"
 )
 
@@ -58,22 +57,21 @@ func (p *Provider) WellKnownHandler(rw http.ResponseWriter, req *http.Request) {
 // JwksHandler implements the HTTP provider JWKS endpoint for OpenID provider
 // metadata used with OpenID Connect Discovery 1.0 as specified at https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 func (p *Provider) JwksHandler(rw http.ResponseWriter, req *http.Request) {
-	// TODO(longsleep): Use better library, or self implemented jwks struct.
 	addResponseHeaders(rw.Header())
 
 	validationKeys := p.validationKeys
-	jwks := &jwk.Key{
-		Keys: make([]*jwk.Key, 0, len(validationKeys)-1),
+	jwks := &jose.JSONWebKeySet{
+		Keys: make([]jose.JSONWebKey, 0),
 	}
 	for kid, key := range validationKeys {
-		keyJwk, err := signing.JWKFromPublicKey(key)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
+		keyJwk := jose.JSONWebKey{
+			Key:   key,
+			KeyID: kid,
+			Use:   "sig", // https://tools.ietf.org/html/rfc7517#section-4.2
 		}
-		keyJwk.Use = "sig" // https://tools.ietf.org/html/rfc7517#section-4.2
-		keyJwk.Kid = kid
-		jwks.Keys = append(jwks.Keys, keyJwk)
+		if keyJwk.Valid() {
+			jwks.Keys = append(jwks.Keys, keyJwk.Public())
+		}
 	}
 
 	err := utils.WriteJSON(rw, http.StatusOK, jwks, "application/jwk-set+json")
