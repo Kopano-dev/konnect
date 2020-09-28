@@ -211,6 +211,7 @@ func (i *Identifier) writeSAML2AssertionConsumerService(rw http.ResponseWriter, 
 	query, _ := url.ParseQuery(sd.RawQuery)
 	query.Del("flow")
 	query.Set("identifier", MustBeSignedIn)
+	query.Set("prompt", oidc.PromptNone)
 
 	switch typedErr := err.(type) {
 	case nil:
