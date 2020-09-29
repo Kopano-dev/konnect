@@ -4,8 +4,14 @@
 
 
 
+## v0.33.7 (2020-09-29)
+
+- Set prompt=None to avoid loops with external authority
+
+
 ## v0.33.6 (2020-09-10)
 
+- v0.33.6
 - Update Jenkins reporting plugin from checkstyle to recordIssues
 - Remove extra kty key from JWKS top level document
 
