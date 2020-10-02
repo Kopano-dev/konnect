@@ -32,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus"
 	jose "gopkg.in/square/go-jose.v2"
 	jwt "gopkg.in/square/go-jose.v2/jwt"
+	"stash.kopano.io/kgol/rndm"
 
 	"stash.kopano.io/kc/konnect"
 	"stash.kopano.io/kc/konnect/identifier/backends"
@@ -336,6 +337,9 @@ func (i *Identifier) EndSession(ctx context.Context, user *IdentifiedUser, rw ht
 	var uri *url.URL
 	if user.externalAuthority != nil && user.externalAuthority.EndSessionEnabled {
 		// Generate state and set state cookie with postRedirectURI.
+		if state == "" {
+			state = rndm.GenerateRandomString(32)
+		}
 		sd := &StateData{
 			State: state,
 			Mode:  StateModeEndSession,
