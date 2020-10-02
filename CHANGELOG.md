@@ -4,6 +4,12 @@
 
 
 
+## v0.33.8 (2020-10-02)
+
+- Generate random endsession state for external authority
+- Update dependencies in Dockerfile
+
+
 ## v0.33.7 (2020-09-29)
 
 - Set prompt=None to avoid loops with external authority
