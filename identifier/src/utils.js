@@ -13,21 +13,27 @@ export function propertyFromStylesheet(selector, attribute, asURL=false) {
   let sheetHref;
 
   Array.prototype.some.call(document.styleSheets, function(sheet) {
-    return Array.prototype.some.call(sheet.cssRules, function(rule) {
-      sheetHref = sheet.href;
-      if (selector === rule.selectorText) {
-        return Array.prototype.some.call(rule.style, function(style) {
-          if (attribute === style) {
-            value = rule.style.getPropertyValue(attribute);
-            return true;
-          }
+    try {
+      return Array.prototype.some.call(sheet.cssRules, function(rule) {
+        sheetHref = sheet.href;
+        if (selector === rule.selectorText) {
+          return Array.prototype.some.call(rule.style, function(style) {
+            if (attribute === style) {
+              value = rule.style.getPropertyValue(attribute);
+              return true;
+            }
 
-          return false;
-        });
-      }
+            return false;
+          });
+        }
 
+        return false;
+      });
+    } catch(e) {
+      // Ignore sheels which caused errors. This for example can happen if an
+      // extension injected styles from an other origin.
       return false;
-    });
+    }
   });
 
   if (value && asURL) {
