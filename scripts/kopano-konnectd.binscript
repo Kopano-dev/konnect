@@ -167,6 +167,10 @@ case "${1}" in
 			set -- "$@" --refresh-token-expiration="$refresh_token_expiration"
 		fi
 
+		if [ -n "${uri_base_path:-}" ]; then
+			set -- "$@" --uri-base-path="$uri_base_path"
+		fi
+
 		# kc identity manager
 
 		if [ "$identity_manager" = "kc" ]; then
