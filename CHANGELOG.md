@@ -4,6 +4,14 @@
 
 
 
+## v0.33.9 (2020-10-27)
+
+- Build with Go 1.14.10
+- enhance description
+- Add uri_base_path to binscript and config file
+- Catch potential errors when parsing own styles
+
+
 ## v0.33.8 (2020-10-02)
 
 - Generate random endsession state for external authority
