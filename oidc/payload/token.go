@@ -60,27 +60,44 @@ func DecodeTokenRequest(req *http.Request, providerMetadata *oidc.WellKnown) (*T
 		return nil, err
 	}
 
+	var clientID string
+	var clientSecret string
+
 	auth := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
 	switch auth[0] {
 	case "Basic":
+		// Support client_secret_basic authentication method.
 		if len(auth) != 2 {
 			return nil, fmt.Errorf("invalid Basic authorization header format")
 		}
 		var basic []byte
 		if basic, err = base64.StdEncoding.DecodeString(auth[1]); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid Basic authorization value: %w", err)
 		}
-		// Split client id and secret.
+		// Decode username as client ID and password as client secret. See
+		// https://tools.ietf.org/html/rfc6749#section-2.3.1 for details.
 		check := strings.SplitN(string(basic), ":", 2)
-		// Data is encoded application/x-www-form-urlencoded UTF-8. See
-		// https://tools.ietf.org/html/rfc6749#appendix-B for details.
-		tr.ClientID, err = url.QueryUnescape(check[0])
-		if err != nil {
-			return nil, err
+		if len(check) == 2 {
+			// Data is encoded application/x-www-form-urlencoded UTF-8. See
+			// https://tools.ietf.org/html/rfc6749#appendix-B for details.
+			if clientID, err = url.QueryUnescape(check[0]); err == nil {
+				clientSecret, _ = url.QueryUnescape(check[1])
+			}
 		}
-		tr.ClientSecret, err = url.QueryUnescape(check[1])
-		if err != nil {
-			return nil, err
+	}
+
+	if tr.ClientID == "" {
+		if clientID == "" {
+			return nil, fmt.Errorf("client_id is missing")
+		}
+		// Use client ID and secret if no client_id was passed to the request directly.
+		tr.ClientID = clientID
+		tr.ClientSecret = clientSecret
+	} else if clientID != "" {
+		if tr.ClientID == clientID {
+			// Update the client secret, if the ID is a match. This replaces
+			// a directly given secret.
+			tr.ClientSecret = clientSecret
 		}
 	}
 
