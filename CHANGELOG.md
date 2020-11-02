@@ -4,6 +4,12 @@
 
 
 
+## v0.33.10 (2020-10-30)
+
+- Fix processing for prompt select_account with consent
+- Improve checks for Basic auth data in token requests
+
+
 ## v0.33.9 (2020-10-27)
 
 - Build with Go 1.14.10
