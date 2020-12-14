@@ -410,7 +410,7 @@ func (ar *saml2AuthorityRegistration) MakeRedirectEndSessionRequestURL(ref inter
 		}
 		nameID = logonRefParts[1]
 	}
-	req, err := ar.serviceProvider.MakeRedirectLogoutRequest(nameID)
+	req, err := ar.serviceProvider.MakeLogoutRequest(ar.serviceProvider.GetSLOBindingLocation(saml.HTTPRedirectBinding), nameID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to make redirect logout request: %w", err)
 	}

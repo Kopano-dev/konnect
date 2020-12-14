@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/beevik/etree v1.1.0
 	github.com/crewjam/httperr v0.2.0
-	github.com/crewjam/saml v0.4.0
+	github.com/crewjam/saml v0.4.3
 	github.com/deckarep/golang-set v1.7.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ghodss/yaml v1.0.0
@@ -23,7 +23,7 @@ require (
 	github.com/prometheus/client_golang v1.5.0
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rs/cors v1.7.0
-	github.com/russellhaering/goxmldsig v0.0.0-20180430223755-7acd5e4a6ef7
+	github.com/russellhaering/goxmldsig v1.1.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.6
@@ -42,3 +42,5 @@ require (
 )
 
 replace github.com/crewjam/httperr => github.com/crewjam/httperr v0.2.0
+
+replace github.com/mattermost/xml-roundtrip-validator => github.com/mattermost/xml-roundtrip-validator v0.0.0-20201213122252-bcd7e1b9601e
