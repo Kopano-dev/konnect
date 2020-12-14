@@ -4,7 +4,12 @@
 
 
 
-## v0.33.10 (2020-10-30)
+## v0.33.11 (2020-12-14)
+
+- Validate XML before SAML processing
+
+
+## v0.33.10 (2020-11-02)
 
 - Fix processing for prompt select_account with consent
 - Improve checks for Basic auth data in token requests
