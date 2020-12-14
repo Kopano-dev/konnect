@@ -100,7 +100,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 # Download
 RUN apk add --no-cache \
 		ca-certificates=20191127-r4 \
-		curl=7.69.1-r1 \
+		curl=7.69.1-r3 \
 	&& curl -sSL https://download.kopano.io/community/konnect:/kopano-konnect-${VERSION}.tar.gz | \
 	tar -C /var/lib/konnectd-docker --strip 1 -vxzf - && \
 	mv ${EXE} /usr/local/bin/${EXE}
