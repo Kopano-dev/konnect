@@ -210,7 +210,7 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 		// and has no configured redirect URIs.
 		redirectURIOK := false
 		for _, urlString := range client.RedirectURIs {
-			if client.ApplicationType == "native" {
+			if client.ApplicationType == oidc.ApplicationTypeNative {
 				urlStringParsed, _ := url.Parse(urlString)
 				if urlStringParsed.Host == "localhost" && urlStringParsed.Scheme == "http" {
 					u, err := url.Parse(redirectURIString)
@@ -218,9 +218,11 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 						break
 					}
 					host := u.Hostname()
-					if host == "localhost" && u.Scheme == "http" && u.Path == urlStringParsed.Path {
-						redirectURIOK = true
-						break
+					if host == "localhost" && u.Scheme == "http" {
+						if urlStringParsed.Path == "" || u.Path == urlStringParsed.Path {
+							redirectURIOK = true
+							break
+						}
 					}
 					continue
 				}
