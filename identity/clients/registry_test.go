@@ -20,7 +20,7 @@ func TestRedirectUriWithDynamicPort(t *testing.T) {
 		{"http://host-with-port:123/callback", true},
 	}
 
-	registry, _ := NewRegistry(context.Background(), nil, "", nil)
+	registry, _ := NewRegistry(context.Background(), nil, "", true, 0, nil)
 	clientRegistration := ClientRegistration{
 		ID:              "native",
 		Secret:          "secret",

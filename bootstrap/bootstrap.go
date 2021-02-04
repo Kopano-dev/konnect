@@ -66,33 +66,34 @@ const (
 
 // Config is a typed application config which represents the user accessible config params
 type Config struct {
-	Iss                            string
-	IdentityManager                string
-	URIBasePath                    string
-	SignInURI                      string
-	SignedOutURI                   string
-	AuthorizationEndpointURI       string
-	EndsessionEndpointURI          string
-	Insecure                       bool
-	TrustedProxy                   []string
-	AllowScope                     []string
-	AllowClientGuests              bool
-	AllowDynamicClientRegistration bool
-	EncryptionSecretFile           string
-	Listen                         string
-	IdentifierClientDisabled       bool
-	IdentifierClientPath           string
-	IdentifierRegistrationConf     string
-	IdentifierScopesConf           string
-	SigningKid                     string
-	SigningMethod                  string
-	SigningPrivateKeyFiles         []string
-	ValidationKeysPath             string
-	CookieBackendURI               string
-	CookieNames                    []string
-	AccessTokenDurationSeconds     uint64
-	IDTokenDurationSeconds         uint64
-	RefreshTokenDurationSeconds    uint64
+	Iss                               string
+	IdentityManager                   string
+	URIBasePath                       string
+	SignInURI                         string
+	SignedOutURI                      string
+	AuthorizationEndpointURI          string
+	EndsessionEndpointURI             string
+	Insecure                          bool
+	TrustedProxy                      []string
+	AllowScope                        []string
+	AllowClientGuests                 bool
+	AllowDynamicClientRegistration    bool
+	EncryptionSecretFile              string
+	Listen                            string
+	IdentifierClientDisabled          bool
+	IdentifierClientPath              string
+	IdentifierRegistrationConf        string
+	IdentifierScopesConf              string
+	SigningKid                        string
+	SigningMethod                     string
+	SigningPrivateKeyFiles            []string
+	ValidationKeysPath                string
+	CookieBackendURI                  string
+	CookieNames                       []string
+	AccessTokenDurationSeconds        uint64
+	IDTokenDurationSeconds            uint64
+	RefreshTokenDurationSeconds       uint64
+	DyamicClientSecretDurationSeconds uint64
 }
 
 // Bootstrap is a data structure to hold configuration required to start
@@ -124,10 +125,12 @@ type bootstrap struct {
 	signers          map[string]crypto.Signer
 	validators       map[string]crypto.PublicKey
 
-	accessTokenDurationSeconds  uint64
-	idTokenDurationSeconds      uint64
-	refreshTokenDurationSeconds uint64
-	uriBasePath                 string
+	accessTokenDurationSeconds        uint64
+	idTokenDurationSeconds            uint64
+	refreshTokenDurationSeconds       uint64
+	dyamicClientSecretDurationSeconds uint64
+
+	uriBasePath string
 
 	cfg      *config.Config
 	managers *managers.Managers
@@ -363,6 +366,7 @@ func (bs *bootstrap) initialize(cfg *Config) error {
 	if bs.refreshTokenDurationSeconds == 0 {
 		bs.refreshTokenDurationSeconds = 60 * 60 * 24 * 365 * 3 // 3 Years
 	}
+	bs.dyamicClientSecretDurationSeconds = cfg.DyamicClientSecretDurationSeconds
 
 	return nil
 }

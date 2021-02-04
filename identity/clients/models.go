@@ -145,9 +145,16 @@ func (cr *ClientRegistration) SetDynamic(ctx context.Context, creator func(ctx c
 		return fmt.Errorf("has ID already")
 	}
 
+	registry, ok := FromRegistryContext(ctx)
+	if !ok {
+		return fmt.Errorf("no registry")
+	}
+
 	// Initialize basic client registration data for dynamic client.
 	cr.IDIssuedAt = time.Now().Unix()
-	cr.SecretExpiresAt = time.Now().Add(1 * time.Hour).Unix()
+	if registry.dynamicClientSecretDuration > 0 {
+		cr.SecretExpiresAt = time.Now().Add(registry.dynamicClientSecretDuration).Unix()
+	}
 	cr.Dynamic = true
 
 	sub, secret, err := cr.makeSecret(nil)

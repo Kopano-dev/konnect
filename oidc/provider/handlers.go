@@ -871,8 +871,9 @@ func (p *Provider) RegistrationHandler(rw http.ResponseWriter, req *http.Request
 	if err != nil {
 		goto done
 	}
+
 	// Set client to dynamic. This creates the id and client secret.
-	err = cr.SetDynamic(req.Context(), p.clients.StatelessCreator)
+	err = cr.SetDynamic(clients.NewRegistryContext(req.Context(), p.clients), p.clients.StatelessCreator)
 	if err != nil {
 		goto done
 	}

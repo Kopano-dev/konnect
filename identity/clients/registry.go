@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
@@ -39,14 +40,26 @@ type Registry struct {
 	trustedURI *url.URL
 	clients    map[string]*ClientRegistration
 
+	allowDynamicClientRegistration bool
+	dynamicClientSecretDuration    time.Duration
+
 	StatelessCreator   func(ctx context.Context, signingMethod jwt.SigningMethod, claims jwt.Claims) (string, error)
 	StatelessValidator func(token *jwt.Token) (interface{}, error)
 
 	logger logrus.FieldLogger
 }
 
+// contextKey is an unexported type for keys defined in this package.
+// This prevents collisions with keys defined in other packages.
+type contextKey int
+
+// claimsKey is the key for claims in contexts. It is
+// unexported; clients use konnect.NewClaimsContext and
+// connect.FromClaimsContext instead of using this key directly.
+var registryKey contextKey
+
 // NewRegistry created a new client Registry with the provided parameters.
-func NewRegistry(ctx context.Context, trustedURI *url.URL, registrationConfFilepath string, logger logrus.FieldLogger) (*Registry, error) {
+func NewRegistry(ctx context.Context, trustedURI *url.URL, registrationConfFilepath string, allowDynamicClientRegistration bool, dynamicClientSecretDuration time.Duration, logger logrus.FieldLogger) (*Registry, error) {
 	registryData := &RegistryData{}
 
 	if registrationConfFilepath != "" {
@@ -65,6 +78,9 @@ func NewRegistry(ctx context.Context, trustedURI *url.URL, registrationConfFilep
 	r := &Registry{
 		trustedURI: trustedURI,
 		clients:    make(map[string]*ClientRegistration),
+
+		allowDynamicClientRegistration: allowDynamicClientRegistration,
+		dynamicClientSecretDuration:    dynamicClientSecretDuration,
 
 		logger: logger,
 	}
@@ -94,6 +110,17 @@ func NewRegistry(ctx context.Context, trustedURI *url.URL, registrationConfFilep
 	}
 
 	return r, nil
+}
+
+// NewRegistryContext returns a new Context that carries value provided Registry.
+func NewRegistryContext(ctx context.Context, r *Registry) context.Context {
+	return context.WithValue(ctx, registryKey, r)
+}
+
+// FromRegistryContext returns the Registry value stored in ctx, if any.
+func FromRegistryContext(ctx context.Context) (*Registry, bool) {
+	r, ok := ctx.Value(registryKey).(*Registry)
+	return r, ok
 }
 
 // Register validates the provided client registration and adds the client

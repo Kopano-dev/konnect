@@ -20,6 +20,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"time"
 
 	identityAuthorities "stash.kopano.io/kc/konnect/identity/authorities"
 	identityClients "stash.kopano.io/kc/konnect/identity/clients"
@@ -52,7 +53,7 @@ func newManagers(ctx context.Context, bs *bootstrap) (*managers.Managers, error)
 	mgrs.Set("code", code)
 
 	// Identifier client registry manager.
-	clients, err := identityClients.NewRegistry(ctx, bs.issuerIdentifierURI, bs.identifierRegistrationConf, logger)
+	clients, err := identityClients.NewRegistry(ctx, bs.issuerIdentifierURI, bs.identifierRegistrationConf, bs.cfg.AllowDynamicClientRegistration, time.Duration(bs.dyamicClientSecretDurationSeconds)*time.Second, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client registry: %v", err)
 	}
