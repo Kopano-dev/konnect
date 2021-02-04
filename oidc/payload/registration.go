@@ -173,10 +173,10 @@ func (crr *ClientRegistrationRequest) Validate() error {
 			}
 			if ok := registeredGrantTypes[oidc.GrantTypeImplicit]; ok {
 				if uri.Scheme != "https" {
-					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "implicit web clients must use https redirect_uris")
+					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "web clients must use https redirect_uris")
 				}
-				if uri.Hostname() == "localhost" {
-					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "implicit web clients must not use localhost redirect_uris")
+				if clients.IsLocalNativeHostURI(uri) {
+					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "web clients must not use localhost redirect_uris")
 				}
 			}
 		}
@@ -189,10 +189,9 @@ func (crr *ClientRegistrationRequest) Validate() error {
 			if err != nil {
 				return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "failed to parse redirect_uris")
 			}
-			if uri.Scheme == "http" {
-				if uri.Hostname() != "localhost" {
-					return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "native clients must only use localhost redirect_uris with http")
-				}
+
+			if !clients.IsLocalNativeHTTPURI(uri) {
+				return konnectoidc.NewOAuth2Error(oidc.ErrorCodeOIDCInvalidRedirectURI, "native clients must only use localhost redirect_uris with http")
 			}
 		}
 

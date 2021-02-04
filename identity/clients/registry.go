@@ -146,8 +146,8 @@ func (r *Registry) Register(client *ClientRegistration) error {
 				return fmt.Errorf("invalid redirect_uri %v - invalid or no hostname", urlString)
 			} else if !client.Insecure && parsed.Scheme != "https" {
 				return fmt.Errorf("invalid redirect_uri %v - make sure to use https when application_type is web", parsed)
-			} else if parsed.Host == "localhost" {
-				return fmt.Errorf("invalid redirect_uri %v - host must not be localhost", parsed)
+			} else if IsLocalNativeHTTPURI(parsed) {
+				return fmt.Errorf("invalid redirect_uri %v - host must not be localhost when application_type is web", parsed)
 			}
 
 			if len(client.Origins) == 0 {
@@ -170,7 +170,7 @@ func (r *Registry) Register(client *ClientRegistration) error {
 				return fmt.Errorf("invalid redirect_uri %v - invalid uri or no hostname", urlString)
 			} else if parsed.Scheme == "https" {
 				return fmt.Errorf("invalid redirect_uri %v - scheme must not be https when application_type is native", parsed)
-			} else if parsed.Scheme == "http" && parsed.Hostname() != "localhost" {
+			} else if parsed.Scheme == "http" && !IsLocalNativeHTTPURI(parsed) {
 				return fmt.Errorf("invalid redirect_uri %v = http host must be localhost when application_type is native", parsed)
 			}
 		}
@@ -209,17 +209,16 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 		// Make sure to validate the redirect URI unless client is marked insecure
 		// and has no configured redirect URIs.
 		redirectURIOK := false
-		for _, urlString := range client.RedirectURIs {
+		for _, registeredURIString := range client.RedirectURIs {
 			if client.ApplicationType == oidc.ApplicationTypeNative {
-				urlStringParsed, _ := url.Parse(urlString)
-				if urlStringParsed.Host == "localhost" && urlStringParsed.Scheme == "http" {
-					u, err := url.Parse(redirectURIString)
+				registeredURI, _ := url.Parse(registeredURIString)
+				if IsLocalNativeHTTPURI(registeredURI) {
+					redirectURI, err := url.Parse(redirectURIString)
 					if err != nil {
 						break
 					}
-					host := u.Hostname()
-					if host == "localhost" && u.Scheme == "http" {
-						if urlStringParsed.Path == "" || u.Path == urlStringParsed.Path {
+					if IsLocalNativeHTTPURI(redirectURI) {
+						if registeredURI.Path == "" || redirectURI.Path == registeredURI.Path {
 							redirectURIOK = true
 							break
 						}
@@ -227,7 +226,7 @@ func (r *Registry) Validate(client *ClientRegistration, clientSecret string, red
 					continue
 				}
 			}
-			if urlString == redirectURIString {
+			if registeredURIString == redirectURIString {
 				redirectURIOK = true
 				break
 			}

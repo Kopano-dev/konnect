@@ -19,6 +19,7 @@ package clients
 
 import (
 	"crypto"
+	"net/url"
 )
 
 // Details hold detail information about clients identified by ID.
@@ -43,4 +44,20 @@ type Secured struct {
 	TrustedScopes []string
 
 	Registration *ClientRegistration
+}
+
+// IsLocalNativeHTTPURI returns true if the provided URI qualifies to be used
+// as http redirect URI for a native client.
+func IsLocalNativeHTTPURI(uri *url.URL) bool {
+	if uri.Scheme != "http" {
+		return false
+	}
+	return IsLocalNativeHostURI(uri)
+}
+
+// IsLocalNativeHostURI returns true if the provided URI hostname is considered
+// as localhost for a native client.
+func IsLocalNativeHostURI(uri *url.URL) bool {
+	hostname := uri.Hostname()
+	return hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1"
 }

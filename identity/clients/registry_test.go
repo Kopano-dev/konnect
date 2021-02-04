@@ -12,6 +12,9 @@ func TestRedirectUriWithDynamicPort(t *testing.T) {
 	}{
 		{"http://localhost:12345", false},
 		{"http://localhost:12345/callback", false},
+		{"http://127.0.0.1:12345/callback", false},
+		{"http://192.168.88.4:8080/callback", true},
+		{"http://[::1]:12345/callback", false},
 		{"http://localhost", false},
 		{"custom://callback.example.net", false},
 		{"http://localhost:12345/other-callback", false},
@@ -50,6 +53,8 @@ func TestRedirectUriWithSpecificPath(t *testing.T) {
 	}{
 		{"http://localhost:12345", true},
 		{"http://localhost:12345/callback", false},
+		{"http://127.0.0.1:12345/callback", false},
+		{"http://[::1]:12345/callback", false},
 		{"http://localhost", true},
 		{"custom://callback.example.net", true},
 		{"http://localhost:12345/callback-disallowed", true},
@@ -58,6 +63,9 @@ func TestRedirectUriWithSpecificPath(t *testing.T) {
 		{"http://host-with-port:123/callback", true},
 		{"https://localhost:123/callback", true},
 		{"http://localhost/other-callback", false},
+		{"http://127.0.0.1/other-callback", false},
+		{"http://10.0.0.1/other-callback", true},
+		{"http://[::1]/other-callback", false},
 		{"http://localhost:8080/other-callback", false},
 	}
 
