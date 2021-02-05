@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Allow 127.0.0.1 and [::1] redirect_uris for native clients
+- Allow redirect_uris without path for native clients
+- Allow configuration of expiration of dynamic client_secret values
+- Update dependencies in Dockerfile.release
 
 
 ## v0.33.11 (2020-12-14)
