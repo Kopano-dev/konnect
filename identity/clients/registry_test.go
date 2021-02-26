@@ -69,7 +69,7 @@ func TestRedirectUriWithSpecificPath(t *testing.T) {
 		{"http://localhost:8080/other-callback", false},
 	}
 
-	registry, _ := NewRegistry(context.Background(), nil, "", nil)
+	registry, _ := NewRegistry(context.Background(), nil, "", true, 0, nil)
 	clientRegistration := ClientRegistration{
 		ID:              "native",
 		Secret:          "secret",
