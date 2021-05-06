@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+
+
+## v0.34.0 (2021-05-06)
+
+- Correct Docker based build example
 - Fix broken client registration unit test initialization
 - Allow 127.0.0.1 and [::1] redirect_uris for native clients
 - Allow redirect_uris without path for native clients
