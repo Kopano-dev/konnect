@@ -81,7 +81,7 @@ are expected to be found in your $PATH.
 
 ```
 docker build -t konnectd-builder -f Dockerfile.build .
-docker run -it --rm -u $(id -u):$(id -g) -v $(pwd):/build kapid-konnectd
+docker run -it --rm -u $(id -u):$(id -g) -v $(pwd):/build konnectd-builder
 ```
 
 ## Running Konnect
