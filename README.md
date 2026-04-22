@@ -299,7 +299,7 @@ the Kopano Groupware Core unix socket as admin user `SYSTEM`.
 ### Run Konnect from Docker image
 
 ```
-openssl rand 32 -out /etc/kopano/konnectd-encryption-secret.key
+openssl rand -out /etc/kopano/konnectd-encryption-secret.key 32
 docker run --rm=true --name=konnectd \
 	--read-only \
 	--user=$(id -u kopano):$(id -g kopano) \
